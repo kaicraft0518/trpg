@@ -918,7 +918,7 @@ window.shareChar = async (e, charId) => {
   document.getElementById('share-char-content').style.display = 'none';
 
   // Get char data
-  const snap = await get(ref(db, \`users/\${currentUser.uid}/characters/\${charId}\`));
+  const snap = await get(ref(db, `users/${currentUser.uid}/characters/${charId}`));
   if (!snap.exists()) { alert('キャラクターが見つかりません'); closeShareCharModal(); return; }
   const char = snap.val();
 
@@ -966,7 +966,7 @@ window.importByCharId = async () => {
   errEl.classList.remove('show');
   if (!shareId) { errEl.textContent = 'キャラクターIDを入力してください'; errEl.classList.add('show'); return; }
 
-  const snap = await get(ref(db, \`characters-public/\${shareId}\`));
+  const snap = await get(ref(db, `characters-public/${shareId}`));
   if (!snap.exists()) { errEl.textContent = 'キャラクターが見つかりません。IDを確認してください'; errEl.classList.add('show'); return; }
 
   const data = snap.val();
