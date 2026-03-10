@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>深淵の卓 - ID設定</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Noto+Serif+JP:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg-deep: #0a0807; --bg-dark: #110e0b; --bg-mid: #1a1410;
+  --bg-card: #1f1915; --bg-hover: #261e18;
+  --border: #3a2e22; --border-glow: #6b4c2a;
+  --gold: #c9a84c; --gold-dim: #7a6030;
+  --red-glow: #ff4444;
+  --text-primary: #e8dcc8; --text-secondary: #a08060; --text-dim: #6a5040;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: var(--bg-deep); color: var(--text-primary);
+  font-family: 'Noto Serif JP', serif;
+  min-height: 100vh; display: flex; align-items: center; justify-content: center;
+}
+.container { width: 100%; max-width: 420px; padding: 20px; }
+.logo { text-align: center; margin-bottom: 32px; }
+.logo-title { font-family: 'Cinzel Decorative', serif; font-size: 22px; color: var(--gold); letter-spacing: 3px; }
+.logo-sub { font-size: 12px; color: var(--text-dim); margin-top: 4px; display: block; }
+.card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 16px; padding: 32px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+  position: relative;
+}
+.card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--gold-dim), transparent);
+}
+h2 { font-family: 'Cinzel Decorative', serif; font-size: 16px; color: var(--gold); margin-bottom: 8px; }
+.desc { font-size: 13px; color: var(--text-secondary); margin-bottom: 24px; line-height: 1.6; }
+.form-label { display: block; font-size: 11px; color: var(--text-dim); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 7px; }
+.input-wrapper { position: relative; margin-bottom: 6px; }
+.form-input {
+  width: 100%; background: var(--bg-mid); border: 1px solid var(--border);
+  border-radius: 8px; padding: 11px 100px 11px 14px;
+  color: var(--text-primary); font-family: 'Noto Serif JP', serif; font-size: 14px;
+  transition: all 0.2s;
+}
+.form-input:focus { outline: none; border-color: var(--gold-dim); box-shadow: 0 0 0 3px rgba(201,168,76,0.08); }
+.input-status {
+  position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+  font-size: 12px; display: none;
+}
+.input-status.checking { color: var(--text-dim); display: block; }
+.input-status.available { color: #4ade80; display: block; }
+.input-status.taken { color: var(--red-glow); display: block; }
+.hint { font-size: 11px; color: var(--text-dim); }
+.hint.error { color: var(--red-glow); display: none; }
+.hint.error.show { display: block; }
+.displayname-group { margin-top: 16px; margin-bottom: 20px; }
+.submit-btn {
+  width: 100%; padding: 13px;
+  background: linear-gradient(135deg, rgba(201,168,76,0.15), rgba(201,168,76,0.08));
+  border: 1px solid var(--gold-dim); border-radius: 10px;
+  color: var(--gold); font-family: 'Cinzel Decorative', serif;
+  font-size: 14px; letter-spacing: 2px; cursor: pointer; transition: all 0.2s;
+}
+.submit-btn:hover { background: linear-gradient(135deg, rgba(201,168,76,0.25), rgba(201,168,76,0.15)); box-shadow: 0 0 20px rgba(201,168,76,0.2); }
+.submit-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.error-banner {
+  background: rgba(255,68,68,0.08); border: 1px solid rgba(255,68,68,0.3);
+  border-radius: 8px; padding: 10px 14px; font-size: 13px; color: #ff9999;
+  margin-bottom: 16px; display: none;
+}
+.error-banner.show { display: block; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="logo">
+    <span class="logo-title">深淵の卓</span>
+    <span class="logo-sub">アカウント設定</span>
+  </div>
+  <div class="card">
+    <h2>ユーザーIDを設定</h2>
+    <p class="desc">Googleアカウントと連携するユーザーIDを決めてください。このIDでログインできます。一度設定すると変更できません。</p>
+
+    <div class="error-banner" id="error-banner"></div>
+
+    <label class="form-label">ユーザーID <span style="color:var(--red-glow)">*</span></label>
+    <div class="input-wrapper">
+      <input class="form-input" id="handle-input" type="text"
+        placeholder="your_id（半角英数字・アンダースコア）"
+        oninput="checkHandle()">
+      <span class="input-status" id="handle-status"></span>
+    </div>
+    <span class="hint">3〜20文字。ログイン時に使用します。</span>
+    <span class="hint error" id="handle-error"></span>
+
+    <div class="displayname-group">
+      <label class="form-label">表示名</label>
+      <input class="form-input" id="displayname-input" type="text" placeholder="セッション中に表示される名前" style="padding-right:14px">
+    </div>
+
+    <button class="submit-btn" id="submit-btn" onclick="submitHandle()">IDを設定してはじめる</button>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import { getDatabase, ref, get, set } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyB_JYoE53JPCyTTaAdHUj6EPX2K5P6HjYs",
+  authDomain: "cthulhu-trpg.firebaseapp.com",
+  databaseURL: "https://cthulhu-trpg-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "cthulhu-trpg",
+  storageBucket: "cthulhu-trpg.firebasestorage.app",
+  messagingSenderId: "595458056355",
+  appId: "1:595458056355:web:9156ec7efedf8f64895f16"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getDatabase(app);
+
+let currentUser = null;
+
+onAuthStateChanged(auth, async user => {
+  if (!user) { window.location.href = 'index.html'; return; }
+  // If already has handle → go home
+  const snap = await get(ref(db, `users/${user.uid}/handle`));
+  if (snap.exists()) { window.location.href = 'home.html'; return; }
+  currentUser = user;
+  // Pre-fill display name from Google
+  const gName = user.displayName || '';
+  document.getElementById('displayname-input').value = gName;
+});
+
+let checkTimer = null;
+
+window.checkHandle = function() {
+  const handle = document.getElementById('handle-input').value.trim().toLowerCase();
+  const status = document.getElementById('handle-status');
+  const errEl  = document.getElementById('handle-error');
+  if (!handle) { status.className = 'input-status'; errEl.classList.remove('show'); return; }
+  if (!/^[a-z0-9_]{3,20}$/.test(handle)) {
+    status.textContent = '✗'; status.className = 'input-status taken';
+    errEl.textContent = '3〜20文字の半角英数字・アンダースコアのみ'; errEl.classList.add('show');
+    return;
+  }
+  errEl.classList.remove('show');
+  status.textContent = '…'; status.className = 'input-status checking';
+  clearTimeout(checkTimer);
+  checkTimer = setTimeout(async () => {
+    const snap = await get(ref(db, `handles/${handle}`));
+    status.textContent = snap.exists() ? '✗ 使用済み' : '✓ 使用可能';
+    status.className = 'input-status ' + (snap.exists() ? 'taken' : 'available');
+  }, 500);
+};
+
+window.submitHandle = async function() {
+  if (!currentUser) return;
+  const handle      = document.getElementById('handle-input').value.trim().toLowerCase();
+  const displayName = document.getElementById('displayname-input').value.trim() || handle;
+  const errBanner   = document.getElementById('error-banner');
+
+  if (!/^[a-z0-9_]{3,20}$/.test(handle)) { errBanner.textContent = 'IDの形式が正しくありません'; errBanner.classList.add('show'); return; }
+
+  const snap = await get(ref(db, `handles/${handle}`));
+  if (snap.exists()) { errBanner.textContent = 'このIDはすでに使用されています'; errBanner.classList.add('show'); return; }
+
+  document.getElementById('submit-btn').disabled = true;
+
+  await set(ref(db, `users/${currentUser.uid}`), {
+    handle, displayName, role: 'PL',
+    linkedGoogle: true, linkedEmail: false,
+    createdAt: Date.now()
+  });
+  await set(ref(db, `handles/${handle}`), currentUser.uid);
+
+  window.location.href = 'home.html';
+};
+</script>
+</body>
+</html>
