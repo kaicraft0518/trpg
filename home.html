@@ -1,0 +1,1043 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>深淵の卓 - ホーム</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Noto+Serif+JP:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg-deep: #0a0807; --bg-dark: #110e0b; --bg-mid: #1a1410;
+  --bg-card: #1f1915; --bg-hover: #261e18;
+  --border: #3a2e22; --border-glow: #6b4c2a;
+  --gold: #c9a84c; --gold-light: #e8c97a; --gold-dim: #7a6030;
+  --red: #8b1a1a; --red-glow: #ff4444;
+  --text-primary: #e8dcc8; --text-secondary: #a08060; --text-dim: #6a5040;
+  --hp-color: #ff6b6b; --san-color: #4a9eff; --mp-color: #a78bfa;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: var(--bg-deep); color: var(--text-primary);
+  font-family: 'Noto Serif JP', serif; min-height: 100vh;
+}
+body::before {
+  content: ''; position: fixed; inset: 0;
+  background:
+    radial-gradient(ellipse 60% 40% at 10% 50%, rgba(139,26,26,0.05) 0%, transparent 70%),
+    radial-gradient(ellipse 40% 60% at 90% 30%, rgba(107,76,42,0.06) 0%, transparent 70%);
+  pointer-events: none; z-index: 0;
+}
+
+/* HEADER */
+header {
+  background: rgba(17,14,11,0.95);
+  border-bottom: 1px solid var(--border);
+  padding: 0 32px; height: 60px;
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; z-index: 50;
+  backdrop-filter: blur(10px);
+}
+.header-logo {
+  font-family: 'Cinzel Decorative', serif; font-size: 16px;
+  color: var(--gold); letter-spacing: 2px;
+  text-shadow: 0 0 15px rgba(201,168,76,0.3);
+  display: flex; align-items: center; gap: 8px;
+}
+.header-logo::before { content: '👁'; font-size: 18px; filter: sepia(1) hue-rotate(30deg) saturate(2); }
+.header-user {
+  display: flex; align-items: center; gap: 12px;
+}
+.user-badge {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 20px; padding: 5px 14px 5px 10px;
+  display: flex; align-items: center; gap: 8px; font-size: 13px;
+}
+.user-avatar {
+  width: 26px; height: 26px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--gold-dim), var(--red));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; color: var(--bg-deep); font-weight: 700;
+  overflow: hidden;
+}
+.user-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.user-name { color: var(--text-secondary); }
+.user-handle { color: var(--text-dim); font-size: 11px; }
+.logout-btn {
+  background: transparent; border: 1px solid var(--border);
+  border-radius: 6px; padding: 5px 12px; color: var(--text-dim);
+  cursor: pointer; font-size: 12px; font-family: 'Noto Serif JP', serif;
+  transition: all 0.2s;
+}
+.logout-btn:hover { border-color: var(--red); color: #ff9999; }
+
+/* LAYOUT */
+.page { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 32px 24px; display: grid; grid-template-columns: 1fr 360px; gap: 24px; }
+
+/* SECTION */
+.section-title {
+  font-family: 'Cinzel Decorative', serif; font-size: 12px;
+  color: var(--gold-dim); letter-spacing: 3px; text-transform: uppercase;
+  margin-bottom: 14px; padding-bottom: 8px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+
+/* CHARACTER CARDS */
+.char-grid { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
+
+.char-card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 12px; padding: 16px; display: flex; gap: 14px;
+  align-items: flex-start; cursor: pointer; transition: all 0.2s;
+  position: relative; overflow: hidden;
+}
+.char-card::before {
+  content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px;
+  background: var(--gold); opacity: 0; transition: opacity 0.2s;
+}
+.char-card:hover { border-color: var(--border-glow); background: var(--bg-hover); }
+.char-card:hover::before { opacity: 1; }
+
+.char-avatar {
+  width: 52px; height: 52px; border-radius: 8px;
+  background: linear-gradient(135deg, var(--bg-mid), var(--bg-hover));
+  border: 1px solid var(--border); flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; overflow: hidden;
+}
+.char-avatar img { width: 100%; height: 100%; object-fit: cover; border-radius: 8px; }
+
+.char-info { flex: 1; min-width: 0; }
+.char-name { font-size: 15px; font-weight: 600; color: var(--text-primary); margin-bottom: 2px; }
+.char-meta { font-size: 12px; color: var(--text-secondary); font-style: italic; margin-bottom: 10px; }
+
+.char-vitals { display: flex; flex-direction: column; gap: 4px; }
+.vital-row { display: flex; align-items: center; gap: 6px; }
+.v-label { font-size: 10px; color: var(--text-dim); width: 28px; }
+.v-bar { flex: 1; height: 3px; background: rgba(255,255,255,0.05); border-radius: 2px; overflow: hidden; }
+.v-fill { height: 100%; border-radius: 2px; }
+.v-fill.hp  { background: var(--hp-color);  box-shadow: 0 0 4px var(--hp-color); }
+.v-fill.san { background: var(--san-color); box-shadow: 0 0 4px var(--san-color); }
+.v-fill.mp  { background: var(--mp-color);  box-shadow: 0 0 4px var(--mp-color); }
+.v-val { font-size: 10px; color: var(--text-dim); width: 36px; text-align: right; }
+
+.char-actions {
+  display: flex; flex-direction: column; gap: 4px; flex-shrink: 0;
+}
+.char-action-btn {
+  background: transparent; border: 1px solid var(--border);
+  border-radius: 6px; padding: 4px 10px; color: var(--text-dim);
+  cursor: pointer; font-size: 11px; font-family: 'Noto Serif JP', serif;
+  transition: all 0.2s; white-space: nowrap;
+}
+.char-action-btn:hover { border-color: var(--border-glow); color: var(--text-secondary); }
+.char-action-btn.danger:hover { border-color: var(--red); color: #ff9999; }
+
+/* Import button */
+.import-btn {
+  width: 100%; padding: 12px;
+  background: rgba(201,168,76,0.05); border: 1px dashed var(--gold-dim);
+  border-radius: 10px; color: var(--gold-dim); cursor: pointer;
+  font-family: 'Noto Serif JP', serif; font-size: 13px;
+  transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.import-btn:hover { background: rgba(201,168,76,0.1); border-color: var(--gold); color: var(--gold); }
+
+.empty-state {
+  text-align: center; padding: 32px; color: var(--text-dim);
+  font-style: italic; font-size: 13px;
+}
+
+/* SESSION PANEL */
+.session-panel { display: flex; flex-direction: column; gap: 16px; }
+
+.session-card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 12px; padding: 20px;
+}
+
+.session-card h3 {
+  font-family: 'Cinzel Decorative', serif; font-size: 13px;
+  color: var(--gold); margin-bottom: 6px;
+}
+.session-card p { font-size: 12px; color: var(--text-secondary); margin-bottom: 16px; font-style: italic; line-height: 1.6; }
+
+.form-group { margin-bottom: 12px; }
+.form-label { display: block; font-size: 11px; color: var(--text-dim); letter-spacing: 1px; margin-bottom: 5px; }
+.form-input {
+  width: 100%; background: var(--bg-mid); border: 1px solid var(--border);
+  border-radius: 7px; padding: 9px 12px; color: var(--text-primary);
+  font-family: 'Noto Serif JP', serif; font-size: 13px; transition: all 0.2s;
+}
+.form-input:focus { outline: none; border-color: var(--gold-dim); }
+.form-input::placeholder { color: var(--text-dim); }
+
+.code-row { display: flex; gap: 6px; }
+.code-row .form-input { flex: 1; font-family: 'Cinzel Decorative', serif; letter-spacing: 2px; }
+.gen-btn {
+  background: var(--bg-mid); border: 1px solid var(--border);
+  border-radius: 7px; padding: 9px 10px; color: var(--text-dim);
+  cursor: pointer; font-size: 14px; transition: all 0.2s; flex-shrink: 0;
+}
+.gen-btn:hover { border-color: var(--border-glow); color: var(--gold); }
+
+.role-select { display: flex; gap: 6px; margin-bottom: 12px; }
+.role-btn {
+  flex: 1; padding: 8px; background: var(--bg-mid);
+  border: 1px solid var(--border); border-radius: 7px;
+  color: var(--text-dim); cursor: pointer; font-size: 12px;
+  font-family: 'Noto Serif JP', serif; transition: all 0.2s; text-align: center;
+}
+.role-btn:hover { border-color: var(--border-glow); color: var(--text-secondary); }
+.role-btn.active.pl { border-color: var(--san-color); background: rgba(74,158,255,0.08); color: #7bc4ff; }
+.role-btn.active.kp { border-color: var(--gold-dim); background: rgba(201,168,76,0.08); color: var(--gold); }
+
+.submit-btn {
+  width: 100%; padding: 11px;
+  background: linear-gradient(135deg, rgba(201,168,76,0.12), rgba(201,168,76,0.06));
+  border: 1px solid var(--gold-dim); border-radius: 8px;
+  color: var(--gold); font-family: 'Noto Serif JP', serif;
+  font-size: 13px; cursor: pointer; transition: all 0.2s;
+}
+.submit-btn:hover { background: linear-gradient(135deg, rgba(201,168,76,0.22), rgba(201,168,76,0.12)); box-shadow: 0 0 15px rgba(201,168,76,0.15); }
+.submit-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.submit-btn.red {
+  background: rgba(139,26,26,0.15); border-color: var(--red); color: #ff9999;
+}
+.submit-btn.red:hover { background: rgba(139,26,26,0.25); }
+
+.error-msg { font-size: 12px; color: var(--red-glow); margin-top: 6px; display: none; }
+.error-msg.show { display: block; }
+.success-msg { font-size: 12px; color: #4ade80; margin-top: 6px; display: none; }
+.success-msg.show { display: block; }
+
+/* Recent sessions */
+.session-history { margin-top: 4px; display: flex; flex-direction: column; gap: 6px; }
+.history-item {
+  background: var(--bg-mid); border: 1px solid var(--border);
+  border-radius: 8px; padding: 10px 12px;
+  display: flex; align-items: center; justify-content: space-between;
+  cursor: pointer; transition: all 0.2s;
+}
+.history-item:hover { border-color: var(--border-glow); background: var(--bg-hover); }
+.h-name { font-size: 13px; color: var(--text-secondary); }
+.h-code { font-size: 11px; color: var(--text-dim); font-family: 'Cinzel Decorative', serif; }
+.h-role { font-size: 10px; padding: 2px 7px; border-radius: 10px; }
+.h-role.pl { background: rgba(74,158,255,0.1); color: #7bc4ff; border: 1px solid rgba(74,158,255,0.3); }
+.h-role.kp { background: rgba(201,168,76,0.1); color: var(--gold); border: 1px solid var(--gold-dim); }
+
+/* ===== MODAL ===== */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.8);
+  backdrop-filter: blur(4px); z-index: 200;
+  display: none; align-items: center; justify-content: center; padding: 20px;
+}
+.modal-overlay.open { display: flex; }
+
+.modal {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 16px; width: 100%; max-width: 680px; max-height: 90vh;
+  overflow-y: auto; position: relative;
+  box-shadow: 0 30px 80px rgba(0,0,0,0.8);
+  animation: modalIn 0.25s ease;
+}
+@keyframes modalIn { from { opacity: 0; transform: translateY(20px) scale(0.97); } to { opacity: 1; transform: none; } }
+
+.modal-header {
+  padding: 24px 24px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; background: var(--bg-card); z-index: 1;
+}
+.modal-title { font-family: 'Cinzel Decorative', serif; font-size: 15px; color: var(--gold); }
+.modal-close {
+  width: 30px; height: 30px; background: var(--bg-mid); border: 1px solid var(--border);
+  border-radius: 6px; color: var(--text-dim); cursor: pointer; font-size: 16px;
+  display: flex; align-items: center; justify-content: center; transition: all 0.2s;
+}
+.modal-close:hover { border-color: var(--red); color: #ff9999; }
+
+.modal-body { padding: 20px 24px 24px; }
+
+/* Import steps */
+.step { display: none; animation: fadeIn 0.25s ease; }
+.step.active { display: block; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+.step-label {
+  font-size: 11px; color: var(--text-dim); letter-spacing: 2px;
+  text-transform: uppercase; margin-bottom: 8px;
+}
+.step-desc { font-size: 13px; color: var(--text-secondary); margin-bottom: 16px; line-height: 1.6; }
+
+.txt-area {
+  width: 100%; min-height: 280px; background: var(--bg-mid);
+  border: 1px solid var(--border); border-radius: 8px;
+  padding: 14px; color: var(--text-primary); font-family: monospace; font-size: 12px;
+  line-height: 1.6; resize: vertical; transition: border-color 0.2s;
+}
+.txt-area:focus { outline: none; border-color: var(--gold-dim); }
+.txt-area::placeholder { color: var(--text-dim); }
+
+.parse-btn {
+  margin-top: 12px; width: 100%; padding: 11px;
+  background: rgba(201,168,76,0.1); border: 1px solid var(--gold-dim);
+  border-radius: 8px; color: var(--gold); font-family: 'Noto Serif JP', serif;
+  font-size: 13px; cursor: pointer; transition: all 0.2s;
+}
+.parse-btn:hover { background: rgba(201,168,76,0.18); }
+
+/* Preview */
+.preview-header {
+  display: flex; gap: 16px; align-items: flex-start; margin-bottom: 20px;
+}
+.preview-avatar {
+  width: 70px; height: 70px; border-radius: 10px;
+  border: 1px solid var(--border); overflow: hidden;
+  background: var(--bg-mid); flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center; font-size: 28px;
+}
+.preview-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.preview-name { font-size: 20px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px; }
+.preview-meta { font-size: 13px; color: var(--text-secondary); font-style: italic; }
+
+.preview-section { margin-bottom: 16px; }
+.preview-section-title {
+  font-size: 10px; color: var(--text-dim); letter-spacing: 2px;
+  text-transform: uppercase; margin-bottom: 8px; padding-bottom: 5px;
+  border-bottom: 1px solid var(--border);
+}
+.stats-preview {
+  display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px;
+}
+.stat-p {
+  background: var(--bg-mid); border: 1px solid var(--border);
+  border-radius: 6px; padding: 8px 6px; text-align: center;
+}
+.stat-p .s-name { font-size: 10px; color: var(--text-dim); margin-bottom: 3px; }
+.stat-p .s-val { font-family: 'Cinzel Decorative', serif; font-size: 16px; color: var(--gold); }
+
+.vitals-preview { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
+.vital-p {
+  background: var(--bg-mid); border-radius: 8px; padding: 12px; text-align: center;
+}
+.vital-p.hp  { border: 1px solid rgba(255,107,107,0.3); }
+.vital-p.san { border: 1px solid rgba(74,158,255,0.3); }
+.vital-p.mp  { border: 1px solid rgba(167,139,250,0.3); }
+.vital-p .v-name { font-size: 10px; letter-spacing: 1px; margin-bottom: 4px; }
+.vital-p.hp  .v-name { color: var(--hp-color); }
+.vital-p.san .v-name { color: var(--san-color); }
+.vital-p.mp  .v-name { color: var(--mp-color); }
+.vital-p .v-num { font-family: 'Cinzel Decorative', serif; font-size: 20px; }
+.vital-p.hp  .v-num { color: var(--hp-color); }
+.vital-p.san .v-num { color: var(--san-color); }
+.vital-p.mp  .v-num { color: var(--mp-color); }
+
+.skills-preview {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px;
+  max-height: 180px; overflow-y: auto;
+}
+.skill-p {
+  display: flex; justify-content: space-between; align-items: center;
+  background: var(--bg-mid); border: 1px solid var(--border);
+  border-radius: 5px; padding: 5px 8px; font-size: 11px;
+}
+.skill-p .sk-name { color: var(--text-secondary); }
+.skill-p .sk-val { color: var(--gold); font-family: 'Cinzel Decorative', serif; font-size: 12px; }
+
+.items-preview { display: flex; flex-direction: column; gap: 4px; }
+.item-p {
+  background: var(--bg-mid); border: 1px solid var(--border);
+  border-radius: 5px; padding: 5px 10px; font-size: 12px; color: var(--text-secondary);
+}
+
+.modal-footer {
+  display: flex; gap: 10px; margin-top: 20px;
+  padding-top: 16px; border-top: 1px solid var(--border);
+}
+.modal-btn {
+  flex: 1; padding: 11px; border-radius: 8px;
+  font-family: 'Noto Serif JP', serif; font-size: 13px; cursor: pointer; transition: all 0.2s;
+}
+.modal-btn.secondary {
+  background: var(--bg-mid); border: 1px solid var(--border); color: var(--text-dim);
+}
+.modal-btn.secondary:hover { border-color: var(--border-glow); color: var(--text-secondary); }
+.modal-btn.primary {
+  background: rgba(201,168,76,0.12); border: 1px solid var(--gold-dim); color: var(--gold);
+}
+.modal-btn.primary:hover { background: rgba(201,168,76,0.22); }
+.modal-btn.primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.parse-error {
+  background: rgba(255,68,68,0.08); border: 1px solid rgba(255,68,68,0.3);
+  border-radius: 8px; padding: 10px 14px; font-size: 13px; color: #ff9999;
+  margin-top: 10px; display: none;
+}
+.parse-error.show { display: block; }
+
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-glow); border-radius: 3px; }
+
+@media (max-width: 800px) {
+  .page { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-logo">深淵の卓</div>
+  <div class="header-user">
+    <div class="user-badge">
+      <div class="user-avatar" id="header-avatar">？</div>
+      <div>
+        <div class="user-name" id="header-name">読込中…</div>
+        <div class="user-handle" id="header-handle"></div>
+      </div>
+    </div>
+    <button class="logout-btn" onclick="doLogout()">ログアウト</button>
+  </div>
+</header>
+
+<div class="page">
+  <!-- LEFT: CHARACTERS -->
+  <div>
+    <div class="section-title">
+      <span>キャラクター</span>
+      <span id="char-count" style="font-size:11px;color:var(--text-dim)"></span>
+    </div>
+    <div class="char-grid" id="char-grid">
+      <div class="empty-state" id="empty-state">キャラクターがまだいません</div>
+    </div>
+    <button class="import-btn" onclick="openImportModal()">
+      ＋ いあきゃらからインポート
+    </button>
+  </div>
+
+  <!-- RIGHT: SESSION -->
+  <div class="session-panel">
+    <!-- Create session -->
+    <div class="session-card">
+      <h3>セッションを作成</h3>
+      <p>招待コードを設定してセッションを開始します。URLをシェアすれば参加者が入室できます。</p>
+
+      <div class="form-group">
+        <label class="form-label">セッション名</label>
+        <input class="form-input" id="create-name" type="text" placeholder="インスマスを覆う影">
+      </div>
+      <div class="form-group">
+        <label class="form-label">招待コード</label>
+        <div class="code-row">
+          <input class="form-input" id="create-code" type="text" placeholder="ARKHAM2024" oninput="this.value=this.value.toUpperCase()">
+          <button class="gen-btn" onclick="generateCode()" title="ランダム生成">🎲</button>
+        </div>
+        <div class="error-msg" id="create-code-error"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">あなたの役割</label>
+        <div class="role-select">
+          <button class="role-btn kp active" id="create-role-kp" onclick="setCreateRole('KP')">🕯️ KP</button>
+          <button class="role-btn pl" id="create-role-pl" onclick="setCreateRole('PL')">🧍 PL</button>
+        </div>
+      </div>
+      <button class="submit-btn" onclick="createSession()">セッションを作成</button>
+      <div class="success-msg" id="create-success"></div>
+    </div>
+
+    <!-- Join session -->
+    <div class="session-card">
+      <h3>セッションに参加</h3>
+      <p>招待コードまたはURLから参加できます。</p>
+
+      <div class="form-group">
+        <label class="form-label">招待コード</label>
+        <input class="form-input" id="join-code" type="text" placeholder="ARKHAM2024" oninput="this.value=this.value.toUpperCase()" onkeydown="if(event.key==='Enter')joinSession()">
+        <div class="error-msg" id="join-error"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">あなたの役割</label>
+        <div class="role-select">
+          <button class="role-btn pl active" id="join-role-pl" onclick="setJoinRole('PL')">🧍 PL</button>
+          <button class="role-btn kp" id="join-role-kp" onclick="setJoinRole('KP')">🕯️ KP</button>
+        </div>
+      </div>
+      <button class="submit-btn" onclick="joinSession()">参加する</button>
+    </div>
+
+    <!-- Recent sessions -->
+    <div>
+      <div class="section-title">最近のセッション</div>
+      <div class="session-history" id="session-history">
+        <div style="font-size:12px;color:var(--text-dim);font-style:italic;padding:8px 0">参加履歴はありません</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- IMPORT MODAL -->
+<div class="modal-overlay" id="import-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">キャラクターをインポート</div>
+      <button class="modal-close" onclick="closeImportModal()">✕</button>
+    </div>
+    <div class="modal-body">
+
+      <!-- Step 1: Paste TXT -->
+      <div class="step active" id="step-1">
+        <div class="step-label">Step 1 / 2 — テキスト貼り付け</div>
+        <div class="step-desc">いあきゃらの「テキスト出力（6版）」でコピーしたテキストをそのまま貼り付けてください。</div>
+        <textarea class="txt-area" id="import-txt" placeholder="いあきゃらテキスト 6版 v2.0.1&#10;【基本情報】&#10;名前: ○○ ○○&#10;..."></textarea>
+        <div class="parse-error" id="parse-error"></div>
+        <button class="parse-btn" onclick="parseTxt()">解析してプレビュー →</button>
+      </div>
+
+      <!-- Step 2: Preview -->
+      <div class="step" id="step-2">
+        <div class="step-label">Step 2 / 2 — 内容を確認</div>
+
+        <div class="preview-header">
+          <div class="preview-avatar" id="prev-avatar">🧍</div>
+          <div>
+            <div class="preview-name" id="prev-name">—</div>
+            <div class="preview-meta" id="prev-meta">—</div>
+          </div>
+        </div>
+
+        <div class="preview-section">
+          <div class="preview-section-title">HP / SAN / MP</div>
+          <div class="vitals-preview">
+            <div class="vital-p hp"><div class="v-name">HP</div><div class="v-num" id="prev-hp">—</div></div>
+            <div class="vital-p san"><div class="v-name">SAN</div><div class="v-num" id="prev-san">—</div></div>
+            <div class="vital-p mp"><div class="v-name">MP</div><div class="v-num" id="prev-mp">—</div></div>
+          </div>
+        </div>
+
+        <div class="preview-section">
+          <div class="preview-section-title">基本能力値</div>
+          <div class="stats-preview" id="prev-stats"></div>
+        </div>
+
+        <div class="preview-section">
+          <div class="preview-section-title">技能（初期値より高いもの）</div>
+          <div class="skills-preview" id="prev-skills"></div>
+        </div>
+
+        <div class="preview-section" id="prev-items-section">
+          <div class="preview-section-title">所持品</div>
+          <div class="items-preview" id="prev-items"></div>
+        </div>
+
+        <div class="modal-footer">
+          <button class="modal-btn secondary" onclick="backToStep1()">← 戻る</button>
+          <button class="modal-btn primary" id="save-btn" onclick="saveCharacter()">このキャラで保存</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getAuth, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import { getDatabase, ref, get, set, push, onValue, update } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyB_JYoE53JPCyTTaAdHUj6EPX2K5P6HjYs",
+  authDomain: "cthulhu-trpg.firebaseapp.com",
+  databaseURL: "https://cthulhu-trpg-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "cthulhu-trpg",
+  storageBucket: "cthulhu-trpg.firebasestorage.app",
+  messagingSenderId: "595458056355",
+  appId: "1:595458056355:web:9156ec7efedf8f64895f16"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getDatabase(app);
+
+let currentUser = null;
+let userData = null;
+let parsedChar = null;
+let createRole = 'KP';
+let joinRole = 'PL';
+
+// ── Auth guard ──
+onAuthStateChanged(auth, async user => {
+  if (!user) { window.location.href = 'index.html'; return; }
+  currentUser = user;
+  const snap = await get(ref(db, `users/${user.uid}`));
+  if (!snap.exists()) { window.location.href = 'index.html'; return; }
+  userData = snap.val();
+
+  // Header
+  document.getElementById('header-name').textContent = userData.displayName || userData.handle;
+  document.getElementById('header-handle').textContent = '@' + userData.handle;
+  document.getElementById('header-avatar').textContent = (userData.displayName || userData.handle)[0].toUpperCase();
+
+  // Load characters
+  loadCharacters();
+  // Load session history
+  loadSessionHistory();
+  // Check URL for session code
+  checkUrlSession();
+});
+
+window.doLogout = async function() {
+  await signOut(auth);
+  window.location.href = 'index.html';
+};
+
+// ── Check URL for ?session= ──
+function checkUrlSession() {
+  const params = new URLSearchParams(window.location.search);
+  const code = params.get('session');
+  if (code) {
+    document.getElementById('join-code').value = code.toUpperCase();
+    // Scroll to join section
+    document.getElementById('join-code').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+}
+
+// ── Load characters ──
+function loadCharacters() {
+  onValue(ref(db, `users/${currentUser.uid}/characters`), snap => {
+    const data = snap.val();
+    const grid = document.getElementById('char-grid');
+    const empty = document.getElementById('empty-state');
+    grid.innerHTML = '';
+
+    if (!data) {
+      grid.appendChild(empty);
+      document.getElementById('char-count').textContent = '';
+      return;
+    }
+
+    const chars = Object.entries(data);
+    document.getElementById('char-count').textContent = `${chars.length}体`;
+
+    chars.forEach(([charId, char]) => {
+      const card = buildCharCard(charId, char);
+      grid.appendChild(card);
+    });
+  });
+}
+
+function buildCharCard(charId, char) {
+  const div = document.createElement('div');
+  div.className = 'char-card';
+
+  const hpPct  = Math.round((char.hp  / char.hpMax)  * 100);
+  const sanPct = Math.round((char.san / char.sanMax) * 100);
+  const mpPct  = Math.round((char.mp  / char.mpMax)  * 100);
+
+  const avatarHtml = char.iconUrl
+    ? `<img src="${char.iconUrl}" alt="${char.name}" onerror="this.parentElement.textContent='🧍'">`
+    : '🧍';
+
+  div.innerHTML = `
+    <div class="char-avatar">${avatarHtml}</div>
+    <div class="char-info">
+      <div class="char-name">${char.name}</div>
+      <div class="char-meta">${char.occupation} · ${char.age}歳 · ${char.gender}</div>
+      <div class="char-vitals">
+        <div class="vital-row">
+          <span class="v-label">HP</span>
+          <div class="v-bar"><div class="v-fill hp" style="width:${hpPct}%"></div></div>
+          <span class="v-val">${char.hp}/${char.hpMax}</span>
+        </div>
+        <div class="vital-row">
+          <span class="v-label">SAN</span>
+          <div class="v-bar"><div class="v-fill san" style="width:${sanPct}%"></div></div>
+          <span class="v-val">${char.san}/${char.sanMax}</span>
+        </div>
+        <div class="vital-row">
+          <span class="v-label">MP</span>
+          <div class="v-bar"><div class="v-fill mp" style="width:${mpPct}%"></div></div>
+          <span class="v-val">${char.mp}/${char.mpMax}</span>
+        </div>
+      </div>
+    </div>
+    <div class="char-actions">
+      <button class="char-action-btn danger" onclick="deleteChar(event,'${charId}')">削除</button>
+    </div>
+  `;
+  return div;
+}
+
+window.deleteChar = async function(e, charId) {
+  e.stopPropagation();
+  if (!confirm('このキャラクターを削除しますか？')) return;
+  await set(ref(db, `users/${currentUser.uid}/characters/${charId}`), null);
+};
+
+// ── Load session history ──
+async function loadSessionHistory() {
+  const snap = await get(ref(db, `users/${currentUser.uid}/sessions`));
+  const container = document.getElementById('session-history');
+  if (!snap.exists()) return;
+
+  container.innerHTML = '';
+  const sessions = Object.entries(snap.val()).reverse().slice(0, 5);
+
+  for (const [code, info] of sessions) {
+    const item = document.createElement('div');
+    item.className = 'history-item';
+    item.onclick = () => { window.location.href = `session.html?session=${code}`; };
+    item.innerHTML = `
+      <div>
+        <div class="h-name">${info.name || code}</div>
+        <div class="h-code">${code}</div>
+      </div>
+      <span class="h-role ${(info.role||'PL').toLowerCase()}">${info.role || 'PL'}</span>
+    `;
+    container.appendChild(item);
+  }
+}
+
+// ── Session create ──
+window.setCreateRole = function(role) {
+  createRole = role;
+  document.getElementById('create-role-kp').classList.toggle('active', role === 'KP');
+  document.getElementById('create-role-pl').classList.toggle('active', role === 'PL');
+};
+
+window.setJoinRole = function(role) {
+  joinRole = role;
+  document.getElementById('join-role-pl').classList.toggle('active', role === 'PL');
+  document.getElementById('join-role-kp').classList.toggle('active', role === 'KP');
+};
+
+window.generateCode = function() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code = '';
+  for (let i = 0; i < 8; i++) code += chars[Math.floor(Math.random() * chars.length)];
+  document.getElementById('create-code').value = code;
+};
+
+window.createSession = async function() {
+  const name = document.getElementById('create-name').value.trim() || '名称未設定のセッション';
+  const code = document.getElementById('create-code').value.trim().toUpperCase();
+  const errEl = document.getElementById('create-code-error');
+  const sucEl = document.getElementById('create-success');
+
+  errEl.classList.remove('show');
+  sucEl.classList.remove('show');
+
+  if (!code) { errEl.textContent = '招待コードを入力してください'; errEl.classList.add('show'); return; }
+  if (!/^[A-Z0-9]{4,12}$/.test(code)) { errEl.textContent = '4〜12文字の半角英数字（大文字）で入力してください'; errEl.classList.add('show'); return; }
+
+  // Check if code already exists
+  const snap = await get(ref(db, `sessions/${code}`));
+  if (snap.exists()) { errEl.textContent = 'このコードはすでに使用されています'; errEl.classList.add('show'); return; }
+
+  await set(ref(db, `sessions/${code}`), {
+    name, createdBy: currentUser.uid, createdAt: Date.now(),
+    players: { [currentUser.uid]: { role: createRole, joinedAt: Date.now() } }
+  });
+
+  // Save to user's session history
+  await set(ref(db, `users/${currentUser.uid}/sessions/${code}`), { name, role: createRole, joinedAt: Date.now() });
+
+  const url = `${location.origin}${location.pathname.replace('home.html','session.html')}?session=${code}`;
+  sucEl.innerHTML = `作成完了！ <a href="session.html?session=${code}" style="color:var(--gold)">入室する →</a><br><span style="font-size:11px;color:var(--text-dim)">URL: ${url}</span>`;
+  sucEl.style.display = 'block';
+};
+
+window.joinSession = async function() {
+  const code  = document.getElementById('join-code').value.trim().toUpperCase();
+  const errEl = document.getElementById('join-error');
+  errEl.classList.remove('show');
+
+  if (!code) { errEl.textContent = '招待コードを入力してください'; errEl.classList.add('show'); return; }
+
+  const snap = await get(ref(db, `sessions/${code}`));
+  if (!snap.exists()) { errEl.textContent = 'セッションが見つかりません'; errEl.classList.add('show'); return; }
+
+  const sessionName = snap.val().name || code;
+
+  // Add player to session
+  await update(ref(db, `sessions/${code}/players/${currentUser.uid}`), { role: joinRole, joinedAt: Date.now() });
+  // Save to user's session history
+  await set(ref(db, `users/${currentUser.uid}/sessions/${code}`), { name: sessionName, role: joinRole, joinedAt: Date.now() });
+
+  window.location.href = `session.html?session=${code}`;
+};
+
+// ── Import modal ──
+window.openImportModal = function() {
+  document.getElementById('import-modal').classList.add('open');
+  document.getElementById('step-1').classList.add('active');
+  document.getElementById('step-2').classList.remove('active');
+  document.getElementById('import-txt').value = '';
+  document.getElementById('parse-error').classList.remove('show');
+};
+
+window.closeImportModal = function() {
+  document.getElementById('import-modal').classList.remove('open');
+};
+
+window.backToStep1 = function() {
+  document.getElementById('step-2').classList.remove('active');
+  document.getElementById('step-1').classList.add('active');
+};
+
+// ── いあきゃら TXT Parser ──
+window.parseTxt = function() {
+  const txt = document.getElementById('import-txt').value.trim();
+  const errEl = document.getElementById('parse-error');
+  errEl.classList.remove('show');
+
+  if (!txt) { errEl.textContent = 'テキストを貼り付けてください'; errEl.classList.add('show'); return; }
+  if (!txt.includes('いあきゃらテキスト')) { errEl.textContent = 'いあきゃらのテキスト出力ではないようです。6版のテキスト出力をご利用ください。'; errEl.classList.add('show'); return; }
+
+  try {
+    parsedChar = parseIaCharaTxt(txt);
+  } catch(e) {
+    errEl.textContent = '解析中にエラーが発生しました: ' + e.message;
+    errEl.classList.add('show');
+    return;
+  }
+
+  renderPreview(parsedChar);
+  document.getElementById('step-1').classList.remove('active');
+  document.getElementById('step-2').classList.add('active');
+};
+
+function parseIaCharaTxt(txt) {
+  const lines = txt.split('\n').map(l => l.trim());
+  const char = {
+    name: '', kana: '', occupation: '', age: '', gender: '', height: '', weight: '',
+    origin: '', hairColor: '', eyeColor: '', birthday: '', iconUrl: '',
+    str: 0, con: 0, pow: 0, dex: 0, app: 0, siz: 0, int: 0, edu: 0,
+    hp: 0, hpMax: 0, mp: 0, mpMax: 0, san: 0, sanMax: 0,
+    luck: 0, knowledge: 0, db: '+0',
+    skills: {}, items: [], money: 0,
+    importedAt: Date.now()
+  };
+
+  // Helper: find line value
+  const findVal = (key) => {
+    const line = lines.find(l => l.startsWith(key));
+    return line ? line.replace(key, '').trim() : '';
+  };
+
+  // ── 基本情報 ──
+  const nameLine = findVal('名前:');
+  // "夜咲 沙羅(stock) (よるさき さら)" → name / kana
+  const nameMatch = nameLine.match(/^(.+?)\s*[\(（]([ぁ-ん\s]+)[\)）]$/);
+  if (nameMatch) { char.name = nameMatch[1].trim(); char.kana = nameMatch[2].trim(); }
+  else char.name = nameLine;
+
+  char.occupation = findVal('職業:');
+  char.birthday   = findVal('誕生日:');
+
+  // Age / gender / height / weight / origin on same line
+  const ageLine = findVal('年齢:');
+  if (ageLine) {
+    const ageM = ageLine.match(/(\d+)/); if (ageM) char.age = ageM[1];
+  }
+  // Find the line with 年齢 and parse all fields
+  const infoLine = lines.find(l => l.includes('年齢:') && l.includes('性別:'));
+  if (infoLine) {
+    const ageM2   = infoLine.match(/年齢:\s*(\d+)/);    if (ageM2)   char.age    = ageM2[1];
+    const genM    = infoLine.match(/性別:\s*(\S+)/);    if (genM)    char.gender = genM[1];
+    const heightM = infoLine.match(/身長:\s*(\d+)/);    if (heightM) char.height = heightM[1];
+  }
+  const weightLine = lines.find(l => l.includes('体重:') && l.includes('出身:'));
+  if (weightLine) {
+    const wM = weightLine.match(/体重:\s*(\d+)/);   if (wM) char.weight = wM[1];
+    const oM = weightLine.match(/出身:\s*(\S+)/);   if (oM) char.origin = oM[1];
+  }
+  const hairLine = lines.find(l => l.includes('髪の色:'));
+  if (hairLine) {
+    const hM = hairLine.match(/髪の色:\s*(\S*)/);  if (hM) char.hairColor = hM[1];
+    const eM = hairLine.match(/瞳の色:\s*(\S*)/);  if (eM) char.eyeColor  = eM[1];
+  }
+
+  // ── アイコン URL ──
+  const iconSection = lines.findIndex(l => l === '【アイコン】');
+  if (iconSection !== -1) {
+    for (let i = iconSection + 1; i < Math.min(iconSection + 4, lines.length); i++) {
+      const l = lines[i];
+      // Format: ":https://..." or just URL
+      const urlMatch = l.match(/https?:\/\/\S+/);
+      if (urlMatch) { char.iconUrl = urlMatch[0]; break; }
+    }
+  }
+
+  // ── 能力値 ──
+  const statKeys = ['STR','CON','POW','DEX','APP','SIZ','INT','EDU','HP','MP','SAN'];
+  const statSection = lines.findIndex(l => l === '【能力値】');
+  if (statSection !== -1) {
+    for (let i = statSection + 1; i < lines.length; i++) {
+      const l = lines[i];
+      if (l.startsWith('【')) break;
+      for (const key of statKeys) {
+        const re = new RegExp(`^${key}\\s+(-?\\d+)`);
+        const m = l.match(re);
+        if (m) {
+          const val = parseInt(m[1]);
+          switch(key) {
+            case 'STR': char.str = val; break;
+            case 'CON': char.con = val; break;
+            case 'POW': char.pow = val; break;
+            case 'DEX': char.dex = val; break;
+            case 'APP': char.app = val; break;
+            case 'SIZ': char.siz = val; break;
+            case 'INT': char.int = val; break;
+            case 'EDU': char.edu = val; break;
+            case 'HP':  char.hp  = val; char.hpMax  = val; break;
+            case 'MP':  char.mp  = val; char.mpMax  = val; break;
+            case 'SAN': char.san = val; char.sanMax = val; break;
+          }
+        }
+      }
+      // 幸運・知識
+      const luckM = l.match(/^幸運\s+(-?\d+)/);      if (luckM) char.luck = parseInt(luckM[1]);
+      const knowM = l.match(/^知識\s+(-?\d+)/);      if (knowM) char.knowledge = parseInt(knowM[1]);
+    }
+  }
+
+  // 現在SAN（"現在SAN値 65 / 99" 形式）
+  const curSanLine = lines.find(l => l.startsWith('現在SAN値'));
+  if (curSanLine) {
+    const m = curSanLine.match(/現在SAN値\s+(\d+)\s*\/\s*(\d+)/);
+    if (m) { char.san = parseInt(m[1]); char.sanMax = parseInt(m[2]); }
+  }
+
+  // DB
+  const dbLine = lines.find(l => l.startsWith('DB'));
+  if (dbLine) { const m = dbLine.match(/DB\s+([\+\-\d]+d?\d*)/i); if (m) char.db = m[1]; }
+
+  // ── 技能 ──
+  const skillSection = lines.findIndex(l => l === '【技能値】');
+  if (skillSection !== -1) {
+    for (let i = skillSection + 1; i < lines.length; i++) {
+      const l = lines[i];
+      if (l === '【戦闘・武器・防具】' || l === '【所持品】') break;
+      if (!l || l.startsWith('技能名') || l.startsWith('職業') || l.startsWith('興味') || l.startsWith('『') || l.startsWith('』')) continue;
+      // Format: "技能名    合計  初期値  職業P  興味P  成長分  その他"
+      const m = l.match(/^(.+?)\s{2,}(\d+)\s+(\d+)/);
+      if (m) {
+        const skillName = m[1].trim();
+        const total     = parseInt(m[2]);
+        const base      = parseInt(m[3]);
+        char.skills[skillName] = { total, base };
+      }
+    }
+  }
+
+  // ── 所持品 ──
+  const itemSection = lines.findIndex(l => l === '【所持品】');
+  if (itemSection !== -1) {
+    for (let i = itemSection + 1; i < lines.length; i++) {
+      const l = lines[i];
+      if (l.startsWith('【')) break;
+      if (!l || l.startsWith('名称')) continue;
+      if (l.startsWith('現在の所持金:')) {
+        const m = l.match(/(\d+)/); if (m) char.money = parseInt(m[1]);
+        continue;
+      }
+      if (l.startsWith('借金:')) continue;
+      // Item line: "名称  単価  個数  価格  備考"
+      const itemM = l.match(/^(\S.+?)\s{2,}/);
+      if (itemM) char.items.push(itemM[1].trim());
+    }
+  }
+
+  return char;
+}
+
+function renderPreview(char) {
+  // Avatar
+  const avatarEl = document.getElementById('prev-avatar');
+  if (char.iconUrl) {
+    avatarEl.innerHTML = `<img src="${char.iconUrl}" alt="${char.name}" onerror="this.parentElement.textContent='🧍'">`;
+  } else {
+    avatarEl.textContent = '🧍';
+  }
+
+  document.getElementById('prev-name').textContent = char.name + (char.kana ? ` (${char.kana})` : '');
+  document.getElementById('prev-meta').textContent =
+    [char.occupation, char.age ? char.age + '歳' : '', char.gender, char.origin].filter(Boolean).join(' · ');
+
+  document.getElementById('prev-hp').textContent  = `${char.hp} / ${char.hpMax}`;
+  document.getElementById('prev-san').textContent = `${char.san} / ${char.sanMax}`;
+  document.getElementById('prev-mp').textContent  = `${char.mp} / ${char.mpMax}`;
+
+  // Stats
+  const statsEl = document.getElementById('prev-stats');
+  statsEl.innerHTML = '';
+  const statList = [
+    ['STR', char.str], ['CON', char.con], ['POW', char.pow],
+    ['DEX', char.dex], ['APP', char.app], ['SIZ', char.siz],
+    ['INT', char.int], ['EDU', char.edu], ['幸運', char.luck],
+    ['DB', char.db],
+  ];
+  statList.forEach(([name, val]) => {
+    const d = document.createElement('div');
+    d.className = 'stat-p';
+    d.innerHTML = `<div class="s-name">${name}</div><div class="s-val">${val}</div>`;
+    statsEl.appendChild(d);
+  });
+
+  // Skills (only those higher than base)
+  const skillsEl = document.getElementById('prev-skills');
+  skillsEl.innerHTML = '';
+  const raised = Object.entries(char.skills).filter(([, v]) => v.total > v.base).sort((a,b) => b[1].total - a[1].total);
+  if (raised.length === 0) {
+    skillsEl.innerHTML = '<div style="color:var(--text-dim);font-size:12px;grid-column:1/-1">（初期値から上昇した技能なし）</div>';
+  } else {
+    raised.forEach(([name, v]) => {
+      const d = document.createElement('div');
+      d.className = 'skill-p';
+      d.innerHTML = `<span class="sk-name">${name}</span><span class="sk-val">${v.total}</span>`;
+      skillsEl.appendChild(d);
+    });
+  }
+
+  // Items
+  const itemsEl = document.getElementById('prev-items');
+  itemsEl.innerHTML = '';
+  if (char.items.length === 0) {
+    document.getElementById('prev-items-section').style.display = 'none';
+  } else {
+    document.getElementById('prev-items-section').style.display = 'block';
+    char.items.forEach(item => {
+      const d = document.createElement('div');
+      d.className = 'item-p';
+      d.textContent = item;
+      itemsEl.appendChild(d);
+    });
+    if (char.money) {
+      const d = document.createElement('div');
+      d.className = 'item-p';
+      d.textContent = `💴 所持金: ${char.money.toLocaleString()}円`;
+      itemsEl.appendChild(d);
+    }
+  }
+}
+
+window.saveCharacter = async function() {
+  if (!parsedChar || !currentUser) return;
+  const btn = document.getElementById('save-btn');
+  btn.disabled = true;
+  btn.textContent = '保存中…';
+
+  try {
+    await push(ref(db, `users/${currentUser.uid}/characters`), parsedChar);
+    closeImportModal();
+  } catch(e) {
+    alert('保存に失敗しました: ' + e.message);
+    btn.disabled = false;
+    btn.textContent = 'このキャラで保存';
+  }
+};
+
+</script>
+</body>
+</html>
