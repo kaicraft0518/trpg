@@ -59,6 +59,7 @@ header {
   background: rgba(11,9,7,0.97); border-bottom: 1px solid var(--border);
   padding: 0 16px; height: 52px; display: flex; align-items: center; gap: 12px;
   position: fixed; top: 0; left: 0; right: 0; z-index: 100; backdrop-filter: blur(10px);
+  overflow: hidden;
 }
 .header-logo { font-family: 'Cinzel Decorative', serif; font-size: 13px; color: var(--gold); letter-spacing: 2px; white-space: nowrap; }
 .header-divider { width: 1px; height: 20px; background: var(--border); flex-shrink: 0; }
@@ -358,16 +359,39 @@ header {
 
 /* ── TABLET (601px ~ 900px) ── */
 @media (max-width: 900px) {
-  .app-body { grid-template-columns: 1fr 260px; }
+  .app-body { grid-template-columns: 1fr 240px; }
   .sidebar { display: none; }
   .tablet-only { display: flex; }
+  /* ヘッダーを少し詰める */
+  header { gap: 8px; padding: 0 12px; }
+  .header-logo { font-size: 12px; letter-spacing: 1px; }
+  .session-code-badge { font-size: 10px; padding: 2px 7px; letter-spacing: 1px; }
+  .header-btn { padding: 5px 9px; font-size: 11px; }
+  /* コンテンツを少し小さく */
+  .nav-tab { padding: 10px 14px; font-size: 11px; }
+  .tab-panel { padding: 14px; }
+  .sheet-name-block h2 { font-size: 17px; }
+  .v-label, .stat-name { font-size: 11px; }
+  .stat-val { font-size: 18px; }
+  .skill-item { font-size: 11px; }
+  .dice-btn { font-size: 12px; padding: 8px; }
+  /* チャット */
+  .chat-msg { font-size: 12px; }
+  .panel-tab { padding: 8px 12px; font-size: 11px; }
+  /* 右パネル幅を固定 */
+  .right-panel { min-width: 0; }
 }
 
 /* ── SMALL TABLET (641px ~ 760px) ── */
 @media (max-width: 760px) {
-  .app-body { grid-template-columns: 1fr 220px; }
-  .header-logo { font-size: 12px; }
-  .session-code-badge { font-size: 10px; padding: 2px 7px; }
+  .app-body { grid-template-columns: 1fr 200px; }
+  .header-logo { font-size: 11px; }
+  .session-code-badge { display: none; }
+  .conn-badge span { display: none; } /* ドットだけ残す */
+  .header-btn { padding: 5px 7px; font-size: 11px; }
+  /* チャットパネルのフォントを少し小さく */
+  .chat-msg { font-size: 12px; }
+  .right-panel .panel-tab { font-size: 11px; padding: 8px 10px; }
 }
 
 /* ── MOBILE (〜640px) ── */
