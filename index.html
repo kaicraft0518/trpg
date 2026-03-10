@@ -616,21 +616,21 @@ window.submitRegister = async function() {
     const cred = await createUserWithEmailAndPassword(auth, toFakeEmail(handle), password);
     const uid  = cred.user.uid;
 
-    // Save user data to DB
-    await set(ref(db, `users/${uid}`), {
-      handle,
-      displayName,
-      role: 'PL',
-      linkedGoogle: false,
-      linkedEmail: false,
-      createdAt: Date.now()
-    });
-
-    // Reserve handle
-    await set(ref(db, `handles/${handle}`), uid);
+    // Save user data to DB (both writes must complete before redirect)
+    await Promise.all([
+      set(ref(db, `users/${uid}`), {
+        handle,
+        displayName,
+        role: 'PL',
+        linkedGoogle: false,
+        linkedEmail: false,
+        createdAt: Date.now()
+      }),
+      set(ref(db, `handles/${handle}`), uid)
+    ]);
 
     showSuccess('登録完了！ホームへ移動します…');
-    setTimeout(() => window.location.href = 'home.html', 1200);
+    setTimeout(() => window.location.href = 'home.html', 800);
 
   } catch (e) {
     const msgs = {

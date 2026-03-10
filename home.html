@@ -554,8 +554,16 @@ let currentInviteCode = '', foundUserData = null;
 onAuthStateChanged(auth, async user => {
   if (!user) { window.location.href = 'index.html'; return; }
   currentUser = user;
-  const snap = await get(ref(db, `users/${user.uid}`));
-  if (!snap.exists()) { window.location.href = 'index.html'; return; }
+
+  // Retry up to 5 times in case DB write hasn't completed yet (race condition on registration)
+  let snap = null;
+  for (let i = 0; i < 5; i++) {
+    snap = await get(ref(db, `users/${user.uid}`));
+    if (snap.exists()) break;
+    await new Promise(r => setTimeout(r, 600));
+  }
+  if (!snap || !snap.exists()) { window.location.href = 'index.html'; return; }
+
   userData = snap.val();
   document.getElementById('header-name').textContent = userData.displayName || userData.handle;
   document.getElementById('header-handle').textContent = '@' + userData.handle;
@@ -591,9 +599,11 @@ function checkUrlSession() {
 
   if (importCharId) {
     // Auto-open import modal with the char ID pre-filled
-    openImportModal();
-    document.getElementById('import-char-id').value = importCharId;
-    importByCharId();
+    setTimeout(() => {
+      openImportModal();
+      document.getElementById('import-char-id').value = importCharId;
+      importByCharId();
+    }, 300);
   }
 }
 
