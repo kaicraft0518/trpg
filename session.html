@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>深淵の卓 - セッション</title>
+<title>TRPG Table - セッション</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=Noto+Serif+JP:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -432,13 +432,13 @@ header {
 <!-- Loading -->
 <div class="loading-screen" id="loading-screen">
   <div class="loading-eye">👁</div>
-  <div class="loading-title">深淵の卓</div>
+  <div class="loading-title">TRPG Table</div>
   <div class="loading-text" id="loading-text">セッションに接続中…</div>
 </div>
 
 <!-- HEADER -->
 <header id="main-header" style="display:none">
-  <div class="header-logo">深淵の卓</div>
+  <div class="header-logo">TRPG Table</div>
   <div class="header-divider"></div>
   <div class="session-name" id="session-name-display">—</div>
   <div class="session-code-badge" id="session-code-display">—</div>
@@ -738,7 +738,7 @@ onAuthStateChanged(auth, async user => {
 
   document.getElementById('session-name-display').textContent = sessionData.name || sessionCode;
   document.getElementById('session-code-display').textContent = sessionCode;
-  document.title = `深淵の卓 — ${sessionData.name || sessionCode}`;
+  document.title = `TRPG Table — ${sessionData.name || sessionCode}`;
 
   // Load my characters
   setLoading('キャラクターを読み込み中…');
@@ -1211,7 +1211,7 @@ window.copyVal = async (valId, btnId) => {
 
 window.shareUrl = async () => {
   const url = document.getElementById('inv-url-val').textContent;
-  if (navigator.share) { try { await navigator.share({ title: '深淵の卓 — セッション招待', text: `招待コード: ${sessionCode}`, url }); } catch(e) {} }
+  if (navigator.share) { try { await navigator.share({ title: 'TRPG Table — セッション招待', text: `招待コード: ${sessionCode}`, url }); } catch(e) {} }
   else { await navigator.clipboard.writeText(url).catch(() => {}); alert('URLをクリップボードにコピーしました'); }
 };
 
