@@ -551,27 +551,76 @@ let createRole = 'KP', joinRole = 'PL', invRole = 'PL';
 let currentInviteCode = '', foundUserData = null;
 
 // ── Auth ──
-onAuthStateChanged(auth, async user => {
-  if (!user) { window.location.href = 'index.html'; return; }
-  currentUser = user;
-
-  // Retry up to 5 times in case DB write hasn't completed yet (race condition on registration)
-  let snap = null;
-  for (let i = 0; i < 5; i++) {
-    snap = await get(ref(db, `users/${user.uid}`));
-    if (snap.exists()) break;
-    await new Promise(r => setTimeout(r, 600));
+// ── Loading overlay ──
+function showLoading(msg) {
+  let el = document.getElementById('_loading_overlay');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = '_loading_overlay';
+    el.style.cssText = 'position:fixed;inset:0;background:var(--bg-deep);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;font-family:"Noto Serif JP",serif';
+    el.innerHTML = '<div style="font-size:36px;margin-bottom:12px;animation:spin 2s linear infinite">👁</div><div id="_loading_msg" style="color:var(--text-secondary);font-size:14px"></div>';
+    document.body.appendChild(el);
+    const style = document.createElement('style');
+    style.textContent = '@keyframes spin{0%{transform:scaleY(1)}45%{transform:scaleY(0.1)}55%{transform:scaleY(0.1)}100%{transform:scaleY(1)}}';
+    document.head.appendChild(style);
   }
-  if (!snap || !snap.exists()) { window.location.href = 'index.html'; return; }
+  document.getElementById('_loading_msg').textContent = msg;
+}
+function hideLoading() {
+  const el = document.getElementById('_loading_overlay');
+  if (el) el.remove();
+}
+function showFatalError(msg) {
+  hideLoading();
+  let el = document.getElementById('_fatal_error');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = '_fatal_error';
+    el.style.cssText = 'position:fixed;inset:0;background:var(--bg-deep);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;font-family:"Noto Serif JP",serif;gap:12px;padding:20px;text-align:center';
+    document.body.appendChild(el);
+  }
+  el.innerHTML = `
+    <div style="font-size:36px">⚠️</div>
+    <div style="color:var(--red-glow);font-size:14px;max-width:320px">${msg}</div>
+    <button onclick="window.location.href='index.html'" style="margin-top:8px;padding:8px 20px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;color:var(--text-secondary);cursor:pointer;font-family:'Noto Serif JP',serif">ログイン画面に戻る</button>
+  `;
+}
 
-  userData = snap.val();
-  document.getElementById('header-name').textContent = userData.displayName || userData.handle;
-  document.getElementById('header-handle').textContent = '@' + userData.handle;
-  document.getElementById('header-avatar').textContent = (userData.displayName || userData.handle)[0].toUpperCase();
-  loadCharacters();
-  loadSessionHistory();
-  listenNotifications();
-  checkUrlSession();
+showLoading('Firebase に接続中…');
+
+onAuthStateChanged(auth, async user => {
+  try {
+    showLoading('認証を確認中…');
+    if (!user) { window.location.href = 'index.html'; return; }
+    currentUser = user;
+
+    showLoading('アカウント情報を読み込み中…');
+    let snap = null;
+    for (let i = 0; i < 5; i++) {
+      snap = await get(ref(db, `users/${user.uid}`));
+      if (snap.exists()) break;
+      await new Promise(r => setTimeout(r, 800));
+    }
+    if (!snap || !snap.exists()) {
+      showFatalError('アカウントデータが見つかりません。再登録してください。');
+      return;
+    }
+
+    userData = snap.val();
+    document.getElementById('header-name').textContent = userData.displayName || userData.handle;
+    document.getElementById('header-handle').textContent = '@' + userData.handle;
+    document.getElementById('header-avatar').textContent = (userData.displayName || userData.handle)[0].toUpperCase();
+
+    showLoading('データを読み込み中…');
+    loadCharacters();
+    loadSessionHistory();
+    listenNotifications();
+    checkUrlSession();
+    hideLoading();
+
+  } catch(e) {
+    showFatalError(`エラーが発生しました: ${e.message}`);
+  }
 });
 
 window.doLogout = async () => { await signOut(auth); window.location.href = 'index.html'; };
