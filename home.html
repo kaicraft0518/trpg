@@ -187,6 +187,14 @@ header {
 .txt-area:focus { outline: none; border-color: var(--gold-dim); }
 .txt-area::placeholder { color: var(--text-dim); }
 .parse-btn { margin-top: 10px; width: 100%; padding: 10px; background: rgba(201,168,76,0.1); border: 1px solid var(--gold-dim); border-radius: 8px; color: var(--gold); font-family: 'Noto Serif JP', serif; font-size: 13px; cursor: pointer; transition: all 0.2s; }
+.file-upload-btn { display: flex; align-items: center; justify-content: center; gap: 7px; width: 100%; padding: 10px; background: var(--bg-mid); border: 1px solid var(--border); border-radius: 8px; color: var(--text-secondary); font-family: 'Noto Serif JP', serif; font-size: 13px; cursor: pointer; transition: all 0.2s; margin-bottom: 8px; }
+.file-upload-btn:hover { border-color: var(--gold-dim); color: var(--gold); background: var(--bg-hover); }
+.file-name-display { font-size: 11px; color: var(--text-dim); margin-bottom: 6px; min-height: 16px; font-style: italic; }
+.char-share-btn { background: transparent; border: 1px solid var(--gold-dim); border-radius: 6px; padding: 4px 10px; color: var(--gold-dim); cursor: pointer; font-size: 11px; font-family: 'Noto Serif JP', serif; transition: all 0.2s; white-space: nowrap; }
+.char-share-btn:hover { background: rgba(201,168,76,0.1); color: var(--gold); }
+/* Share char modal */
+.share-id-display { font-family: 'Cinzel Decorative', serif; font-size: 13px; letter-spacing: 2px; color: var(--gold); background: var(--bg-mid); border: 1px solid var(--border); border-radius: 7px; padding: 10px 14px; text-align: center; margin-bottom: 10px; }
+.share-note { font-size: 12px; color: var(--text-dim); font-style: italic; line-height: 1.6; margin-top: 8px; }
 .parse-btn:hover { background: rgba(201,168,76,0.18); }
 .parse-error { background: rgba(255,68,68,0.08); border: 1px solid rgba(255,68,68,0.3); border-radius: 8px; padding: 10px 14px; font-size: 13px; color: #ff9999; margin-top: 10px; display: none; }
 .parse-error.show { display: block; }
@@ -375,6 +383,40 @@ header {
 
 </div>
 
+<!-- SHARE CHAR MODAL -->
+<div class="modal-overlay" id="share-char-modal">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <div class="modal-title">キャラクターを共有</div>
+      <button class="modal-close" onclick="closeShareCharModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="share-char-generating" style="text-align:center;padding:20px;color:var(--text-dim);font-style:italic">共有リンクを生成中…</div>
+      <div id="share-char-content" style="display:none">
+        <div class="invite-section">
+          <div class="invite-section-title">共有URL</div>
+          <div class="copy-row">
+            <div class="copy-val" id="share-char-url"></div>
+            <button class="icon-btn" id="copy-share-url-btn" onclick="copyShareUrl()" title="コピー">📋</button>
+          </div>
+        </div>
+        <div class="invite-section">
+          <div class="invite-section-title">キャラクターID</div>
+          <div class="share-id-display" id="share-char-id"></div>
+          <div class="copy-row">
+            <div class="copy-val code-val" id="share-char-id-copy"></div>
+            <button class="icon-btn" id="copy-share-id-btn" onclick="copyShareId()" title="コピー">📋</button>
+          </div>
+        </div>
+        <div class="share-note">
+          このURLを共有すると、相手はキャラクターの内容を確認して自分のキャラとして登録できます。<br>
+          キャラクターIDをホームの「インポート」から入力しても同様にインポートできます。
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- IMPORT MODAL -->
 <div class="modal-overlay" id="import-modal">
   <div class="modal">
@@ -384,8 +426,18 @@ header {
     </div>
     <div class="modal-body">
       <div class="step active" id="step-1">
-        <div class="step-label">Step 1 / 2 — テキスト貼り付け</div>
-        <div class="step-desc">いあきゃらの「テキスト出力（6版）」でコピーしたテキストをそのまま貼り付けてください。</div>
+        <div class="step-label">Step 1 / 2 — テキスト入力</div>
+        <div class="step-desc">いあきゃらの「テキスト出力（6版）」のテキストを貼り付けるか、.txtファイルをアップロードしてください。<br>キャラクターIDでのインポートも対応しています。</div>
+        <div style="display:flex;gap:6px;margin-bottom:12px">
+          <input class="form-input" id="import-char-id" type="text" placeholder="キャラクターIDでインポート…" style="flex:1;font-family:'Cinzel Decorative',serif;letter-spacing:1px">
+          <button class="search-btn" onclick="importByCharId()">読み込む</button>
+        </div>
+        <div style="font-size:11px;color:var(--text-dim);text-align:center;margin-bottom:8px;letter-spacing:1px">— または テキスト入力 —</div>
+        <label class="file-upload-btn" id="file-upload-label">
+          📂 .txtファイルを選ぶ
+          <input type="file" id="txt-file-input" accept=".txt" style="display:none" onchange="loadTxtFile(event)">
+        </label>
+        <div class="file-name-display" id="file-name-display"></div>
         <textarea class="txt-area" id="import-txt" placeholder="いあきゃらテキスト 6版 v2.0.1&#10;【基本情報】&#10;名前: ..."></textarea>
         <div class="parse-error" id="parse-error"></div>
         <button class="parse-btn" onclick="parseTxt()">解析してプレビュー →</button>
@@ -525,13 +577,24 @@ window.switchTab = (tab, btn) => {
 };
 
 function checkUrlSession() {
-  const code = new URLSearchParams(window.location.search).get('session');
-  if (!code) return;
-  document.getElementById('join-code').value = code.toUpperCase();
-  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.main-tab').forEach(b => b.classList.remove('active'));
-  document.getElementById('panel-sessions').classList.add('active');
-  document.querySelectorAll('.main-tab')[1].classList.add('active');
+  const params = new URLSearchParams(window.location.search);
+  const code = params.get('session');
+  const importCharId = params.get('importChar');
+
+  if (code) {
+    document.getElementById('join-code').value = code.toUpperCase();
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.main-tab').forEach(b => b.classList.remove('active'));
+    document.getElementById('panel-sessions').classList.add('active');
+    document.querySelectorAll('.main-tab')[1].classList.add('active');
+  }
+
+  if (importCharId) {
+    // Auto-open import modal with the char ID pre-filled
+    openImportModal();
+    document.getElementById('import-char-id').value = importCharId;
+    importByCharId();
+  }
 }
 
 // ── Characters ──
@@ -565,7 +628,10 @@ function buildCharCard(charId, char) {
         <div class="vital-row"><span class="v-label">MP</span><div class="v-bar"><div class="v-fill mp" style="width:${mpPct}%"></div></div><span class="v-val">${char.mp}/${char.mpMax}</span></div>
       </div>
     </div>
-    <button class="char-del-btn" onclick="deleteChar(event,'${charId}')">削除</button>`;
+    <div style="display:flex;flex-direction:column;gap:5px;flex-shrink:0;align-self:flex-start">
+      <button class="char-share-btn" onclick="shareChar(event,'${charId}')">共有</button>
+      <button class="char-del-btn" onclick="deleteChar(event,'${charId}')">削除</button>
+    </div>`;
   return div;
 }
 
@@ -758,7 +824,97 @@ window.openImportModal = () => {
   document.getElementById('step-1').classList.add('active');
   document.getElementById('step-2').classList.remove('active');
   document.getElementById('import-txt').value = '';
+  document.getElementById('import-char-id').value = '';
+  document.getElementById('file-name-display').textContent = '';
   document.getElementById('parse-error').classList.remove('show');
+};
+
+// ── TXT file upload ──
+window.loadTxtFile = (event) => {
+  const file = event.target.files[0];
+  if (!file) return;
+  if (!file.name.endsWith('.txt')) {
+    document.getElementById('parse-error').textContent = '.txtファイルを選択してください';
+    document.getElementById('parse-error').classList.add('show');
+    return;
+  }
+  document.getElementById('file-name-display').textContent = '📄 ' + file.name;
+  const reader = new FileReader();
+  reader.onload = e => {
+    document.getElementById('import-txt').value = e.target.result;
+    document.getElementById('parse-error').classList.remove('show');
+  };
+  reader.onerror = () => {
+    document.getElementById('parse-error').textContent = 'ファイルの読み込みに失敗しました';
+    document.getElementById('parse-error').classList.add('show');
+  };
+  reader.readAsText(file, 'UTF-8');
+};
+
+// ── Share char ──
+window.shareChar = async (e, charId) => {
+  e.stopPropagation();
+  document.getElementById('share-char-modal').classList.add('open');
+  document.getElementById('share-char-generating').style.display = 'block';
+  document.getElementById('share-char-content').style.display = 'none';
+
+  // Get char data
+  const snap = await get(ref(db, \`users/\${currentUser.uid}/characters/\${charId}\`));
+  if (!snap.exists()) { alert('キャラクターが見つかりません'); closeShareCharModal(); return; }
+  const char = snap.val();
+
+  // Generate a share ID and save to public
+  const shareRef = push(ref(db, 'characters-public'));
+  const shareId = shareRef.key;
+  await set(shareRef, {
+    ownerUid: currentUser.uid,
+    ownerHandle: userData.handle,
+    charName: char.name,
+    char,
+    createdAt: Date.now()
+  });
+
+  const url = location.origin + location.pathname + '?importChar=' + shareId;
+  document.getElementById('share-char-url').textContent = url;
+  document.getElementById('share-char-id').textContent = shareId;
+  document.getElementById('share-char-id-copy').textContent = shareId;
+  document.getElementById('share-char-generating').style.display = 'none';
+  document.getElementById('share-char-content').style.display = 'block';
+};
+
+window.closeShareCharModal = () => document.getElementById('share-char-modal').classList.remove('open');
+
+window.copyShareUrl = async () => {
+  const text = document.getElementById('share-char-url').textContent;
+  await navigator.clipboard.writeText(text).catch(() => {});
+  const btn = document.getElementById('copy-share-url-btn');
+  btn.textContent = '✓'; btn.classList.add('copied');
+  setTimeout(() => { btn.textContent = '📋'; btn.classList.remove('copied'); }, 2000);
+};
+
+window.copyShareId = async () => {
+  const text = document.getElementById('share-char-id-copy').textContent;
+  await navigator.clipboard.writeText(text).catch(() => {});
+  const btn = document.getElementById('copy-share-id-btn');
+  btn.textContent = '✓'; btn.classList.add('copied');
+  setTimeout(() => { btn.textContent = '📋'; btn.classList.remove('copied'); }, 2000);
+};
+
+// ── Import by char ID ──
+window.importByCharId = async () => {
+  const shareId = document.getElementById('import-char-id').value.trim();
+  const errEl = document.getElementById('parse-error');
+  errEl.classList.remove('show');
+  if (!shareId) { errEl.textContent = 'キャラクターIDを入力してください'; errEl.classList.add('show'); return; }
+
+  const snap = await get(ref(db, \`characters-public/\${shareId}\`));
+  if (!snap.exists()) { errEl.textContent = 'キャラクターが見つかりません。IDを確認してください'; errEl.classList.add('show'); return; }
+
+  const data = snap.val();
+  parsedChar = data.char;
+  renderPreview(parsedChar);
+  document.getElementById('step-1').classList.remove('active');
+  document.getElementById('step-2').classList.add('active');
 };
 window.closeImportModal = () => document.getElementById('import-modal').classList.remove('open');
 window.backToStep1 = () => { document.getElementById('step-2').classList.remove('active'); document.getElementById('step-1').classList.add('active'); };
