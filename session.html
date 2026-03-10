@@ -17,6 +17,8 @@
 }
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body { background: var(--bg-deep); color: var(--text-primary); font-family: 'Noto Serif JP', serif; min-height: 100vh; overflow: hidden; }
+/* Mobile base */
+* { -webkit-tap-highlight-color: transparent; }
 body::before {
   content: ''; position: fixed; inset: 0;
   background: radial-gradient(ellipse 60% 40% at 20% 50%, rgba(139,26,26,0.05) 0%, transparent 70%), radial-gradient(ellipse 40% 60% at 80% 30%, rgba(107,76,42,0.06) 0%, transparent 70%);
@@ -43,10 +45,18 @@ header {
 .header-btn.gold:hover { background: rgba(201,168,76,0.14); }
 
 /* ── LAYOUT ── */
-.app-body { position: fixed; top: 52px; left: 0; right: 0; bottom: 0; display: grid; grid-template-columns: 240px 1fr 280px; z-index: 1; }
+.app-body { position: fixed; top: 52px; left: 0; right: 0; bottom: 0; display: grid; grid-template-columns: 240px 1fr 280px; z-index: 1; overflow: hidden; }
+
+/* ── MOBILE NAV ── */
+.mobile-nav { display: none; position: fixed; bottom: 0; left: 0; right: 0; z-index: 110; background: rgba(11,9,7,0.97); border-top: 1px solid var(--border); backdrop-filter: blur(10px); }
+.mobile-nav-inner { display: flex; }
+.mobile-nav-btn { flex: 1; padding: 10px 4px 8px; background: transparent; border: none; color: var(--text-dim); cursor: pointer; font-size: 10px; font-family: 'Noto Serif JP', serif; display: flex; flex-direction: column; align-items: center; gap: 3px; transition: color 0.2s; }
+.mobile-nav-btn .mn-icon { font-size: 18px; }
+.mobile-nav-btn.active { color: var(--gold); }
+.mobile-nav-btn.active .mn-icon { filter: drop-shadow(0 0 4px rgba(201,168,76,0.6)); }
 
 /* ── LEFT SIDEBAR ── */
-.sidebar { background: var(--bg-dark); border-right: 1px solid var(--border); overflow-y: auto; display: flex; flex-direction: column; }
+.sidebar { background: var(--bg-dark); border-right: 1px solid var(--border); overflow-y: auto; overflow-x: hidden; display: flex; flex-direction: column; height: 100%; -webkit-overflow-scrolling: touch; }
 .sidebar-section { padding: 14px 12px; border-bottom: 1px solid var(--border); }
 .sidebar-section:last-child { border-bottom: none; flex: 1; }
 .sec-title { font-family: 'Cinzel Decorative', serif; font-size: 10px; color: var(--gold-dim); letter-spacing: 3px; text-transform: uppercase; margin-bottom: 10px; }
@@ -78,16 +88,23 @@ header {
 
 /* Initiative */
 .init-list { display: flex; flex-direction: column; gap: 5px; }
-.init-item { display: flex; align-items: center; gap: 8px; padding: 6px 8px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 7px; font-size: 12px; transition: all 0.2s; }
+.init-item { display: flex; align-items: center; gap: 6px; padding: 6px 8px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 7px; font-size: 12px; transition: all 0.2s; }
 .init-item.active-turn { border-color: var(--gold-dim); background: rgba(201,168,76,0.04); }
-.init-num { font-family: 'Cinzel Decorative', serif; font-size: 14px; color: var(--gold); width: 24px; }
-.init-name { flex: 1; color: var(--text-secondary); font-size: 11px; }
-.init-hp { font-size: 10px; color: var(--hp-color); }
-.add-init-btn { width: 100%; margin-top: 7px; padding: 6px; background: transparent; border: 1px dashed var(--border); border-radius: 6px; color: var(--text-dim); cursor: pointer; font-size: 11px; font-family: 'Noto Serif JP', serif; transition: all 0.2s; }
+.init-num { font-family: 'Cinzel Decorative', serif; font-size: 13px; color: var(--gold); width: 26px; flex-shrink: 0; text-align: center; }
+.init-name { flex: 1; color: var(--text-secondary); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.init-hp { font-size: 10px; color: var(--hp-color); flex-shrink: 0; }
+.init-npc { font-size: 9px; padding: 1px 5px; border-radius: 8px; background: rgba(255,68,68,0.1); border: 1px solid rgba(255,68,68,0.3); color: #ff9999; flex-shrink: 0; }
+.init-del { width: 18px; height: 18px; background: transparent; border: none; color: var(--text-dim); cursor: pointer; font-size: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; opacity: 0; transition: opacity 0.2s; }
+.init-item:hover .init-del { opacity: 1; }
+.init-del:hover { color: var(--red-glow); }
+.init-controls { display: flex; gap: 4px; margin-top: 7px; }
+.add-init-btn { flex: 1; padding: 6px; background: transparent; border: 1px dashed var(--border); border-radius: 6px; color: var(--text-dim); cursor: pointer; font-size: 11px; font-family: 'Noto Serif JP', serif; transition: all 0.2s; }
 .add-init-btn:hover { border-color: var(--border-glow); color: var(--text-secondary); }
+.clear-init-btn { padding: 6px 8px; background: transparent; border: 1px solid var(--border); border-radius: 6px; color: var(--text-dim); cursor: pointer; font-size: 10px; font-family: 'Noto Serif JP', serif; transition: all 0.2s; }
+.clear-init-btn:hover { border-color: var(--red); color: #ff9999; }
 
 /* ── MAIN CONTENT ── */
-.main-content { overflow-y: auto; display: flex; flex-direction: column; }
+.main-content { overflow-y: auto; overflow-x: hidden; display: flex; flex-direction: column; min-height: 0; height: 100%; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
 .nav-tabs { display: flex; background: var(--bg-dark); border-bottom: 1px solid var(--border); padding: 0 16px; flex-shrink: 0; }
 .nav-tab { padding: 12px 18px; border: none; background: transparent; color: var(--text-dim); cursor: pointer; font-family: 'Noto Serif JP', serif; font-size: 12px; border-bottom: 2px solid transparent; transition: all 0.2s; }
 .nav-tab:hover { color: var(--text-secondary); }
@@ -217,12 +234,12 @@ header {
 .add-clue-btn:hover { border-color: var(--gold-dim); color: var(--gold-dim); }
 
 /* ── RIGHT PANEL ── */
-.right-panel { background: var(--bg-dark); border-left: 1px solid var(--border); display: flex; flex-direction: column; }
+.right-panel { background: var(--bg-dark); border-left: 1px solid var(--border); display: flex; flex-direction: column; min-height: 0; height: 100%; overflow: hidden; }
 .panel-tabs { display: flex; border-bottom: 1px solid var(--border); flex-shrink: 0; }
 .panel-tab { flex: 1; padding: 10px 6px; background: transparent; border: none; color: var(--text-dim); cursor: pointer; font-family: 'Noto Serif JP', serif; font-size: 11px; transition: all 0.2s; border-bottom: 2px solid transparent; }
 .panel-tab:hover { color: var(--text-secondary); }
 .panel-tab.active { color: var(--gold); border-bottom-color: var(--gold); }
-.chat-messages { flex: 1; overflow-y: auto; padding: 12px 10px; display: flex; flex-direction: column; gap: 8px; }
+.chat-messages { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 12px 10px; display: flex; flex-direction: column; gap: 8px; min-height: 0; max-height: 100%; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
 .chat-msg { border-radius: 7px; padding: 8px 10px; font-size: 12px; line-height: 1.5; animation: fadeIn 0.3s ease; }
 .chat-msg.player { background: rgba(58,46,34,0.4); border: 1px solid rgba(58,46,34,0.6); }
 .chat-msg.gm     { background: rgba(139,26,26,0.12); border: 1px solid rgba(139,26,26,0.25); }
@@ -294,6 +311,117 @@ header {
 .loading-title { font-family: 'Cinzel Decorative', serif; font-size: 20px; color: var(--gold); margin-bottom: 8px; letter-spacing: 3px; }
 .loading-text { font-size: 13px; color: var(--text-dim); font-style: italic; }
 
+/* ── RESPONSIVE ── */
+/* ── TABLET SIDEBAR DRAWER ── */
+.tablet-only { display: none; }
+.tablet-sidebar-overlay {
+  display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+  z-index: 80; backdrop-filter: blur(2px);
+}
+.tablet-sidebar-overlay.open { display: block; }
+.sidebar.tablet-drawer {
+  position: fixed; top: 52px; left: 0; bottom: 0; width: 260px;
+  z-index: 90; transform: translateX(-100%);
+  transition: transform 0.25s ease; display: flex !important;
+  box-shadow: 4px 0 20px rgba(0,0,0,0.5);
+}
+.sidebar.tablet-drawer.open { transform: translateX(0); }
+
+/* ── TABLET (601px ~ 900px) ── */
+@media (max-width: 900px) {
+  .app-body { grid-template-columns: 1fr 260px; }
+  .sidebar { display: none; }
+  .tablet-only { display: flex; }
+}
+
+/* ── SMALL TABLET (641px ~ 760px) ── */
+@media (max-width: 760px) {
+  .app-body { grid-template-columns: 1fr 220px; }
+  .header-logo { font-size: 12px; }
+  .session-code-badge { font-size: 10px; padding: 2px 7px; }
+}
+
+/* ── MOBILE (〜640px) ── */
+@media (max-width: 640px) {
+  /* ヘッダー */
+  header { padding: 0 10px; gap: 6px; height: 50px; }
+  .header-logo { font-size: 11px; letter-spacing: 1px; }
+  .session-code-badge { display: none; }
+  .conn-badge { display: none; }
+  .header-btn span { display: none; }
+  .header-btn { padding: 5px 8px; min-width: 32px; justify-content: center; }
+
+  /* レイアウト: ヘッダー50px + モバイルナビ56px */
+  .app-body {
+    position: fixed;
+    top: 50px; left: 0; right: 0;
+    bottom: 56px;
+    display: block;
+    overflow: hidden;
+  }
+
+  /* 全パネルを fixed で重ねてモバイルナビで切り替え */
+  .sidebar, .main-content, .right-panel {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    display: none;
+    height: 100%;
+    border: none;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .main-content.mobile-active,
+  .sidebar.mobile-active,
+  .right-panel.mobile-active { display: flex; flex-direction: column; }
+
+  /* 最初はメインを表示 */
+  .main-content { display: flex; flex-direction: column; }
+
+  /* チャットパネルはflexで高さを確保 */
+  .right-panel {
+    display: none;
+    flex-direction: column;
+  }
+  .right-panel.mobile-active {
+    display: flex;
+    flex-direction: column;
+  }
+  .chat-messages {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .chat-input-area { flex-shrink: 0; }
+
+  /* ナビ表示 */
+  .mobile-nav { display: block; }
+
+  /* タッチ操作しやすいサイズ調整 */
+  .chat-input { font-size: 16px; } /* iOS自動ズーム防止 */
+  .form-input  { font-size: 16px; }
+  .dice-btn    { min-width: 54px; padding: 12px 8px; }
+  .vitals-row  { gap: 6px; }
+  .v-num       { font-size: 20px; }
+  .v-btn       { width: 28px; height: 28px; }
+  .stats-grid  { grid-template-columns: repeat(5, 1fr); gap: 5px; }
+  .skills-grid { grid-template-columns: repeat(2, 1fr); }
+  .nav-tabs    { overflow-x: auto; flex-wrap: nowrap; }
+  .nav-tab     { white-space: nowrap; padding: 10px 14px; }
+  .tab-panel   { padding: 14px 12px; }
+  .panel-tabs  { }
+  .panel-tab   { padding: 10px 4px; font-size: 12px; }
+  .kp-char-select { flex-wrap: wrap; }
+  .kp-char-btn    { font-size: 10px; padding: 4px 8px; }
+  .dice-area { max-width: 100%; }
+  .clues-grid { grid-template-columns: 1fr; }
+  .vitals-row { grid-template-columns: repeat(3,1fr); }
+}
+
+@media (min-width: 641px) {
+  .mobile-nav { display: none !important; }
+}
+
 ::-webkit-scrollbar { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border-glow); border-radius: 2px; }
@@ -316,23 +444,28 @@ header {
   <div class="session-code-badge" id="session-code-display">—</div>
   <div class="conn-badge"><div class="conn-dot" id="conn-dot"></div><span id="conn-text">接続中</span></div>
   <div style="flex:1"></div>
+  <button class="header-btn tablet-only" id="sidebar-toggle-btn" onclick="toggleTabletSidebar()" title="参加者">👥</button>
   <button class="header-btn gold" onclick="openInviteModal()">📨 招待</button>
   <button class="header-btn" onclick="goHome()">🏠 ホーム</button>
 </header>
 
 <!-- APP BODY -->
+<div class="tablet-sidebar-overlay" id="tablet-overlay" onclick="closeTabletSidebar()"></div>
 <div class="app-body" id="app-body" style="display:none">
 
   <!-- LEFT SIDEBAR -->
-  <aside class="sidebar">
+  <aside class="sidebar" id="main-sidebar">
     <div class="sidebar-section">
       <div class="sec-title">探索者</div>
       <div id="player-list"></div>
     </div>
     <div class="sidebar-section">
-      <div class="sec-title">戦闘順序</div>
+      <div class="sec-title">戦闘順序 <span style="font-size:9px;color:var(--text-dim);letter-spacing:0;font-family:serif;font-weight:400">DEX順</span></div>
       <div class="init-list" id="init-list"></div>
-      <button class="add-init-btn" onclick="addInitiative()">＋ 追加</button>
+      <div class="init-controls">
+        <button class="add-init-btn" onclick="addInitiative()">＋ 追加</button>
+        <button class="clear-init-btn" onclick="clearInitiative()" title="全員削除">🗑</button>
+      </div>
     </div>
   </aside>
 
@@ -471,6 +604,27 @@ header {
     </div>
   </aside>
 </div>
+
+<!-- MOBILE NAV -->
+<nav class="mobile-nav">
+  <div class="mobile-nav-inner">
+    <button class="mobile-nav-btn active" id="mnav-chars" onclick="mobileNav('chars')">
+      <span class="mn-icon">🧍</span>キャラ
+    </button>
+    <button class="mobile-nav-btn" id="mnav-dice" onclick="mobileNav('dice')">
+      <span class="mn-icon">🎲</span>ダイス
+    </button>
+    <button class="mobile-nav-btn" id="mnav-session" onclick="mobileNav('session')">
+      <span class="mn-icon">📜</span>セッション
+    </button>
+    <button class="mobile-nav-btn" id="mnav-sidebar" onclick="mobileNav('sidebar')">
+      <span class="mn-icon">👥</span>参加者
+    </button>
+    <button class="mobile-nav-btn" id="mnav-chat" onclick="mobileNav('chat')">
+      <span class="mn-icon">💬</span>チャット
+    </button>
+  </div>
+</nav>
 
 <!-- INVITE MODAL -->
 <div class="modal-overlay" id="invite-modal">
@@ -614,6 +768,27 @@ onAuthStateChanged(auth, async user => {
 });
 
 window.goHome = () => { window.location.href = 'home.html'; };
+
+// ── Tablet sidebar drawer ──
+window.toggleTabletSidebar = function() {
+  const sb = document.getElementById('main-sidebar');
+  const ov = document.getElementById('tablet-overlay');
+  if (!sb) return;
+  const isOpen = sb.classList.contains('open');
+  if (isOpen) {
+    sb.classList.remove('open', 'tablet-drawer');
+    ov.classList.remove('open');
+  } else {
+    sb.classList.add('open', 'tablet-drawer');
+    ov.classList.add('open');
+  }
+};
+window.closeTabletSidebar = function() {
+  const sb = document.getElementById('main-sidebar');
+  const ov = document.getElementById('tablet-overlay');
+  if (sb) sb.classList.remove('open', 'tablet-drawer');
+  if (ov) ov.classList.remove('open');
+};
 
 // ── Load all player chars ──
 async function loadAllPlayerChars(players) {
@@ -904,7 +1079,13 @@ function addChatMessage(type, who, text, time) {
   const msg = document.createElement('div'); msg.className = `chat-msg ${type}`;
   const icon = type==='gm'?'🕯️ ':type==='system'?'🔔 ':type==='dice'?'':'';
   msg.innerHTML = `<div class="msg-who">${icon}${who}</div><div class="msg-text">${text}</div><div class="msg-time">${time}</div>`;
-  msgs.appendChild(msg); msgs.scrollTop = msgs.scrollHeight;
+
+  // 追加前に一番下にいるか確認（手動スクロール中は追わない）
+  const isAtBottom = msgs.scrollHeight - msgs.scrollTop - msgs.clientHeight < 60;
+  msgs.appendChild(msg);
+  if (isAtBottom) {
+    requestAnimationFrame(() => { msgs.scrollTop = msgs.scrollHeight; });
+  }
 }
 
 function postSystemMessage(text) {
@@ -958,14 +1139,22 @@ window.addClue = async () => {
   await push(ref(db, `sessions/${sessionCode}/clues`), { title, desc, addedAt: Date.now() });
 };
 
-// ── Initiative ──
+// ── Initiative (DEX order) ──
 function listenInitiative() {
   onValue(ref(db, `sessions/${sessionCode}/initiative`), snap => {
     const list = document.getElementById('init-list'); list.innerHTML = '';
     if (!snap.exists()) return;
-    Object.entries(snap.val()).sort((a,b) => b[1].val - a[1].val).forEach(([id, item]) => {
-      const d = document.createElement('div'); d.className = 'init-item' + (item.active ? ' active-turn' : '');
-      d.innerHTML = `<span class="init-num">${item.val}</span><span class="init-name">${item.name}</span><span class="init-hp" style="color:${item.isNpc?'var(--red-glow)':'var(--hp-color)'}">HP ${item.hp||'?'}</span>`;
+    Object.entries(snap.val()).sort((a,b) => b[1].dex - a[1].dex).forEach(([id, item]) => {
+      const d = document.createElement('div');
+      d.className = 'init-item' + (item.active ? ' active-turn' : '');
+      const npcTag = item.isNpc ? '<span class="init-npc">NPC</span>' : '';
+      d.innerHTML = `
+        <span class="init-num">${item.dex}</span>
+        <span class="init-name">${item.name}</span>
+        ${npcTag}
+        <span class="init-hp">HP ${item.hp||'?'}</span>
+        <button class="init-del" onclick="deleteInitiative(event,'${id}')" title="削除">✕</button>
+      `;
       list.appendChild(d);
     });
   });
@@ -973,10 +1162,30 @@ function listenInitiative() {
 
 window.addInitiative = async () => {
   const name = prompt('名前（キャラ名 or NPC名）：'); if (!name) return;
-  const val  = parseInt(prompt('イニシアチブ値：') || '0');
-  const hp   = prompt('HP（任意）：') || '';
-  const isNpc = !Object.values(allSessionChars).find(c => c.char?.name === name);
-  await push(ref(db, `sessions/${sessionCode}/initiative`), { name, val, hp, isNpc, active: false });
+
+  // Auto-fill DEX and HP from known chars
+  const known = Object.values(allSessionChars).find(c => c.char?.name === name);
+  const defaultDex = known?.char?.dex ?? 0;
+  const defaultHp  = known?.char?.hp  ?? '';
+  const isNpc = !known;
+
+  const dexInput = prompt(`DEX値（${name}）：`, defaultDex);
+  if (dexInput === null) return;
+  const dex = parseInt(dexInput) || 0;
+  const hpInput = prompt(`HP（${name}）：`, defaultHp);
+  const hp = hpInput !== null ? hpInput : String(defaultHp);
+
+  await push(ref(db, `sessions/${sessionCode}/initiative`), { name, dex, hp, isNpc, active: false });
+};
+
+window.deleteInitiative = async (e, id) => {
+  e.stopPropagation();
+  await set(ref(db, `sessions/${sessionCode}/initiative/${id}`), null);
+};
+
+window.clearInitiative = async () => {
+  if (!confirm('戦闘順序をすべてクリアしますか？')) return;
+  await set(ref(db, `sessions/${sessionCode}/initiative`), null);
 };
 
 // ── Invite modal ──
@@ -1043,6 +1252,70 @@ window.sendInvite = async () => {
   document.getElementById('found-user').classList.remove('show');
   document.getElementById('inv-handle-input').value = '';
   foundUserData = null; btn.disabled = false;
+};
+
+// ── Mobile Navigation ──
+let currentMobileView = 'chars';
+window.mobileNav = function(view) {
+  if (window.innerWidth > 640) return;
+  currentMobileView = view;
+
+  // ナビボタンのactive切り替え
+  document.querySelectorAll('.mobile-nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('mnav-' + view)?.classList.add('active');
+
+  const main    = document.querySelector('.main-content');
+  const right   = document.querySelector('.right-panel');
+  const sidebar = document.querySelector('.sidebar');
+
+  // 全パネル非表示にリセット
+  main.classList.remove('mobile-active');
+  right.classList.remove('mobile-active');
+  sidebar.classList.remove('mobile-active');
+  main.style.display    = 'none';
+  right.style.display   = 'none';
+  sidebar.style.display = 'none';
+
+  if (view === 'chat') {
+    right.style.display = 'flex';
+    right.classList.add('mobile-active');
+    // チャットを一番下までスクロール
+    const chat = document.getElementById('panel-chat');
+    setTimeout(() => { chat.scrollTop = chat.scrollHeight; }, 80);
+    // チャットパネル表示
+    document.getElementById('panel-chat').style.display = 'flex';
+    document.getElementById('panel-notes').style.display = 'none';
+
+  } else if (view === 'sidebar') {
+    sidebar.style.display = 'flex';
+    sidebar.classList.add('mobile-active');
+
+  } else {
+    // chars / dice / session
+    main.style.display = 'flex';
+    main.classList.add('mobile-active');
+    const tabMap = { chars: 'sheet', dice: 'dice', session: 'session' };
+    const tabId = tabMap[view];
+    if (tabId) {
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+      document.getElementById('tab-' + tabId)?.classList.add('active');
+      const tabIdx = { sheet: 0, dice: 1, session: 2 }[tabId];
+      document.querySelectorAll('.nav-tab')[tabIdx]?.classList.add('active');
+    }
+  }
+};
+
+// Sync desktop tab clicks with mobile nav highlight
+const origSwitchTab = window.switchTab;
+window.switchTab = (tab, btn) => {
+  origSwitchTab(tab, btn);
+  const mobileMap = { sheet: 'chars', dice: 'dice', session: 'session' };
+  const mview = mobileMap[tab];
+  if (mview) {
+    document.querySelectorAll('.mobile-nav-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('mnav-' + mview)?.classList.add('active');
+  }
 };
 </script>
 </body>
