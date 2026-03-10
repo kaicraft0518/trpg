@@ -15,6 +15,35 @@
   --text-primary: #e8dcc8; --text-secondary: #a08060; --text-dim: #6a5040;
   --hp-color: #ff6b6b; --san-color: #4a9eff; --mp-color: #a78bfa;
 }
+:root.light {
+  --bg-deep: #f5f0e8; --bg-dark: #ede6d8; --bg-mid: #e4dbc8;
+  --bg-card: #ede6d8; --bg-hover: #e0d6c0;
+  --border: #c8b898; --border-glow: #a08850;
+  --gold: #8b6914; --gold-light: #a07820; --gold-dim: #9a7828;
+  --red: #8b2020; --red-glow: #cc3333;
+  --text-primary: #2a1f10; --text-secondary: #5a4020; --text-dim: #8a7050;
+  --hp-color: #cc3333; --san-color: #1a6bb5; --mp-color: #6b3fa8;
+}
+:root.light body::before {
+  background:
+    radial-gradient(ellipse 60% 40% at 10% 50%, rgba(180,120,60,0.06) 0%, transparent 70%),
+    radial-gradient(ellipse 40% 60% at 90% 30%, rgba(160,100,40,0.05) 0%, transparent 70%) !important;
+}
+/* Light mode header overrides */
+:root.light header { background: rgba(237,230,216,0.97) !important; }
+:root.light .main-tabs { background: var(--bg-dark) !important; }
+:root.light .nav-tabs { background: var(--bg-dark) !important; }
+:root.light .panel-tabs { background: var(--bg-dark) !important; }
+:root.light .mobile-nav { background: rgba(237,230,216,0.97) !important; }
+/* Theme toggle button */
+.theme-toggle {
+  background: var(--bg-mid); border: 1px solid var(--border);
+  border-radius: 20px; padding: 4px 10px; cursor: pointer;
+  font-size: 13px; display: flex; align-items: center; gap: 4px;
+  color: var(--text-dim); transition: all 0.2s; flex-shrink: 0;
+  font-family: 'Noto Serif JP', serif; white-space: nowrap;
+}
+.theme-toggle:hover { border-color: var(--border-glow); color: var(--gold); }
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body { background: var(--bg-deep); color: var(--text-primary); font-family: 'Noto Serif JP', serif; min-height: 100vh; overflow: hidden; }
 /* Mobile base */
@@ -445,6 +474,7 @@ header {
   <div class="conn-badge"><div class="conn-dot" id="conn-dot"></div><span id="conn-text">接続中</span></div>
   <div style="flex:1"></div>
   <button class="header-btn tablet-only" id="sidebar-toggle-btn" onclick="toggleTabletSidebar()" title="参加者">👥</button>
+  <button class="theme-toggle" id="theme-toggle-btn" onclick="toggleTheme()">☀️ ライト</button>
   <button class="header-btn gold" onclick="openInviteModal()">📨 招待</button>
   <button class="header-btn" onclick="goHome()">🏠 ホーム</button>
 </header>
@@ -1317,6 +1347,25 @@ window.switchTab = (tab, btn) => {
     document.getElementById('mnav-' + mview)?.classList.add('active');
   }
 };
+
+// ── Theme ──
+(function() {
+  const saved = localStorage.getItem('trpg-theme') || 'dark';
+  if (saved === 'light') document.documentElement.classList.add('light');
+})();
+function updateToggleBtn() {
+  const isLight = document.documentElement.classList.contains('light');
+  const btn = document.getElementById('theme-toggle-btn');
+  if (btn) btn.textContent = isLight ? '🌙 ダーク' : '☀️ ライト';
+}
+window.toggleTheme = function() {
+  document.documentElement.classList.toggle('light');
+  const isLight = document.documentElement.classList.contains('light');
+  localStorage.setItem('trpg-theme', isLight ? 'light' : 'dark');
+  updateToggleBtn();
+};
+// Init button label after DOM ready
+document.addEventListener('DOMContentLoaded', updateToggleBtn);
 </script>
 </body>
 </html>
