@@ -1,0 +1,1049 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>深淵の卓 - セッション</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=Noto+Serif+JP:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg-deep: #0a0807; --bg-dark: #110e0b; --bg-mid: #1a1410;
+  --bg-card: #1f1915; --bg-hover: #261e18;
+  --border: #3a2e22; --border-glow: #6b4c2a;
+  --gold: #c9a84c; --gold-light: #e8c97a; --gold-dim: #7a6030;
+  --red: #8b1a1a; --red-glow: #ff4444;
+  --text-primary: #e8dcc8; --text-secondary: #a08060; --text-dim: #6a5040;
+  --hp-color: #ff6b6b; --san-color: #4a9eff; --mp-color: #a78bfa;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: var(--bg-deep); color: var(--text-primary); font-family: 'Noto Serif JP', serif; min-height: 100vh; overflow: hidden; }
+body::before {
+  content: ''; position: fixed; inset: 0;
+  background: radial-gradient(ellipse 60% 40% at 20% 50%, rgba(139,26,26,0.05) 0%, transparent 70%), radial-gradient(ellipse 40% 60% at 80% 30%, rgba(107,76,42,0.06) 0%, transparent 70%);
+  pointer-events: none; z-index: 0;
+}
+
+/* ── HEADER ── */
+header {
+  background: rgba(11,9,7,0.97); border-bottom: 1px solid var(--border);
+  padding: 0 16px; height: 52px; display: flex; align-items: center; gap: 12px;
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100; backdrop-filter: blur(10px);
+}
+.header-logo { font-family: 'Cinzel Decorative', serif; font-size: 13px; color: var(--gold); letter-spacing: 2px; white-space: nowrap; }
+.header-divider { width: 1px; height: 20px; background: var(--border); flex-shrink: 0; }
+.session-name { font-size: 13px; color: var(--text-secondary); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.session-code-badge { background: rgba(201,168,76,0.08); border: 1px solid var(--gold-dim); border-radius: 6px; padding: 3px 10px; font-family: 'Cinzel Decorative', serif; font-size: 11px; color: var(--gold-dim); letter-spacing: 2px; white-space: nowrap; }
+.conn-badge { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text-dim); white-space: nowrap; }
+.conn-dot { width: 6px; height: 6px; border-radius: 50%; background: #4ade80; box-shadow: 0 0 5px #4ade80; animation: blink 2s ease-in-out infinite; }
+.conn-dot.offline { background: var(--red-glow); box-shadow: 0 0 5px var(--red-glow); }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.4} }
+.header-btn { background: var(--bg-mid); border: 1px solid var(--border); border-radius: 7px; padding: 5px 12px; color: var(--text-dim); cursor: pointer; font-size: 12px; font-family: 'Noto Serif JP', serif; transition: all 0.2s; white-space: nowrap; display: flex; align-items: center; gap: 5px; }
+.header-btn:hover { border-color: var(--border-glow); color: var(--text-secondary); }
+.header-btn.gold { border-color: var(--gold-dim); color: var(--gold); background: rgba(201,168,76,0.06); }
+.header-btn.gold:hover { background: rgba(201,168,76,0.14); }
+
+/* ── LAYOUT ── */
+.app-body { position: fixed; top: 52px; left: 0; right: 0; bottom: 0; display: grid; grid-template-columns: 240px 1fr 280px; z-index: 1; }
+
+/* ── LEFT SIDEBAR ── */
+.sidebar { background: var(--bg-dark); border-right: 1px solid var(--border); overflow-y: auto; display: flex; flex-direction: column; }
+.sidebar-section { padding: 14px 12px; border-bottom: 1px solid var(--border); }
+.sidebar-section:last-child { border-bottom: none; flex: 1; }
+.sec-title { font-family: 'Cinzel Decorative', serif; font-size: 10px; color: var(--gold-dim); letter-spacing: 3px; text-transform: uppercase; margin-bottom: 10px; }
+
+/* Player cards */
+.player-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 10px; margin-bottom: 7px; cursor: pointer; transition: all 0.2s; position: relative; overflow: hidden; }
+.player-card::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 3px; background: var(--gold); opacity: 0; transition: opacity 0.2s; }
+.player-card:hover { border-color: var(--border-glow); background: var(--bg-hover); }
+.player-card:hover::before, .player-card.mine::before { opacity: 1; }
+.player-card.mine { border-color: rgba(201,168,76,0.3); }
+.player-card.selected-char { border-color: var(--gold-dim); background: var(--bg-hover); }
+.pc-header { display: flex; align-items: center; gap: 7px; margin-bottom: 7px; }
+.pc-avatar { width: 28px; height: 28px; border-radius: 5px; background: var(--bg-mid); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 12px; overflow: hidden; flex-shrink: 0; }
+.pc-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.pc-name { font-size: 12px; font-weight: 600; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pc-occ { font-size: 10px; color: var(--text-dim); }
+.status-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+.status-dot.online { background: #4ade80; box-shadow: 0 0 4px #4ade80; }
+.status-dot.offline { background: var(--text-dim); }
+.pc-bars { display: flex; flex-direction: column; gap: 3px; }
+.pc-bar-row { display: flex; align-items: center; gap: 5px; }
+.pc-bar-lbl { font-size: 9px; color: var(--text-dim); width: 22px; }
+.pc-bar-track { flex: 1; height: 3px; background: rgba(255,255,255,0.05); border-radius: 2px; overflow: hidden; }
+.pc-bar-fill { height: 100%; border-radius: 2px; transition: width 0.4s ease; }
+.pc-bar-fill.hp  { background: var(--hp-color);  box-shadow: 0 0 3px var(--hp-color); }
+.pc-bar-fill.san { background: var(--san-color); box-shadow: 0 0 3px var(--san-color); }
+.pc-bar-fill.mp  { background: var(--mp-color);  box-shadow: 0 0 3px var(--mp-color); }
+.pc-bar-val { font-size: 9px; color: var(--text-dim); width: 28px; text-align: right; }
+
+/* Initiative */
+.init-list { display: flex; flex-direction: column; gap: 5px; }
+.init-item { display: flex; align-items: center; gap: 8px; padding: 6px 8px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 7px; font-size: 12px; transition: all 0.2s; }
+.init-item.active-turn { border-color: var(--gold-dim); background: rgba(201,168,76,0.04); }
+.init-num { font-family: 'Cinzel Decorative', serif; font-size: 14px; color: var(--gold); width: 24px; }
+.init-name { flex: 1; color: var(--text-secondary); font-size: 11px; }
+.init-hp { font-size: 10px; color: var(--hp-color); }
+.add-init-btn { width: 100%; margin-top: 7px; padding: 6px; background: transparent; border: 1px dashed var(--border); border-radius: 6px; color: var(--text-dim); cursor: pointer; font-size: 11px; font-family: 'Noto Serif JP', serif; transition: all 0.2s; }
+.add-init-btn:hover { border-color: var(--border-glow); color: var(--text-secondary); }
+
+/* ── MAIN CONTENT ── */
+.main-content { overflow-y: auto; display: flex; flex-direction: column; }
+.nav-tabs { display: flex; background: var(--bg-dark); border-bottom: 1px solid var(--border); padding: 0 16px; flex-shrink: 0; }
+.nav-tab { padding: 12px 18px; border: none; background: transparent; color: var(--text-dim); cursor: pointer; font-family: 'Noto Serif JP', serif; font-size: 12px; border-bottom: 2px solid transparent; transition: all 0.2s; }
+.nav-tab:hover { color: var(--text-secondary); }
+.nav-tab.active { color: var(--gold); border-bottom-color: var(--gold); }
+.tab-panel { display: none; padding: 18px; animation: fadeIn 0.25s ease; flex: 1; }
+.tab-panel.active { display: block; }
+@keyframes fadeIn { from{opacity:0;transform:translateY(5px)} to{opacity:1;transform:none} }
+
+/* ── CHARACTER SHEET ── */
+.sheet-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; gap: 12px; }
+.sheet-name-block h2 { font-family: 'Cinzel Decorative', serif; font-size: 20px; color: var(--gold); text-shadow: 0 0 15px rgba(201,168,76,0.3); margin-bottom: 2px; }
+.sheet-meta { color: var(--text-secondary); font-style: italic; font-size: 13px; }
+.san-display { text-align: center; background: rgba(74,158,255,0.05); border: 1px solid rgba(74,158,255,0.2); border-radius: 10px; padding: 10px 18px; flex-shrink: 0; }
+.san-display .sd-label { font-size: 9px; letter-spacing: 2px; color: var(--san-color); opacity: 0.7; text-transform: uppercase; }
+.san-display .sd-val { font-family: 'Cinzel Decorative', serif; font-size: 28px; color: var(--san-color); line-height: 1.1; }
+.san-display .sd-max { font-size: 11px; color: rgba(74,158,255,0.5); }
+
+/* Vitals */
+.vitals-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 16px; }
+.vital-box { background: var(--bg-card); border-radius: 10px; padding: 12px; text-align: center; }
+.vital-box.hp-box  { border: 1px solid rgba(255,107,107,0.3); }
+.vital-box.san-box { border: 1px solid rgba(74,158,255,0.3); }
+.vital-box.mp-box  { border: 1px solid rgba(167,139,250,0.3); }
+.v-label-top { font-size: 9px; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 6px; }
+.vital-box.hp-box  .v-label-top { color: var(--hp-color); }
+.vital-box.san-box .v-label-top { color: var(--san-color); }
+.vital-box.mp-box  .v-label-top { color: var(--mp-color); }
+.vital-controls { display: flex; align-items: center; justify-content: center; gap: 6px; }
+.v-btn { width: 24px; height: 24px; background: var(--bg-mid); border: 1px solid var(--border); border-radius: 50%; color: var(--text-secondary); cursor: pointer; font-size: 14px; display: flex; align-items: center; justify-content: center; transition: all 0.15s; }
+.v-btn:hover { border-color: var(--border-glow); color: var(--gold); }
+.v-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.v-num { font-family: 'Cinzel Decorative', serif; font-size: 24px; min-width: 40px; text-align: center; }
+.vital-box.hp-box  .v-num { color: var(--hp-color); }
+.vital-box.san-box .v-num { color: var(--san-color); }
+.vital-box.mp-box  .v-num { color: var(--mp-color); }
+.v-max { font-size: 10px; color: var(--text-dim); margin-top: 2px; }
+
+/* Stats */
+.section-label { font-family: 'Cinzel Decorative', serif; font-size: 10px; color: var(--gold-dim); letter-spacing: 3px; text-transform: uppercase; margin-bottom: 8px; padding-bottom: 5px; border-bottom: 1px solid var(--border); }
+.stats-grid { display: grid; grid-template-columns: repeat(5,1fr); gap: 7px; margin-bottom: 16px; }
+.stat-box { background: var(--bg-card); border: 1px solid var(--border); border-radius: 7px; padding: 8px 5px; text-align: center; cursor: pointer; transition: all 0.2s; }
+.stat-box:hover { border-color: var(--gold-dim); background: var(--bg-hover); transform: translateY(-2px); }
+.stat-box .s-name { font-size: 9px; color: var(--text-dim); margin-bottom: 4px; }
+.stat-box .s-val { font-family: 'Cinzel Decorative', serif; font-size: 18px; color: var(--gold); }
+.stat-box .s-sub { font-size: 9px; color: var(--text-dim); margin-top: 1px; }
+
+/* Skills */
+.skills-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 6px; }
+.skill-item { display: flex; align-items: center; justify-content: space-between; background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px; cursor: pointer; transition: all 0.15s; }
+.skill-item:hover { border-color: var(--border-glow); background: var(--bg-hover); }
+.sk-name { font-size: 11px; color: var(--text-secondary); }
+.sk-val { font-family: 'Cinzel Decorative', serif; font-size: 13px; color: var(--gold); background: rgba(201,168,76,0.08); border-radius: 4px; padding: 1px 5px; min-width: 28px; text-align: center; }
+
+/* KP char selector */
+.kp-char-select { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+.kp-char-btn { padding: 5px 12px; background: var(--bg-mid); border: 1px solid var(--border); border-radius: 6px; color: var(--text-dim); cursor: pointer; font-size: 11px; font-family: 'Noto Serif JP', serif; transition: all 0.2s; }
+.kp-char-btn:hover { border-color: var(--border-glow); color: var(--text-secondary); }
+.kp-char-btn.active { border-color: var(--gold-dim); background: rgba(201,168,76,0.08); color: var(--gold); }
+
+/* ── DICE ── */
+.dice-area { max-width: 640px; margin: 0 auto; }
+.dice-title { font-family: 'Cinzel Decorative', serif; font-size: 18px; color: var(--gold); text-align: center; margin-bottom: 4px; }
+.dice-subtitle { text-align: center; color: var(--text-secondary); font-style: italic; font-size: 13px; margin-bottom: 20px; }
+.dice-buttons { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
+.dice-btn { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; cursor: pointer; transition: all 0.2s; text-align: center; min-width: 60px; color: var(--text-primary); }
+.dice-btn:hover { border-color: var(--gold-dim); background: var(--bg-hover); transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,0.4); }
+.dice-btn.rolling { animation: shake 0.35s ease; border-color: var(--gold); box-shadow: 0 0 12px rgba(201,168,76,0.3); }
+@keyframes shake { 0%,100%{transform:rotate(0) translateY(-2px)} 25%{transform:rotate(-8deg) translateY(-4px)} 75%{transform:rotate(8deg) translateY(-4px)} }
+.dice-btn .d-icon { font-size: 22px; display: block; }
+.dice-btn .d-label { font-size: 11px; color: var(--gold); margin-top: 2px; }
+.dice-btn.d100 { border-color: var(--gold-dim); }
+.skill-check-row { display: flex; gap: 8px; align-items: center; justify-content: center; margin-bottom: 16px; flex-wrap: wrap; }
+.sc-input { background: var(--bg-mid); border: 1px solid var(--border); border-radius: 7px; padding: 7px 12px; color: var(--text-primary); font-family: 'Noto Serif JP', serif; font-size: 13px; }
+.sc-input:focus { outline: none; border-color: var(--gold-dim); }
+.sc-btn { background: rgba(201,168,76,0.1); border: 1px solid var(--gold-dim); border-radius: 7px; padding: 7px 16px; color: var(--gold); cursor: pointer; font-family: 'Noto Serif JP', serif; font-size: 12px; transition: all 0.2s; }
+.sc-btn:hover { background: rgba(201,168,76,0.2); }
+.dice-result { background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; padding: 24px; text-align: center; margin-bottom: 16px; min-height: 130px; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; overflow: hidden; }
+.dice-result::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at center, rgba(201,168,76,0.03) 0%, transparent 70%); }
+.r-dice { font-size: 11px; color: var(--text-dim); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 6px; }
+.r-num { font-family: 'Cinzel Decorative', serif; font-size: 60px; color: var(--gold); line-height: 1; text-shadow: 0 0 25px rgba(201,168,76,0.4); transition: all 0.2s; }
+.r-label { font-size: 14px; font-style: italic; color: var(--text-secondary); margin-top: 6px; }
+.r-label.critical { color: #ffd700; text-shadow: 0 0 8px rgba(255,215,0,0.5); }
+.r-label.fumble   { color: var(--red-glow); text-shadow: 0 0 8px rgba(255,68,68,0.5); }
+.r-label.success  { color: #4ade80; }
+.r-label.failure  { color: var(--text-dim); }
+.roll-history { max-height: 180px; overflow-y: auto; }
+.h-item { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-bottom: 1px solid rgba(58,46,34,0.4); font-size: 12px; animation: slideIn 0.2s ease; }
+@keyframes slideIn { from{opacity:0;transform:translateX(-8px)} to{opacity:1;transform:none} }
+.h-who { color: var(--text-secondary); width: 60px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; }
+.h-what { color: var(--text-dim); flex: 1; font-size: 11px; }
+.h-res { font-family: 'Cinzel Decorative', serif; color: var(--gold); font-size: 14px; }
+.h-tag { font-size: 10px; padding: 1px 6px; border-radius: 8px; }
+.h-tag.success  { background: rgba(74,222,128,0.1); color: #4ade80; border: 1px solid rgba(74,222,128,0.3); }
+.h-tag.failure  { background: rgba(100,80,60,0.15); color: var(--text-dim); border: 1px solid var(--border); }
+.h-tag.critical { background: rgba(255,215,0,0.1); color: #ffd700; border: 1px solid rgba(255,215,0,0.3); }
+.h-tag.fumble   { background: rgba(255,68,68,0.1); color: var(--red-glow); border: 1px solid rgba(255,68,68,0.3); }
+.h-time { font-size: 9px; color: var(--text-dim); }
+
+/* ── SESSION TAB ── */
+.scene-block { background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 14px; }
+.scene-block h3 { font-family: 'Cinzel Decorative', serif; font-size: 13px; color: var(--gold); margin-bottom: 8px; display: flex; align-items: center; gap: 7px; }
+.scene-block p { color: var(--text-secondary); font-style: italic; font-size: 13px; line-height: 1.7; margin-bottom: 10px; }
+.scene-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+.tag { padding: 2px 9px; border-radius: 12px; font-size: 10px; border: 1px solid; }
+.tag.location { background: rgba(107,76,42,0.2); border-color: var(--gold-dim); color: var(--gold-dim); }
+.tag.horror   { background: rgba(139,26,26,0.2); border-color: var(--red); color: #ff9999; }
+.tag.mystery  { background: rgba(74,158,255,0.1); border-color: rgba(74,158,255,0.4); color: #7bc4ff; }
+.timeline { position: relative; }
+.timeline::before { content: ''; position: absolute; left: 13px; top: 0; bottom: 0; width: 1px; background: linear-gradient(180deg, var(--gold-dim), transparent); }
+.tl-event { padding: 8px 8px 8px 34px; position: relative; margin-bottom: 2px; }
+.tl-event::before { content: ''; position: absolute; left: 9px; top: 13px; width: 8px; height: 8px; border-radius: 50%; background: var(--bg-mid); border: 2px solid var(--border-glow); }
+.tl-event.imp::before { background: var(--gold-dim); box-shadow: 0 0 5px var(--gold-dim); }
+.tl-time { font-size: 9px; color: var(--text-dim); margin-bottom: 1px; }
+.tl-text { font-size: 12px; color: var(--text-secondary); }
+.tl-input-row { display: flex; gap: 6px; margin-top: 10px; }
+.tl-input { flex: 1; background: var(--bg-mid); border: 1px solid var(--border); border-radius: 7px; padding: 7px 10px; color: var(--text-primary); font-family: 'Noto Serif JP', serif; font-size: 12px; }
+.tl-input:focus { outline: none; border-color: var(--gold-dim); }
+.tl-add-btn { background: rgba(201,168,76,0.08); border: 1px solid var(--gold-dim); border-radius: 7px; padding: 7px 12px; color: var(--gold); cursor: pointer; font-size: 12px; font-family: 'Noto Serif JP', serif; transition: all 0.2s; }
+.tl-add-btn:hover { background: rgba(201,168,76,0.16); }
+
+/* Clues */
+.clues-grid { display: grid; grid-template-columns: repeat(2,1fr); gap: 8px; margin-top: 8px; }
+.clue-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 12px; }
+.clue-card h4 { font-size: 12px; color: var(--gold); margin-bottom: 4px; }
+.clue-card p { font-size: 11px; color: var(--text-secondary); }
+.add-clue-btn { margin-top: 8px; width: 100%; padding: 8px; background: transparent; border: 1px dashed var(--border); border-radius: 7px; color: var(--text-dim); cursor: pointer; font-size: 11px; font-family: 'Noto Serif JP', serif; transition: all 0.2s; }
+.add-clue-btn:hover { border-color: var(--gold-dim); color: var(--gold-dim); }
+
+/* ── RIGHT PANEL ── */
+.right-panel { background: var(--bg-dark); border-left: 1px solid var(--border); display: flex; flex-direction: column; }
+.panel-tabs { display: flex; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.panel-tab { flex: 1; padding: 10px 6px; background: transparent; border: none; color: var(--text-dim); cursor: pointer; font-family: 'Noto Serif JP', serif; font-size: 11px; transition: all 0.2s; border-bottom: 2px solid transparent; }
+.panel-tab:hover { color: var(--text-secondary); }
+.panel-tab.active { color: var(--gold); border-bottom-color: var(--gold); }
+.chat-messages { flex: 1; overflow-y: auto; padding: 12px 10px; display: flex; flex-direction: column; gap: 8px; }
+.chat-msg { border-radius: 7px; padding: 8px 10px; font-size: 12px; line-height: 1.5; animation: fadeIn 0.3s ease; }
+.chat-msg.player { background: rgba(58,46,34,0.4); border: 1px solid rgba(58,46,34,0.6); }
+.chat-msg.gm     { background: rgba(139,26,26,0.12); border: 1px solid rgba(139,26,26,0.25); }
+.chat-msg.system { background: rgba(74,158,255,0.04); border: 1px solid rgba(74,158,255,0.12); font-style: italic; }
+.chat-msg.dice   { background: rgba(201,168,76,0.04); border: 1px solid rgba(201,168,76,0.15); }
+.msg-who { font-size: 10px; margin-bottom: 3px; font-weight: 600; }
+.chat-msg.player .msg-who { color: var(--gold-dim); }
+.chat-msg.gm     .msg-who { color: #ff9999; }
+.chat-msg.system .msg-who { color: rgba(74,158,255,0.7); }
+.chat-msg.dice   .msg-who { color: var(--gold); }
+.msg-text { color: var(--text-secondary); }
+.msg-time { font-size: 9px; color: var(--text-dim); margin-top: 3px; }
+.chat-input-area { padding: 10px; border-top: 1px solid var(--border); display: flex; gap: 6px; flex-shrink: 0; }
+.chat-input { flex: 1; background: var(--bg-mid); border: 1px solid var(--border); border-radius: 7px; padding: 7px 10px; color: var(--text-primary); font-family: 'Noto Serif JP', serif; font-size: 12px; resize: none; height: 36px; }
+.chat-input:focus { outline: none; border-color: var(--gold-dim); }
+.send-btn { width: 36px; height: 36px; background: rgba(201,168,76,0.1); border: 1px solid var(--gold-dim); border-radius: 7px; color: var(--gold); cursor: pointer; font-size: 15px; transition: all 0.2s; display: flex; align-items: center; justify-content: center; }
+.send-btn:hover { background: rgba(201,168,76,0.2); }
+.notes-area { flex: 1; background: transparent; border: none; color: var(--text-primary); font-family: 'Noto Serif JP', serif; font-size: 12px; padding: 12px; resize: none; line-height: 1.7; }
+.notes-area:focus { outline: none; }
+.notes-area::placeholder { color: var(--text-dim); }
+
+/* Modals */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(4px); z-index: 200; display: none; align-items: center; justify-content: center; padding: 16px; }
+.modal-overlay.open { display: flex; }
+.modal { background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; width: 100%; max-width: 460px; max-height: 90vh; overflow-y: auto; box-shadow: 0 30px 80px rgba(0,0,0,0.8); animation: modalIn 0.25s ease; }
+@keyframes modalIn { from{opacity:0;transform:translateY(16px) scale(0.97)} to{opacity:1;transform:none} }
+.modal-header { padding: 16px 20px 12px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+.modal-title { font-family: 'Cinzel Decorative', serif; font-size: 13px; color: var(--gold); }
+.modal-close { width: 26px; height: 26px; background: var(--bg-mid); border: 1px solid var(--border); border-radius: 5px; color: var(--text-dim); cursor: pointer; font-size: 12px; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+.modal-close:hover { border-color: var(--red); color: #ff9999; }
+.modal-body { padding: 16px 20px 20px; }
+.invite-section { margin-bottom: 18px; }
+.invite-sec-title { font-size: 10px; color: var(--text-dim); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 8px; padding-bottom: 5px; border-bottom: 1px solid var(--border); }
+.copy-row { display: flex; gap: 6px; align-items: center; }
+.copy-val { flex: 1; background: var(--bg-mid); border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; color: var(--text-secondary); font-size: 12px; font-family: monospace; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.copy-val.code-val { font-family: 'Cinzel Decorative', serif; letter-spacing: 3px; color: var(--gold); font-size: 14px; text-align: center; }
+.icon-btn { width: 32px; height: 32px; background: var(--bg-mid); border: 1px solid var(--border); border-radius: 6px; color: var(--text-secondary); cursor: pointer; font-size: 13px; display: flex; align-items: center; justify-content: center; transition: all 0.2s; flex-shrink: 0; }
+.icon-btn:hover { border-color: var(--border-glow); color: var(--gold); }
+.icon-btn.copied { border-color: #4ade80; color: #4ade80; }
+.share-btn { padding: 8px 12px; background: rgba(201,168,76,0.1); border: 1px solid var(--gold-dim); border-radius: 6px; color: var(--gold); cursor: pointer; font-family: 'Noto Serif JP', serif; font-size: 12px; transition: all 0.2s; white-space: nowrap; }
+.share-btn:hover { background: rgba(201,168,76,0.2); }
+.form-input { width: 100%; background: var(--bg-mid); border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; color: var(--text-primary); font-family: 'Noto Serif JP', serif; font-size: 12px; transition: all 0.2s; }
+.form-input:focus { outline: none; border-color: var(--gold-dim); }
+.form-input::placeholder { color: var(--text-dim); }
+.id-search-row { display: flex; gap: 6px; margin-bottom: 8px; margin-top: 8px; }
+.id-search-row .form-input { flex: 1; }
+.search-btn { padding: 8px 12px; background: var(--bg-mid); border: 1px solid var(--border); border-radius: 6px; color: var(--text-secondary); cursor: pointer; font-size: 12px; font-family: 'Noto Serif JP', serif; transition: all 0.2s; white-space: nowrap; }
+.search-btn:hover { border-color: var(--border-glow); color: var(--text-primary); }
+.found-user { background: var(--bg-mid); border: 1px solid var(--border); border-radius: 7px; padding: 10px 12px; display: none; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.found-user.show { display: flex; }
+.found-name { font-size: 13px; }
+.found-handle { font-size: 11px; color: var(--text-dim); }
+.invite-send-btn { padding: 6px 12px; background: rgba(74,222,128,0.1); border: 1px solid rgba(74,222,128,0.4); border-radius: 6px; color: #4ade80; cursor: pointer; font-family: 'Noto Serif JP', serif; font-size: 11px; transition: all 0.2s; }
+.invite-send-btn:hover { background: rgba(74,222,128,0.2); }
+.invite-send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.role-select { display: flex; gap: 6px; margin-top: 8px; }
+.role-btn { flex: 1; padding: 6px; background: var(--bg-mid); border: 1px solid var(--border); border-radius: 6px; color: var(--text-dim); cursor: pointer; font-size: 11px; font-family: 'Noto Serif JP', serif; transition: all 0.2s; text-align: center; }
+.role-btn.active.pl { border-color: var(--san-color); background: rgba(74,158,255,0.08); color: #7bc4ff; }
+.role-btn.active.kp { border-color: var(--gold-dim); background: rgba(201,168,76,0.08); color: var(--gold); }
+.err-msg { font-size: 11px; color: var(--red-glow); margin-top: 5px; display: none; }
+.err-msg.show { display: block; }
+.suc-msg { font-size: 11px; color: #4ade80; margin-top: 5px; display: none; }
+.suc-msg.show { display: block; }
+
+/* Loading screen */
+.loading-screen { position: fixed; inset: 0; background: var(--bg-deep); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 999; }
+.loading-eye { font-size: 48px; animation: eye-pulse 3s ease-in-out infinite; margin-bottom: 16px; filter: sepia(1) hue-rotate(30deg) saturate(2); }
+@keyframes eye-pulse { 0%,100%{opacity:0.6;transform:scaleY(1)} 50%{opacity:1;transform:scaleY(0.2)} }
+.loading-title { font-family: 'Cinzel Decorative', serif; font-size: 20px; color: var(--gold); margin-bottom: 8px; letter-spacing: 3px; }
+.loading-text { font-size: 13px; color: var(--text-dim); font-style: italic; }
+
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-glow); border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<!-- Loading -->
+<div class="loading-screen" id="loading-screen">
+  <div class="loading-eye">👁</div>
+  <div class="loading-title">深淵の卓</div>
+  <div class="loading-text" id="loading-text">セッションに接続中…</div>
+</div>
+
+<!-- HEADER -->
+<header id="main-header" style="display:none">
+  <div class="header-logo">深淵の卓</div>
+  <div class="header-divider"></div>
+  <div class="session-name" id="session-name-display">—</div>
+  <div class="session-code-badge" id="session-code-display">—</div>
+  <div class="conn-badge"><div class="conn-dot" id="conn-dot"></div><span id="conn-text">接続中</span></div>
+  <div style="flex:1"></div>
+  <button class="header-btn gold" onclick="openInviteModal()">📨 招待</button>
+  <button class="header-btn" onclick="goHome()">🏠 ホーム</button>
+</header>
+
+<!-- APP BODY -->
+<div class="app-body" id="app-body" style="display:none">
+
+  <!-- LEFT SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-section">
+      <div class="sec-title">探索者</div>
+      <div id="player-list"></div>
+    </div>
+    <div class="sidebar-section">
+      <div class="sec-title">戦闘順序</div>
+      <div class="init-list" id="init-list"></div>
+      <button class="add-init-btn" onclick="addInitiative()">＋ 追加</button>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="main-content">
+    <div class="nav-tabs">
+      <button class="nav-tab active" onclick="switchTab('sheet', this)">キャラクター</button>
+      <button class="nav-tab" onclick="switchTab('dice', this)">ダイス</button>
+      <button class="nav-tab" onclick="switchTab('session', this)">セッション</button>
+    </div>
+
+    <!-- CHARACTER TAB -->
+    <div class="tab-panel active" id="tab-sheet">
+      <div id="kp-char-select-area" style="display:none">
+        <div class="section-label" style="margin-bottom:6px">キャラクター選択（KP）</div>
+        <div class="kp-char-select" id="kp-char-select"></div>
+      </div>
+      <div id="no-char-msg" style="display:none; text-align:center; padding:40px; color:var(--text-dim); font-style:italic; font-size:13px;">
+        キャラクターが登録されていません。<br>
+        <a href="home.html" style="color:var(--gold-dim);">ホームからインポート</a>してください。
+      </div>
+      <div id="sheet-content" style="display:none">
+        <div class="sheet-header">
+          <div class="sheet-name-block">
+            <h2 id="char-name-display">—</h2>
+            <div class="sheet-meta" id="char-meta-display">—</div>
+          </div>
+          <div class="san-display">
+            <div class="sd-label">正気度</div>
+            <div class="sd-val" id="san-big">—</div>
+            <div class="sd-max" id="san-big-max">/ —</div>
+          </div>
+        </div>
+        <div class="vitals-row">
+          <div class="vital-box hp-box">
+            <div class="v-label-top">耐久力 HP</div>
+            <div class="vital-controls">
+              <button class="v-btn" id="hp-minus" onclick="changeVital('hp',-1)">−</button>
+              <div class="v-num" id="hp-val">—</div>
+              <button class="v-btn" id="hp-plus"  onclick="changeVital('hp', 1)">+</button>
+            </div>
+            <div class="v-max" id="hp-max-display">最大: —</div>
+          </div>
+          <div class="vital-box san-box">
+            <div class="v-label-top">正気度 SAN</div>
+            <div class="vital-controls">
+              <button class="v-btn" id="san-minus" onclick="changeVital('san',-1)">−</button>
+              <div class="v-num" id="san-val">—</div>
+              <button class="v-btn" id="san-plus"  onclick="changeVital('san', 1)">+</button>
+            </div>
+            <div class="v-max" id="san-max-display">最大: —</div>
+          </div>
+          <div class="vital-box mp-box">
+            <div class="v-label-top">魔法力 MP</div>
+            <div class="vital-controls">
+              <button class="v-btn" id="mp-minus" onclick="changeVital('mp',-1)">−</button>
+              <div class="v-num" id="mp-val">—</div>
+              <button class="v-btn" id="mp-plus"  onclick="changeVital('mp', 1)">+</button>
+            </div>
+            <div class="v-max" id="mp-max-display">最大: —</div>
+          </div>
+        </div>
+        <div class="section-label">基本能力値</div>
+        <div class="stats-grid" id="stats-grid"></div>
+        <div class="section-label" style="margin-top:14px">技能</div>
+        <div class="skills-grid" id="skills-grid"></div>
+      </div>
+    </div>
+
+    <!-- DICE TAB -->
+    <div class="tab-panel" id="tab-dice">
+      <div class="dice-area">
+        <h2 class="dice-title">運命の賽</h2>
+        <p class="dice-subtitle">命運を決するために、骰子を投げよ</p>
+        <div class="dice-buttons">
+          <div class="dice-btn" onclick="rollDice(4,1)"><span class="d-icon">🎲</span><span class="d-label">D4</span></div>
+          <div class="dice-btn" onclick="rollDice(6,1)"><span class="d-icon">🎲</span><span class="d-label">D6</span></div>
+          <div class="dice-btn" onclick="rollDice(8,1)"><span class="d-icon">🎲</span><span class="d-label">D8</span></div>
+          <div class="dice-btn" onclick="rollDice(10,1)"><span class="d-icon">🎲</span><span class="d-label">D10</span></div>
+          <div class="dice-btn d100" onclick="rollDice(100,1)"><span class="d-icon">🎱</span><span class="d-label" style="color:var(--gold)">D100</span></div>
+          <div class="dice-btn" onclick="rollDice(12,1)"><span class="d-icon">🎲</span><span class="d-label">D12</span></div>
+          <div class="dice-btn" onclick="rollDice(20,1)"><span class="d-icon">🎲</span><span class="d-label">D20</span></div>
+        </div>
+        <div class="skill-check-row">
+          <span style="color:var(--text-dim);font-size:12px">技能値</span>
+          <input class="sc-input" id="sc-val" type="number" min="1" max="100" value="65" style="width:90px">
+          <input class="sc-input" id="sc-name" type="text" value="目星" style="width:100px" placeholder="技能名">
+          <button class="sc-btn" onclick="rollSkillCheck()">技能ロール</button>
+        </div>
+        <div class="dice-result" id="dice-result">
+          <div class="r-dice">ダイスを選択してください</div>
+          <div class="r-num" id="r-num" style="color:var(--text-dim);font-size:36px">—</div>
+          <div class="r-label" id="r-label"></div>
+        </div>
+        <div class="section-label">ロール履歴</div>
+        <div class="roll-history" id="roll-history"></div>
+      </div>
+    </div>
+
+    <!-- SESSION TAB -->
+    <div class="tab-panel" id="tab-session">
+      <div class="scene-block">
+        <h3>🕯️ 現在のシーン</h3>
+        <div id="scene-desc-display" style="color:var(--text-secondary);font-style:italic;font-size:13px;line-height:1.7;margin-bottom:10px">（シーン未設定）</div>
+        <div class="scene-tags" id="scene-tags-display"></div>
+      </div>
+
+      <div style="margin-bottom:14px">
+        <div class="section-label">タイムライン</div>
+        <div class="timeline" id="timeline"></div>
+        <div class="tl-input-row">
+          <input class="tl-input" id="tl-input" type="text" placeholder="出来事を記録…" onkeydown="if(event.key==='Enter')addTimeline()">
+          <button class="tl-add-btn" onclick="addTimeline()">記録</button>
+        </div>
+      </div>
+
+      <div>
+        <div class="section-label">手掛かり</div>
+        <div class="clues-grid" id="clues-grid"></div>
+        <button class="add-clue-btn" onclick="addClue()">＋ 手掛かりを追加</button>
+      </div>
+    </div>
+  </main>
+
+  <!-- RIGHT PANEL -->
+  <aside class="right-panel">
+    <div class="panel-tabs">
+      <button class="panel-tab active" onclick="switchPanelTab('chat', this)">チャット</button>
+      <button class="panel-tab" onclick="switchPanelTab('notes', this)">メモ</button>
+    </div>
+    <div id="panel-chat" class="chat-messages"></div>
+    <textarea id="panel-notes" class="notes-area" style="display:none" placeholder="個人メモ（他の人には見えません）…"></textarea>
+    <div class="chat-input-area">
+      <textarea class="chat-input" id="chat-input" placeholder="メッセージ… (Enter送信)" onkeydown="handleChatKey(event)"></textarea>
+      <button class="send-btn" onclick="sendChat()">↑</button>
+    </div>
+  </aside>
+</div>
+
+<!-- INVITE MODAL -->
+<div class="modal-overlay" id="invite-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">セッションに招待</div>
+      <button class="modal-close" onclick="closeInviteModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="invite-section">
+        <div class="invite-sec-title">招待URL</div>
+        <div class="copy-row">
+          <div class="copy-val" id="inv-url-val"></div>
+          <button class="icon-btn" id="inv-url-btn" onclick="copyVal('inv-url-val','inv-url-btn')" title="コピー">📋</button>
+          <button class="share-btn" onclick="shareUrl()">共有</button>
+        </div>
+      </div>
+      <div class="invite-section">
+        <div class="invite-sec-title">招待コード</div>
+        <div class="copy-row">
+          <div class="copy-val code-val" id="inv-code-val"></div>
+          <button class="icon-btn" id="inv-code-btn" onclick="copyVal('inv-code-val','inv-code-btn')" title="コピー">📋</button>
+        </div>
+      </div>
+      <div class="invite-section">
+        <div class="invite-sec-title">ユーザーIDで招待</div>
+        <div style="font-size:11px;color:var(--text-dim);margin-bottom:4px">招待する役割</div>
+        <div class="role-select">
+          <button class="role-btn pl active" id="inv-role-pl" onclick="setInvRole('PL')">🧍 PL</button>
+          <button class="role-btn kp" id="inv-role-kp" onclick="setInvRole('KP')">🕯️ KP</button>
+        </div>
+        <div class="id-search-row">
+          <input class="form-input" id="inv-handle-input" type="text" placeholder="相手のユーザーID" onkeydown="if(event.key==='Enter')searchUser()">
+          <button class="search-btn" onclick="searchUser()">検索</button>
+        </div>
+        <div class="found-user" id="found-user">
+          <div><div class="found-name" id="found-display-name"></div><div class="found-handle" id="found-handle-text"></div></div>
+          <button class="invite-send-btn" id="send-invite-btn" onclick="sendInvite()">招待を送る</button>
+        </div>
+        <div class="err-msg" id="search-err"></div>
+        <div class="suc-msg" id="invite-suc"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import { getDatabase, ref, get, set, push, update, onValue, onChildAdded } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyB_JYoE53JPCyTTaAdHUj6EPX2K5P6HjYs",
+  authDomain: "cthulhu-trpg.firebaseapp.com",
+  databaseURL: "https://cthulhu-trpg-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "cthulhu-trpg",
+  storageBucket: "cthulhu-trpg.firebasestorage.app",
+  messagingSenderId: "595458056355",
+  appId: "1:595458056355:web:9156ec7efedf8f64895f16"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getDatabase(app);
+
+let currentUser = null, userData = null, sessionCode = '', sessionData = null;
+let myRole = 'PL', myCharId = null, myChar = null;
+let viewingCharId = null, viewingChar = null, viewingUid = null;
+let allSessionChars = {}; // uid -> {charId, char, role}
+let invRole = 'PL', foundUserData = null;
+
+// ── Connection status ──
+onValue(ref(db, '.info/connected'), snap => {
+  const dot = document.getElementById('conn-dot');
+  const txt = document.getElementById('conn-text');
+  if (snap.val()) { dot.classList.remove('offline'); txt.textContent = '接続中'; }
+  else { dot.classList.add('offline'); txt.textContent = '切断'; }
+});
+
+function setLoading(msg) { document.getElementById('loading-text').textContent = msg; }
+function hideLoading() {
+  document.getElementById('loading-screen').style.display = 'none';
+  document.getElementById('main-header').style.display = 'flex';
+  document.getElementById('app-body').style.display = 'grid';
+}
+
+// ── Main init ──
+onAuthStateChanged(auth, async user => {
+  if (!user) { window.location.href = 'index.html'; return; }
+  currentUser = user;
+
+  setLoading('ユーザー情報を確認中…');
+  const uSnap = await get(ref(db, `users/${user.uid}`));
+  if (!uSnap.exists()) { window.location.href = 'index.html'; return; }
+  userData = uSnap.val();
+
+  sessionCode = new URLSearchParams(window.location.search).get('session') || '';
+  if (!sessionCode) { window.location.href = 'home.html'; return; }
+
+  setLoading('セッションに接続中…');
+  const sSnap = await get(ref(db, `sessions/${sessionCode}`));
+  if (!sSnap.exists()) { alert('セッションが見つかりません'); window.location.href = 'home.html'; return; }
+  sessionData = sSnap.val();
+
+  // Check if user is in session (auto-join as PL if not)
+  if (!sessionData.players || !sessionData.players[user.uid]) {
+    await update(ref(db, `sessions/${sessionCode}/players/${user.uid}`), { role: 'PL', joinedAt: Date.now() });
+    await set(ref(db, `users/${user.uid}/sessions/${sessionCode}`), { name: sessionData.name, role: 'PL', joinedAt: Date.now() });
+  }
+  myRole = (sessionData.players?.[user.uid]?.role) || 'PL';
+
+  document.getElementById('session-name-display').textContent = sessionData.name || sessionCode;
+  document.getElementById('session-code-display').textContent = sessionCode;
+  document.title = `深淵の卓 — ${sessionData.name || sessionCode}`;
+
+  // Load my characters
+  setLoading('キャラクターを読み込み中…');
+  const cSnap = await get(ref(db, `users/${user.uid}/characters`));
+  if (cSnap.exists()) {
+    const chars = Object.entries(cSnap.val());
+    if (chars.length > 0) {
+      [myCharId, myChar] = chars[0]; // Use first char by default
+    }
+  }
+
+  // Listen for session players
+  onValue(ref(db, `sessions/${sessionCode}/players`), snap => {
+    const players = snap.val() || {};
+    loadAllPlayerChars(players);
+  });
+
+  // Init UI
+  setupCharSheet();
+  listenRolls();
+  listenChat();
+  listenTimeline();
+  listenClues();
+  listenInitiative();
+  postSystemMessage(`${userData.displayName || userData.handle} が接続しました`);
+  hideLoading();
+});
+
+window.goHome = () => { window.location.href = 'home.html'; };
+
+// ── Load all player chars ──
+async function loadAllPlayerChars(players) {
+  const list = document.getElementById('player-list');
+  list.innerHTML = '';
+  allSessionChars = {};
+
+  for (const [uid, pInfo] of Object.entries(players)) {
+    const uSnap = await get(ref(db, `users/${uid}`));
+    if (!uSnap.exists()) continue;
+    const uData = uSnap.val();
+    const cSnap = await get(ref(db, `users/${uid}/characters`));
+    let charId = null, char = null;
+    if (cSnap.exists()) { const chars = Object.entries(cSnap.val()); if (chars.length > 0) [charId, char] = chars[0]; }
+
+    allSessionChars[uid] = { charId, char, role: pInfo.role, handle: uData.handle, displayName: uData.displayName };
+
+    // Sync char vitals from session if available
+    const vSnap = await get(ref(db, `sessions/${sessionCode}/vitals/${uid}`));
+    if (vSnap.exists() && char) { Object.assign(char, vSnap.val()); }
+
+    list.appendChild(buildPlayerCard(uid, uData, char, pInfo.role));
+
+    // Listen to vitals changes
+    onValue(ref(db, `sessions/${sessionCode}/vitals/${uid}`), vs => {
+      if (!vs.exists()) return;
+      if (allSessionChars[uid]) Object.assign(allSessionChars[uid].char || {}, vs.val());
+      updatePlayerCardBars(uid, vs.val());
+      if (viewingUid === uid && viewingChar) { Object.assign(viewingChar, vs.val()); refreshVitalsDisplay(); }
+    });
+  }
+
+  // KP char select
+  buildKpCharSelect();
+}
+
+function buildPlayerCard(uid, uData, char, role) {
+  const div = document.createElement('div');
+  div.className = 'player-card' + (uid === currentUser.uid ? ' mine' : '');
+  div.id = 'pcard-' + uid;
+  div.onclick = () => { if (myRole === 'KP') selectViewChar(uid); };
+
+  const isOnline = true; // Could be enhanced with presence
+  const avatarHtml = char?.iconUrl ? `<img src="${char.iconUrl}" alt="" onerror="this.parentElement.textContent='🧍'">` : '🧍';
+  const hp = char?.hp ?? 0, hpMax = char?.hpMax ?? 1;
+  const san = char?.san ?? 0, sanMax = char?.sanMax ?? 1;
+  const mp = char?.mp ?? 0, mpMax = char?.mpMax ?? 1;
+
+  div.innerHTML = `
+    <div class="pc-header">
+      <div class="pc-avatar">${avatarHtml}</div>
+      <div style="flex:1;min-width:0">
+        <div class="pc-name">${char?.name || (uData.displayName || uData.handle)}</div>
+        <div class="pc-occ">${char?.occupation || role}</div>
+      </div>
+      <div class="status-dot ${isOnline ? 'online' : 'offline'}"></div>
+    </div>
+    <div class="pc-bars" id="pcbars-${uid}">
+      <div class="pc-bar-row"><span class="pc-bar-lbl">HP</span><div class="pc-bar-track"><div class="pc-bar-fill hp" style="width:${(hp/hpMax*100).toFixed(0)}%" id="pcbar-hp-${uid}"></div></div><span class="pc-bar-val" id="pcval-hp-${uid}">${hp}/${hpMax}</span></div>
+      <div class="pc-bar-row"><span class="pc-bar-lbl">SAN</span><div class="pc-bar-track"><div class="pc-bar-fill san" style="width:${(san/sanMax*100).toFixed(0)}%" id="pcbar-san-${uid}"></div></div><span class="pc-bar-val" id="pcval-san-${uid}">${san}/${sanMax}</span></div>
+      <div class="pc-bar-row"><span class="pc-bar-lbl">MP</span><div class="pc-bar-track"><div class="pc-bar-fill mp" style="width:${(mp/mpMax*100).toFixed(0)}%" id="pcbar-mp-${uid}"></div></div><span class="pc-bar-val" id="pcval-mp-${uid}">${mp}/${mpMax}</span></div>
+    </div>
+  `;
+  return div;
+}
+
+function updatePlayerCardBars(uid, vitals) {
+  const { hp, hpMax, san, sanMax, mp, mpMax } = { ...allSessionChars[uid]?.char, ...vitals };
+  const s = (v, m) => m > 0 ? (v / m * 100).toFixed(0) + '%' : '0%';
+  const setEl = (id, val) => { const el = document.getElementById(id); if (el) el.style.width = val; };
+  const setTxt = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+  setEl(`pcbar-hp-${uid}`,  s(hp, hpMax));
+  setEl(`pcbar-san-${uid}`, s(san, sanMax));
+  setEl(`pcbar-mp-${uid}`,  s(mp, mpMax));
+  setTxt(`pcval-hp-${uid}`,  `${hp}/${hpMax}`);
+  setTxt(`pcval-san-${uid}`, `${san}/${sanMax}`);
+  setTxt(`pcval-mp-${uid}`,  `${mp}/${mpMax}`);
+}
+
+// ── Character sheet ──
+function setupCharSheet() {
+  if (myRole === 'KP') {
+    document.getElementById('kp-char-select-area').style.display = 'block';
+    // KP can select any player's char
+    if (myChar) { viewingChar = myChar; viewingUid = currentUser.uid; viewingCharId = myCharId; }
+  } else {
+    if (myChar) { viewingChar = myChar; viewingUid = currentUser.uid; viewingCharId = myCharId; renderCharSheet(myChar, true); }
+    else { document.getElementById('no-char-msg').style.display = 'block'; }
+  }
+  if (viewingChar) renderCharSheet(viewingChar, viewingUid === currentUser.uid || myRole === 'KP');
+}
+
+function buildKpCharSelect() {
+  const area = document.getElementById('kp-char-select');
+  area.innerHTML = '';
+  Object.entries(allSessionChars).forEach(([uid, info]) => {
+    const btn = document.createElement('button');
+    btn.className = 'kp-char-btn' + (uid === viewingUid ? ' active' : '');
+    btn.textContent = info.char?.name || info.displayName || info.handle;
+    btn.onclick = () => selectViewChar(uid);
+    area.appendChild(btn);
+  });
+}
+
+function selectViewChar(uid) {
+  viewingUid = uid;
+  const info = allSessionChars[uid];
+  viewingChar = info?.char || null;
+  viewingCharId = info?.charId || null;
+  document.querySelectorAll('.kp-char-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.kp-char-btn').forEach(b => { if (b.textContent === (info?.char?.name || info?.displayName)) b.classList.add('active'); });
+  document.querySelectorAll('.player-card').forEach(c => c.classList.remove('selected-char'));
+  const card = document.getElementById('pcard-' + uid);
+  if (card) card.classList.add('selected-char');
+  if (viewingChar) { renderCharSheet(viewingChar, true); document.getElementById('no-char-msg').style.display = 'none'; document.getElementById('sheet-content').style.display = 'block'; }
+  else { document.getElementById('no-char-msg').style.display = 'block'; document.getElementById('sheet-content').style.display = 'none'; }
+}
+
+function renderCharSheet(char, canEdit) {
+  document.getElementById('sheet-content').style.display = 'block';
+  document.getElementById('no-char-msg').style.display = 'none';
+  document.getElementById('char-name-display').textContent = char.name || '—';
+  document.getElementById('char-meta-display').textContent = [char.occupation, char.age ? char.age+'歳' : '', char.gender].filter(Boolean).join(' · ');
+  document.getElementById('san-big').textContent = char.san ?? '—';
+  document.getElementById('san-big-max').textContent = '/ ' + (char.sanMax ?? '—');
+  document.getElementById('hp-val').textContent  = char.hp  ?? '—';
+  document.getElementById('san-val').textContent = char.san ?? '—';
+  document.getElementById('mp-val').textContent  = char.mp  ?? '—';
+  document.getElementById('hp-max-display').textContent  = '最大: ' + (char.hpMax  ?? '—');
+  document.getElementById('san-max-display').textContent = '最大: ' + (char.sanMax ?? '—');
+  document.getElementById('mp-max-display').textContent  = '最大: ' + (char.mpMax  ?? '—');
+  // Enable/disable buttons
+  ['hp-minus','hp-plus','san-minus','san-plus','mp-minus','mp-plus'].forEach(id => { const el = document.getElementById(id); if (el) el.disabled = !canEdit; });
+
+  // Stats
+  const sg = document.getElementById('stats-grid'); sg.innerHTML = '';
+  [['STR',char.str],['CON',char.con],['POW',char.pow],['DEX',char.dex],['APP',char.app],['SIZ',char.siz],['INT',char.int],['EDU',char.edu],['幸運',char.luck],['DB',char.db]].forEach(([n,v]) => {
+    const d = document.createElement('div'); d.className = 'stat-box';
+    const half = typeof v === 'number' ? Math.floor(v/2) : '—';
+    const fifth = typeof v === 'number' ? Math.floor(v/5) : '—';
+    d.innerHTML = `<div class="s-name">${n}</div><div class="s-val">${v ?? '—'}</div><div class="s-sub">${typeof v==='number'?`${half}/${fifth}`:''}</div>`;
+    d.title = `半値: ${half} / 1/5: ${fifth}`;
+    if (typeof v === 'number') d.onclick = () => rollStat(n, v);
+    sg.appendChild(d);
+  });
+
+  // Skills
+  const skgrid = document.getElementById('skills-grid'); skgrid.innerHTML = '';
+  if (char.skills) {
+    Object.entries(char.skills).sort((a,b) => b[1].total - a[1].total).forEach(([name, v]) => {
+      const d = document.createElement('div'); d.className = 'skill-item';
+      d.innerHTML = `<span class="sk-name">${name}</span><span class="sk-val">${v.total}</span>`;
+      d.onclick = () => rollSkill(name, v.total);
+      skgrid.appendChild(d);
+    });
+  }
+}
+
+function refreshVitalsDisplay() {
+  if (!viewingChar) return;
+  document.getElementById('hp-val').textContent  = viewingChar.hp;
+  document.getElementById('san-val').textContent = viewingChar.san;
+  document.getElementById('mp-val').textContent  = viewingChar.mp;
+  document.getElementById('san-big').textContent = viewingChar.san;
+}
+
+// ── Vitals change ──
+window.changeVital = async (type, delta) => {
+  if (!viewingChar || !viewingUid) return;
+  const maxKey = type + 'Max';
+  viewingChar[type] = Math.max(0, Math.min(viewingChar[maxKey] ?? 99, (viewingChar[type] ?? 0) + delta));
+  refreshVitalsDisplay();
+  // Write to session/vitals/{uid} for live sync
+  await update(ref(db, `sessions/${sessionCode}/vitals/${viewingUid}`), { [type]: viewingChar[type] });
+  // Also update user's character
+  if (viewingCharId) await update(ref(db, `users/${viewingUid}/characters/${viewingCharId}`), { [type]: viewingChar[type] });
+};
+
+// ── Tabs ──
+window.switchTab = (tab, btn) => {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  btn.classList.add('active');
+};
+
+window.switchPanelTab = (tab, btn) => {
+  document.querySelectorAll('.panel-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('panel-chat').style.display = tab === 'chat' ? 'flex' : 'none';
+  document.getElementById('panel-notes').style.display = tab === 'notes' ? 'block' : 'none';
+  if (tab === 'chat') document.getElementById('chat-input-area') && null;
+};
+
+// ── Dice ──
+const resultLabels = { critical:{text:'★ クリティカル！',cls:'critical'}, extreme:{text:'◆ 超成功',cls:'critical'}, hard:{text:'▲ 困難成功',cls:'success'}, success:{text:'✓ 成功',cls:'success'}, failure:{text:'✗ 失敗',cls:'failure'}, fumble:{text:'💀 ファンブル！',cls:'fumble'} };
+
+function getCheckResult(roll, val) {
+  if (roll === 1) return 'critical';
+  if (roll >= 96) return 'fumble';
+  if (roll <= Math.floor(val/5)) return 'extreme';
+  if (roll <= Math.floor(val/2)) return 'hard';
+  if (roll <= val) return 'success';
+  return 'failure';
+}
+
+function nowTime() { const d = new Date(); return d.getHours() + ':' + String(d.getMinutes()).padStart(2,'0'); }
+
+window.rollDice = (sides, count) => {
+  const btn = event.currentTarget;
+  btn.classList.add('rolling'); setTimeout(() => btn.classList.remove('rolling'), 350);
+  let total = 0; for (let i=0; i<count; i++) total += Math.floor(Math.random()*sides)+1;
+  showResultLocal(`${count}D${sides}`, total, sides, null);
+  pushRoll(`${count}D${sides}`, total, null);
+};
+
+window.rollSkillCheck = () => {
+  const val  = parseInt(document.getElementById('sc-val').value)  || 50;
+  const name = document.getElementById('sc-name').value || '技能';
+  const roll = Math.floor(Math.random()*100)+1;
+  const result = getCheckResult(roll, val);
+  showResultLocal(`${name} [${val}]`, roll, 100, result);
+  pushRoll(`${name} [${val}]`, roll, result);
+};
+
+function rollStat(name, val) {
+  switchTab('dice', document.querySelectorAll('.nav-tab')[1]);
+  const roll = Math.floor(Math.random()*100)+1;
+  const result = getCheckResult(roll, val);
+  showResultLocal(`${name} [${val}]`, roll, 100, result);
+  pushRoll(`${name} [${val}]`, roll, result);
+}
+
+function rollSkill(name, val) {
+  switchTab('dice', document.querySelectorAll('.nav-tab')[1]);
+  const roll = Math.floor(Math.random()*100)+1;
+  const result = getCheckResult(roll, val);
+  showResultLocal(`${name} [${val}]`, roll, 100, result);
+  pushRoll(`${name} [${val}]`, roll, result);
+}
+
+function showResultLocal(label, num, sides, result) {
+  document.querySelector('.r-dice').textContent = label;
+  const numEl = document.getElementById('r-num');
+  numEl.textContent = num; numEl.style.color = ''; numEl.style.textShadow = '';
+  const labelEl = document.getElementById('r-label');
+  if (result && resultLabels[result]) {
+    const rl = resultLabels[result]; labelEl.textContent = rl.text; labelEl.className = 'r-label ' + rl.cls;
+    if (result==='critical'||result==='extreme') numEl.style.textShadow='0 0 25px rgba(255,215,0,0.8)';
+    if (result==='fumble') { numEl.style.textShadow='0 0 25px rgba(255,68,68,0.8)'; numEl.style.color='var(--red-glow)'; }
+  } else { labelEl.textContent = `1〜${sides}`; labelEl.className = 'r-label'; }
+  numEl.style.animation='none'; numEl.offsetHeight; numEl.style.animation='fadeIn 0.3s ease';
+}
+
+function pushRoll(what, num, result) {
+  const who = viewingChar?.name || userData?.displayName || userData?.handle || '？';
+  push(ref(db, `sessions/${sessionCode}/rolls`), { who, what, num, result, time: nowTime(), ts: Date.now() });
+}
+
+function listenRolls() {
+  const hist = document.getElementById('roll-history');
+  onChildAdded(ref(db, `sessions/${sessionCode}/rolls`), snap => {
+    const { who, what, num, result, time } = snap.val();
+    // History
+    const labelMap = { critical:'クリティカル', extreme:'超成功', hard:'困難成功', success:'成功', failure:'失敗', fumble:'ファンブル' };
+    const clsMap   = { critical:'critical', extreme:'critical', hard:'success', success:'success', failure:'failure', fumble:'fumble' };
+    const item = document.createElement('div'); item.className = 'h-item';
+    item.innerHTML = `<span class="h-who">${who}</span><span class="h-what">${what}</span><span class="h-res">${num}</span>${result?`<span class="h-tag ${clsMap[result]||''}">${labelMap[result]||''}</span>`:''}<span class="h-time">${time}</span>`;
+    hist.insertBefore(item, hist.firstChild);
+    // Chat
+    const ltext = { critical:'★ クリティカル！', extreme:'◆ 超成功', hard:'▲ 困難成功', success:'✓ 成功', failure:'✗ 失敗', fumble:'💀 ファンブル！' };
+    addChatMessage('dice', '🎲 ダイスロール', `${who} — ${what} → ${num} ${result ? ltext[result]||'' : ''}`, time);
+  });
+}
+
+// ── Chat ──
+function listenChat() {
+  const chatArea = document.getElementById('panel-chat');
+  chatArea.innerHTML = '';
+  onChildAdded(ref(db, `sessions/${sessionCode}/chat`), snap => {
+    const { who, text, type, time } = snap.val();
+    addChatMessage(type||'player', who, text, time);
+  });
+}
+
+function addChatMessage(type, who, text, time) {
+  const msgs = document.getElementById('panel-chat');
+  const msg = document.createElement('div'); msg.className = `chat-msg ${type}`;
+  const icon = type==='gm'?'🕯️ ':type==='system'?'🔔 ':type==='dice'?'':'';
+  msg.innerHTML = `<div class="msg-who">${icon}${who}</div><div class="msg-text">${text}</div><div class="msg-time">${time}</div>`;
+  msgs.appendChild(msg); msgs.scrollTop = msgs.scrollHeight;
+}
+
+function postSystemMessage(text) {
+  push(ref(db, `sessions/${sessionCode}/chat`), { who:'システム', text, type:'system', time: nowTime(), ts: Date.now() });
+}
+
+window.handleChatKey = e => { if (e.key==='Enter'&&!e.shiftKey) { e.preventDefault(); sendChat(); } };
+window.sendChat = () => {
+  const input = document.getElementById('chat-input');
+  const text = input.value.trim(); if (!text) return;
+  const who = userData?.displayName || userData?.handle || '？';
+  const type = myRole === 'KP' ? 'gm' : 'player';
+  push(ref(db, `sessions/${sessionCode}/chat`), { who, text, type, time: nowTime(), ts: Date.now() });
+  input.value = '';
+};
+
+// ── Timeline ──
+function listenTimeline() {
+  onChildAdded(ref(db, `sessions/${sessionCode}/timeline`), snap => {
+    const { text, time, imp } = snap.val();
+    const tl = document.getElementById('timeline');
+    const item = document.createElement('div'); item.className = 'tl-event' + (imp ? ' imp' : '');
+    item.innerHTML = `<div class="tl-time">${time}</div><div class="tl-text">${text}</div>`;
+    tl.appendChild(item);
+  });
+}
+
+window.addTimeline = () => {
+  const input = document.getElementById('tl-input');
+  const text = input.value.trim(); if (!text) return;
+  push(ref(db, `sessions/${sessionCode}/timeline`), { text, time: nowTime(), imp: false, ts: Date.now() });
+  input.value = '';
+};
+
+// ── Clues ──
+function listenClues() {
+  onValue(ref(db, `sessions/${sessionCode}/clues`), snap => {
+    const grid = document.getElementById('clues-grid'); grid.innerHTML = '';
+    if (!snap.exists()) return;
+    Object.entries(snap.val()).forEach(([id, clue]) => {
+      const d = document.createElement('div'); d.className = 'clue-card';
+      d.innerHTML = `<h4>📜 ${clue.title}</h4><p>${clue.desc}</p>`;
+      grid.appendChild(d);
+    });
+  });
+}
+
+window.addClue = async () => {
+  const title = prompt('手掛かりのタイトル：'); if (!title) return;
+  const desc  = prompt('説明：') || '';
+  await push(ref(db, `sessions/${sessionCode}/clues`), { title, desc, addedAt: Date.now() });
+};
+
+// ── Initiative ──
+function listenInitiative() {
+  onValue(ref(db, `sessions/${sessionCode}/initiative`), snap => {
+    const list = document.getElementById('init-list'); list.innerHTML = '';
+    if (!snap.exists()) return;
+    Object.entries(snap.val()).sort((a,b) => b[1].val - a[1].val).forEach(([id, item]) => {
+      const d = document.createElement('div'); d.className = 'init-item' + (item.active ? ' active-turn' : '');
+      d.innerHTML = `<span class="init-num">${item.val}</span><span class="init-name">${item.name}</span><span class="init-hp" style="color:${item.isNpc?'var(--red-glow)':'var(--hp-color)'}">HP ${item.hp||'?'}</span>`;
+      list.appendChild(d);
+    });
+  });
+}
+
+window.addInitiative = async () => {
+  const name = prompt('名前（キャラ名 or NPC名）：'); if (!name) return;
+  const val  = parseInt(prompt('イニシアチブ値：') || '0');
+  const hp   = prompt('HP（任意）：') || '';
+  const isNpc = !Object.values(allSessionChars).find(c => c.char?.name === name);
+  await push(ref(db, `sessions/${sessionCode}/initiative`), { name, val, hp, isNpc, active: false });
+};
+
+// ── Invite modal ──
+window.openInviteModal = () => {
+  const url = location.origin + location.pathname + '?session=' + sessionCode;
+  document.getElementById('inv-url-val').textContent = url;
+  document.getElementById('inv-code-val').textContent = sessionCode;
+  document.getElementById('inv-handle-input').value = '';
+  document.getElementById('found-user').classList.remove('show');
+  document.getElementById('search-err').classList.remove('show');
+  document.getElementById('invite-suc').classList.remove('show');
+  document.getElementById('invite-modal').classList.add('open');
+};
+window.closeInviteModal = () => document.getElementById('invite-modal').classList.remove('open');
+
+window.copyVal = async (valId, btnId) => {
+  const text = document.getElementById(valId).textContent;
+  await navigator.clipboard.writeText(text).catch(() => {});
+  const btn = document.getElementById(btnId);
+  btn.textContent = '✓'; btn.classList.add('copied');
+  setTimeout(() => { btn.textContent = '📋'; btn.classList.remove('copied'); }, 2000);
+};
+
+window.shareUrl = async () => {
+  const url = document.getElementById('inv-url-val').textContent;
+  if (navigator.share) { try { await navigator.share({ title: '深淵の卓 — セッション招待', text: `招待コード: ${sessionCode}`, url }); } catch(e) {} }
+  else { await navigator.clipboard.writeText(url).catch(() => {}); alert('URLをクリップボードにコピーしました'); }
+};
+
+window.setInvRole = r => {
+  invRole = r;
+  document.getElementById('inv-role-pl').classList.toggle('active', r==='PL');
+  document.getElementById('inv-role-kp').classList.toggle('active', r==='KP');
+};
+
+window.searchUser = async () => {
+  const handle = document.getElementById('inv-handle-input').value.trim().toLowerCase();
+  const errEl = document.getElementById('search-err');
+  const foundEl = document.getElementById('found-user');
+  errEl.classList.remove('show'); foundEl.classList.remove('show');
+  document.getElementById('invite-suc').classList.remove('show');
+  if (!handle) { errEl.textContent = 'ユーザーIDを入力してください'; errEl.classList.add('show'); return; }
+  if (handle === userData.handle) { errEl.textContent = '自分自身は招待できません'; errEl.classList.add('show'); return; }
+  const snap = await get(ref(db, `handles/${handle}`));
+  if (!snap.exists()) { errEl.textContent = 'ユーザーが見つかりません'; errEl.classList.add('show'); return; }
+  const uid = snap.val();
+  const uSnap = await get(ref(db, `users/${uid}`));
+  if (!uSnap.exists()) { errEl.textContent = 'ユーザーが見つかりません'; errEl.classList.add('show'); return; }
+  foundUserData = { uid, ...uSnap.val() };
+  document.getElementById('found-display-name').textContent = foundUserData.displayName || foundUserData.handle;
+  document.getElementById('found-handle-text').textContent = '@' + foundUserData.handle;
+  foundEl.classList.add('show');
+};
+
+window.sendInvite = async () => {
+  if (!foundUserData) return;
+  const btn = document.getElementById('send-invite-btn'); btn.disabled = true;
+  await set(ref(db, `invites/${foundUserData.uid}/${sessionCode}`), {
+    from: userData.handle, sessionName: sessionData.name || sessionCode,
+    role: invRole, status: 'pending', createdAt: Date.now()
+  });
+  document.getElementById('invite-suc').textContent = `@${foundUserData.handle} に招待を送りました！`;
+  document.getElementById('invite-suc').style.display = 'block';
+  document.getElementById('found-user').classList.remove('show');
+  document.getElementById('inv-handle-input').value = '';
+  foundUserData = null; btn.disabled = false;
+};
+</script>
+</body>
+</html>
