@@ -793,7 +793,10 @@ onAuthStateChanged(auth, async user => {
   listenTimeline();
   listenClues();
   listenInitiative();
-  postSystemMessage(`${userData.displayName || userData.handle} が接続しました`);
+  const connectName = myRole === 'KP'
+    ? `KP（${userData.handle}）`
+    : (myChar?.name || userData.displayName || userData.handle);
+  postSystemMessage(`${connectName} が接続しました`);
   hideLoading();
 });
 
@@ -872,7 +875,10 @@ function buildPlayerCard(uid, uData, char, role) {
       <div class="pc-avatar">${avatarHtml}</div>
       <div style="flex:1;min-width:0">
         <div class="pc-name">${char?.name || (uData.displayName || uData.handle)}</div>
-        <div class="pc-occ">${char?.occupation || role}</div>
+        <div class="pc-occ" style="display:flex;gap:4px;align-items:center">
+          <span>${char?.occupation || ''}</span>
+          <span style="color:var(--text-dim);font-size:9px">${role === 'KP' ? '🕯️KP' : '🧍PL'} @${uData.handle}</span>
+        </div>
       </div>
       <div class="status-dot ${isOnline ? 'online' : 'offline'}"></div>
     </div>
@@ -1074,7 +1080,10 @@ function showResultLocal(label, num, sides, result) {
 }
 
 function pushRoll(what, num, result) {
-  const who = viewingChar?.name || userData?.displayName || userData?.handle || '？';
+  const handle = userData?.handle || '？';
+  const who = myRole === 'KP'
+    ? `KP（${handle}）`
+    : (viewingChar?.name || userData?.displayName || handle);
   push(ref(db, `sessions/${sessionCode}/rolls`), { who, what, num, result, time: nowTime(), ts: Date.now() });
 }
 
@@ -1126,7 +1135,13 @@ window.handleChatKey = e => { if (e.key==='Enter'&&!e.shiftKey) { e.preventDefau
 window.sendChat = () => {
   const input = document.getElementById('chat-input');
   const text = input.value.trim(); if (!text) return;
-  const who = userData?.displayName || userData?.handle || '？';
+  const handle = userData?.handle || '？';
+  let who;
+  if (myRole === 'KP') {
+    who = `KP（${handle}）`;
+  } else {
+    who = myChar?.name || userData?.displayName || handle;
+  }
   const type = myRole === 'KP' ? 'gm' : 'player';
   push(ref(db, `sessions/${sessionCode}/chat`), { who, text, type, time: nowTime(), ts: Date.now() });
   input.value = '';
