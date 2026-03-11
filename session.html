@@ -84,7 +84,7 @@ header {
 .mobile-nav-btn .mn-icon { font-size: 18px; }
 .mobile-nav-btn.active { color: var(--gold); }
 .mobile-nav-btn { position: relative; }
-.mnav-badge { position: absolute; top: 6px; right: 6px; background: #ef4444; color: #fff; font-size: 9px; font-family: sans-serif; font-weight: 700; border-radius: 999px; padding: 1px 4px; min-width: 14px; text-align: center; line-height: 14px; display: none; }
+.mnav-badge { position: absolute; top: 5px; right: 5px; background: #ef4444; border-radius: 50%; width: 8px; height: 8px; display: none; box-shadow: 0 0 4px rgba(239,68,68,0.6); }
 .mnav-badge.show { display: block; }
 .mobile-nav-btn.active .mn-icon { filter: drop-shadow(0 0 4px rgba(201,168,76,0.6)); }
 
@@ -1955,12 +1955,12 @@ function listenChannel(channelId) {
       renderMsg(msg, chatEl);
     }
     // チャットパネルが表示されていないとき（スマホ）は未読バッジを増やす
-    if (msg.who !== 'システム' || msg.type !== 'system') {
+    if (msg.who !== 'システム' && msg.type !== 'system') {
       const chatVisible = currentMobileView === 'chat' || window.innerWidth > 640;
       if (!chatVisible) {
         chatUnreadCount++;
         const badge = document.getElementById('chat-unread-badge');
-        if (badge) { badge.textContent = chatUnreadCount > 99 ? '99+' : chatUnreadCount; badge.classList.add('show'); }
+        if (badge) { badge.classList.add('show'); }
       }
     }
   });
