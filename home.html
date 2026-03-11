@@ -317,16 +317,25 @@ header {
 
 <header>
   <div class="header-logo">TRPG Table</div>
-  <div class="header-right">
-    <div class="user-badge">
+  <div class="header-right" style="position:relative">
+    <div class="user-badge" id="user-badge-btn" onclick="toggleUserPopover()" style="cursor:pointer;user-select:none">
       <div class="user-avatar" id="header-avatar">？</div>
       <div>
         <div class="user-name" id="header-name">読込中…</div>
         <div class="user-handle" id="header-handle"></div>
       </div>
+      <span style="font-size:10px;color:var(--text-dim);margin-left:2px">▾</span>
     </div>
-    <button class="theme-toggle" id="theme-toggle-btn" onclick="toggleTheme()">☀️ ライト</button>
-    <button class="logout-btn" onclick="doLogout()">ログアウト</button>
+    <!-- ポップオーバーメニュー -->
+    <div id="user-popover" style="display:none;position:absolute;top:calc(100% + 8px);right:0;background:var(--bg-card);border:1px solid var(--border);border-radius:12px;min-width:160px;box-shadow:0 8px 32px rgba(0,0,0,0.5);z-index:300;overflow:hidden;animation:fadeIn 0.15s ease">
+      <div id="popover-user-info" style="padding:12px 16px;border-bottom:1px solid var(--border)">
+        <div style="font-size:13px;color:var(--text-primary);font-weight:600" id="popover-name">—</div>
+        <div style="font-size:11px;color:var(--text-dim)" id="popover-handle">—</div>
+      </div>
+      <button onclick="openSettingsModal();closeUserPopover()" style="width:100%;padding:11px 16px;background:transparent;border:none;color:var(--text-secondary);cursor:pointer;font-family:'Noto Serif JP',serif;font-size:13px;text-align:left;transition:background 0.15s" onmouseenter="this.style.background='var(--bg-hover)'" onmouseleave="this.style.background='transparent'">⚙️ 設定</button>
+      <button onclick="toggleTheme();updatePopoverThemeBtn()" style="width:100%;padding:11px 16px;background:transparent;border:none;color:var(--text-secondary);cursor:pointer;font-family:'Noto Serif JP',serif;font-size:13px;text-align:left;transition:background 0.15s" id="popover-theme-btn" onmouseenter="this.style.background='var(--bg-hover)'" onmouseleave="this.style.background='transparent'">☀️ ライトモード</button>
+      <button onclick="doLogout()" style="width:100%;padding:11px 16px;background:transparent;border:none;color:#ff9999;cursor:pointer;font-family:'Noto Serif JP',serif;font-size:13px;text-align:left;border-top:1px solid var(--border);transition:background 0.15s" onmouseenter="this.style.background='var(--bg-hover)'" onmouseleave="this.style.background='transparent'">🚪 ログアウト</button>
+    </div>
   </div>
 </header>
 
@@ -467,6 +476,48 @@ header {
   </div>
 </div>
 
+<!-- SETTINGS MODAL -->
+<div class="modal-overlay" id="settings-modal">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-header">
+      <span class="modal-title">⚙️ ユーザー設定</span>
+      <button class="modal-close" onclick="closeSettingsModal()">✕</button>
+    </div>
+    <div class="modal-body" style="padding:20px;display:flex;flex-direction:column;gap:20px">
+      <!-- 表示名変更 -->
+      <div>
+        <div class="section-label" style="margin-bottom:8px">表示名</div>
+        <div style="display:flex;gap:8px">
+          <input class="form-input" id="settings-displayname" type="text" placeholder="表示名" style="flex:1">
+          <button class="sc-btn" onclick="saveDisplayName()">変更</button>
+        </div>
+        <div id="settings-displayname-msg" style="font-size:11px;color:var(--gold);margin-top:4px;min-height:16px"></div>
+      </div>
+      <!-- パスワード変更（メール認証のみ） -->
+      <div id="settings-password-section">
+        <div class="section-label" style="margin-bottom:8px">パスワード変更</div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <input class="form-input" id="settings-current-pw" type="password" placeholder="現在のパスワード">
+          <input class="form-input" id="settings-new-pw" type="password" placeholder="新しいパスワード（6文字以上）">
+          <button class="sc-btn" onclick="savePassword()" style="align-self:flex-start">変更</button>
+        </div>
+        <div id="settings-pw-msg" style="font-size:11px;margin-top:4px;min-height:16px"></div>
+      </div>
+      <!-- テーマ -->
+      <div>
+        <div class="section-label" style="margin-bottom:8px">テーマ</div>
+        <button class="sc-btn" id="settings-theme-btn" onclick="toggleTheme();updateSettingsThemeBtn()">☀️ ライトモードに切替</button>
+      </div>
+      <!-- アカウント削除 -->
+      <div style="border-top:1px solid var(--border);padding-top:16px">
+        <div class="section-label" style="margin-bottom:8px;color:#ff9999">危険な操作</div>
+        <button onclick="confirmDeleteAccount()" style="background:transparent;border:1px solid rgba(255,100,100,0.4);border-radius:8px;padding:8px 14px;color:#ff9999;cursor:pointer;font-family:'Noto Serif JP',serif;font-size:12px;transition:all 0.2s" onmouseenter="this.style.background='rgba(255,100,100,0.08)'" onmouseleave="this.style.background='transparent'">🗑 アカウントを削除する</button>
+        <div id="settings-delete-msg" style="font-size:11px;color:#ff9999;margin-top:4px;min-height:16px"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- IMPORT MODAL -->
 <div class="modal-overlay" id="import-modal">
   <div class="modal">
@@ -579,7 +630,7 @@ header {
 
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-import { getAuth, signOut, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import { getAuth, signOut, onAuthStateChanged, updatePassword, reauthenticateWithCredential, EmailAuthProvider, deleteUser } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import { getDatabase, ref, get, set, push, update, onValue } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
 import { getSkillCategory } from './skills-config.js';
 
@@ -659,6 +710,8 @@ onAuthStateChanged(auth, async user => {
 
     userData = snap.val();
     document.getElementById('header-name').textContent = userData.displayName || userData.handle;
+  document.getElementById('popover-name').textContent = userData.displayName || userData.handle;
+  document.getElementById('popover-handle').textContent = '@' + (userData.handle || '');
     document.getElementById('header-handle').textContent = '@' + userData.handle;
     document.getElementById('header-avatar').textContent = (userData.displayName || userData.handle)[0].toUpperCase();
 
@@ -673,6 +726,94 @@ onAuthStateChanged(auth, async user => {
     showFatalError(`エラーが発生しました: ${e.message}`);
   }
 });
+
+// ── User popover ──
+window.toggleUserPopover = () => {
+  const p = document.getElementById('user-popover');
+  const isOpen = p.style.display !== 'none';
+  p.style.display = isOpen ? 'none' : 'block';
+  if (!isOpen) updatePopoverThemeBtn();
+};
+window.closeUserPopover = () => { document.getElementById('user-popover').style.display = 'none'; };
+document.addEventListener('click', e => {
+  if (!document.getElementById('user-badge-btn')?.contains(e.target)) closeUserPopover();
+});
+window.updatePopoverThemeBtn = () => {
+  const isLight = document.documentElement.classList.contains('light');
+  const btn = document.getElementById('popover-theme-btn');
+  if (btn) btn.textContent = isLight ? '🌙 ダークモードに切替' : '☀️ ライトモードに切替';
+};
+
+// ── Settings modal ──
+window.openSettingsModal = () => {
+  const dn = userData?.displayName || '';
+  document.getElementById('settings-displayname').value = dn;
+  document.getElementById('settings-displayname-msg').textContent = '';
+  document.getElementById('settings-pw-msg').textContent = '';
+  document.getElementById('settings-delete-msg').textContent = '';
+  document.getElementById('settings-current-pw').value = '';
+  document.getElementById('settings-new-pw').value = '';
+  // Googleログインはパスワード変更非表示
+  const isGoogle = currentUser?.providerData?.some(p => p.providerId === 'google.com');
+  document.getElementById('settings-password-section').style.display = isGoogle ? 'none' : 'block';
+  updateSettingsThemeBtn();
+  document.getElementById('settings-modal').classList.add('open');
+};
+window.closeSettingsModal = () => document.getElementById('settings-modal').classList.remove('open');
+
+window.updateSettingsThemeBtn = () => {
+  const isLight = document.documentElement.classList.contains('light');
+  const btn = document.getElementById('settings-theme-btn');
+  if (btn) btn.textContent = isLight ? '🌙 ダークモードに切替' : '☀️ ライトモードに切替';
+};
+
+window.saveDisplayName = async () => {
+  const name = document.getElementById('settings-displayname').value.trim();
+  const msg = document.getElementById('settings-displayname-msg');
+  if (!name) { msg.style.color = '#ff9999'; msg.textContent = '表示名を入力してください'; return; }
+  await update(ref(db, `users/${currentUser.uid}`), { displayName: name });
+  userData.displayName = name;
+  document.getElementById('header-name').textContent = name;
+  document.getElementById('popover-name').textContent = name;
+  msg.style.color = 'var(--gold)';
+  msg.textContent = '✓ 変更しました';
+};
+
+window.savePassword = async () => {
+  const currentPw = document.getElementById('settings-current-pw').value;
+  const newPw = document.getElementById('settings-new-pw').value;
+  const msg = document.getElementById('settings-pw-msg');
+  msg.textContent = '';
+  if (!currentPw || !newPw) { msg.style.color = '#ff9999'; msg.textContent = '両方入力してください'; return; }
+  if (newPw.length < 6) { msg.style.color = '#ff9999'; msg.textContent = '6文字以上で入力してください'; return; }
+  try {
+    const handle = userData?.handle || '';
+    const email = `${handle}@cthulhu.internal`;
+    const cred = EmailAuthProvider.credential(email, currentPw);
+    await reauthenticateWithCredential(currentUser, cred);
+    await updatePassword(currentUser, newPw);
+    msg.style.color = 'var(--gold)';
+    msg.textContent = '✓ パスワードを変更しました';
+    document.getElementById('settings-current-pw').value = '';
+    document.getElementById('settings-new-pw').value = '';
+  } catch(e) {
+    msg.style.color = '#ff9999';
+    msg.textContent = e.code === 'auth/wrong-password' ? '現在のパスワードが違います' : 'エラーが発生しました';
+  }
+};
+
+window.confirmDeleteAccount = async () => {
+  const msg = document.getElementById('settings-delete-msg');
+  const ok = confirm('本当にアカウントを削除しますか？\nキャラクターデータも全て失われます。この操作は取り消せません。');
+  if (!ok) return;
+  try {
+    await update(ref(db, `users/${currentUser.uid}`), { deleted: true });
+    await deleteUser(currentUser);
+    window.location.href = 'index.html';
+  } catch(e) {
+    msg.textContent = '削除に失敗しました。再ログインしてからお試しください。';
+  }
+};
 
 window.doLogout = async () => { await signOut(auth); window.location.href = 'index.html'; };
 
@@ -799,12 +940,32 @@ function loadSessionHistory() {
     const container = document.getElementById('session-history');
     container.innerHTML = '';
     if (!snap.exists()) { container.innerHTML = '<div style="font-size:12px;color:var(--text-dim);font-style:italic;padding:8px 0">参加履歴はありません</div>'; return; }
-    Object.entries(snap.val()).sort((a,b)=>(b[1].joinedAt||0)-(a[1].joinedAt||0)).slice(0,5).forEach(([code, info]) => {
+    const entries = Object.entries(snap.val()).sort((a,b)=>(b[1].joinedAt||0)-(a[1].joinedAt||0)).slice(0,5);
+    entries.forEach(([code, info]) => {
       const item = document.createElement('div');
       item.className = 'history-item';
+      item.id = `history-item-${code}`;
       item.onclick = () => { openEnterSession(code); };
-      item.innerHTML = `<div><div class="h-name">${info.name||code}</div><div class="h-code">${code}</div></div><span class="h-role ${(info.role||'PL').toLowerCase()}">${info.role||'PL'}</span>`;
+      const nameEl = document.createElement('div');
+      nameEl.className = 'h-name';
+      nameEl.textContent = info.name || code;
+      item.innerHTML = '';
+      const left = document.createElement('div');
+      left.appendChild(nameEl);
+      const codeEl = document.createElement('div');
+      codeEl.className = 'h-code';
+      codeEl.textContent = code;
+      left.appendChild(codeEl);
+      item.appendChild(left);
+      const roleEl = document.createElement('span');
+      roleEl.className = `h-role ${(info.role||'PL').toLowerCase()}`;
+      roleEl.textContent = info.role || 'PL';
+      item.appendChild(roleEl);
       container.appendChild(item);
+      // sessions/{code}/name をリアルタイム監視して表示を更新
+      onValue(ref(db, `sessions/${code}/name`), nameSnap => {
+        if (nameSnap.exists()) nameEl.textContent = nameSnap.val();
+      });
     });
   });
 }
