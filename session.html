@@ -75,7 +75,7 @@ header {
 .header-btn.gold:hover { background: rgba(201,168,76,0.14); }
 
 /* ── LAYOUT ── */
-.app-body { position: fixed; top: 52px; left: 0; right: 0; bottom: 0; display: grid; grid-template-columns: 240px 1fr 280px; z-index: 1; overflow: hidden; }
+.app-body { position: fixed; top: 52px; left: 0; right: 0; bottom: 0; display: grid; grid-template-columns: 240px 1fr var(--right-panel-w, 280px); z-index: 1; overflow: hidden; }
 
 /* ── MOBILE NAV ── */
 .mobile-nav { display: none; position: fixed; bottom: 0; left: 0; right: 0; z-index: 110; background: rgba(11,9,7,0.97); border-top: 1px solid var(--border); backdrop-filter: blur(10px); }
@@ -273,8 +273,20 @@ header {
 .add-clue-btn:hover { border-color: var(--gold-dim); color: var(--gold-dim); }
 
 /* ── RIGHT PANEL ── */
-.right-panel { background: var(--bg-dark); border-left: 1px solid var(--border); display: flex; flex-direction: column; min-height: 0; height: 100%; overflow: hidden; }
-.panel-tabs { display: flex; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.right-panel { background: var(--bg-dark); border-left: 1px solid var(--border); display: flex; flex-direction: column; min-height: 0; height: 100%; overflow: hidden; position: relative; }
+.panel-resize-handle { position: absolute; left: 0; top: 0; bottom: 0; width: 5px; cursor: col-resize; z-index: 10; background: transparent; transition: background 0.15s; }
+.panel-resize-handle:hover, .panel-resize-handle.dragging { background: rgba(201,168,76,0.3); }
+/* チャンネル選択行 */
+.channel-bar { display: flex; align-items: center; border-bottom: 1px solid var(--border); flex-shrink: 0; min-height: 36px; background: var(--bg-dark); }
+.channel-tabs { display: flex; overflow-x: auto; flex: 1; scrollbar-width: none; }
+.channel-tabs::-webkit-scrollbar { display: none; }
+.channel-tab { padding: 8px 10px; background: transparent; border: none; color: var(--text-dim); cursor: pointer; font-family: 'Noto Serif JP', serif; font-size: 11px; white-space: nowrap; transition: all 0.15s; border-bottom: 2px solid transparent; flex-shrink: 0; }
+.channel-tab:hover { color: var(--text-secondary); }
+.channel-tab.active { color: var(--gold); border-bottom-color: var(--gold); }
+.channel-add-btn { width: 30px; height: 30px; background: transparent; border: none; color: var(--text-dim); cursor: pointer; font-size: 16px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; transition: color 0.15s; margin-right: 4px; }
+.channel-add-btn:hover { color: var(--gold); }
+/* 旧タブ（メモ切り替え用に残す） */
+.panel-tabs { display: none; }
 .panel-tab { flex: 1; padding: 10px 6px; background: transparent; border: none; color: var(--text-dim); cursor: pointer; font-family: 'Noto Serif JP', serif; font-size: 11px; transition: all 0.2s; border-bottom: 2px solid transparent; }
 .panel-tab:hover { color: var(--text-secondary); }
 .panel-tab.active { color: var(--gold); border-bottom-color: var(--gold); }
@@ -298,6 +310,25 @@ header {
 .send-btn:hover { background: rgba(201,168,76,0.2); }
 .notes-area { flex: 1; background: transparent; border: none; color: var(--text-primary); font-family: 'Noto Serif JP', serif; font-size: 12px; padding: 12px; resize: none; line-height: 1.7; }
 .notes-area:focus { outline: none; }
+/* チャンネルモーダル */
+.ch-member-list { display: flex; flex-direction: column; gap: 6px; max-height: 200px; overflow-y: auto; margin-top: 6px; }
+.ch-member-item { display: flex; align-items: center; gap: 8px; padding: 6px 8px; background: var(--bg-mid); border-radius: 6px; font-size: 13px; color: var(--text-secondary); cursor: pointer; border: 1px solid transparent; transition: all 0.15s; }
+.ch-member-item:hover { border-color: var(--border-glow); }
+.ch-member-item.selected { border-color: var(--gold-dim); background: rgba(201,168,76,0.08); color: var(--text-primary); }
+.ch-member-item input[type=checkbox] { accent-color: var(--gold); width: 14px; height: 14px; }
+/* KP設定 */
+.kp-player-row { display: flex; align-items: center; gap: 8px; padding: 7px 10px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 7px; }
+.kp-player-name { flex: 1; font-size: 13px; color: var(--text-secondary); }
+.kp-role-select { background: var(--bg-mid); border: 1px solid var(--border); border-radius: 6px; color: var(--text-primary); font-family: 'Noto Serif JP', serif; font-size: 12px; padding: 3px 8px; cursor: pointer; }
+.kp-role-select:focus { outline: none; border-color: var(--gold-dim); }
+.kp-ch-row { display: flex; align-items: center; gap: 6px; padding: 6px 8px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 7px; }
+.kp-ch-name-input { flex: 1; background: transparent; border: none; color: var(--text-primary); font-family: 'Noto Serif JP', serif; font-size: 13px; padding: 2px 4px; }
+.kp-ch-name-input:focus { outline: none; border-bottom: 1px solid var(--gold-dim); }
+.kp-ch-save-btn { font-size: 11px; background: none; border: 1px solid var(--border); border-radius: 5px; color: var(--text-dim); cursor: pointer; padding: 2px 7px; font-family: 'Noto Serif JP', serif; transition: all 0.15s; }
+.kp-ch-save-btn:hover { border-color: var(--gold-dim); color: var(--gold); }
+.kp-ch-del-btn { font-size: 13px; background: none; border: none; color: var(--text-dim); cursor: pointer; padding: 2px 4px; transition: color 0.15s; }
+.kp-ch-del-btn:hover { color: var(--red-glow); }
+.ch-lock-icon { font-size: 10px; color: var(--text-dim); }
 .notes-area::placeholder { color: var(--text-dim); }
 
 /* Modals */
@@ -510,8 +541,8 @@ header {
   <div style="flex:1"></div>
   <button class="header-btn tablet-only" id="sidebar-toggle-btn" onclick="toggleTabletSidebar()" title="参加者">👥</button>
   <button class="theme-toggle" id="theme-toggle-btn" onclick="toggleTheme()">☀️ ライト</button>
-  <button class="header-btn gold" onclick="openInviteModal()">📨 招待</button>
-  <button class="header-btn" onclick="goHome()">🏠 ホーム</button>
+  <button class="header-btn gold" onclick="openInviteModal()">📨 <span>招待</span></button>
+  <button class="header-btn" onclick="goHome()">🏠 <span>ホーム</span></button>
 </header>
 
 <!-- APP BODY -->
@@ -635,6 +666,9 @@ header {
 
     <!-- SESSION TAB -->
     <div class="tab-panel" id="tab-session">
+      <div id="kp-settings-btn-wrap" style="display:none;margin-bottom:14px">
+        <button class="sc-btn" style="width:100%" onclick="openKpSettings()">⚙️ KP設定</button>
+      </div>
       <div class="scene-block">
         <h3>🕯️ 現在のシーン</h3>
         <div id="scene-desc-display" style="color:var(--text-secondary);font-style:italic;font-size:13px;line-height:1.7;margin-bottom:10px">（シーン未設定）</div>
@@ -659,14 +693,21 @@ header {
   </main>
 
   <!-- RIGHT PANEL -->
-  <aside class="right-panel">
-    <div class="panel-tabs">
-      <button class="panel-tab active" onclick="switchPanelTab('chat', this)">チャット</button>
-      <button class="panel-tab" onclick="switchPanelTab('notes', this)">メモ</button>
+  <aside class="right-panel" id="right-panel">
+    <div class="panel-resize-handle" id="panel-resize-handle"></div>
+    <!-- チャンネルバー -->
+    <div class="channel-bar">
+      <div class="channel-tabs" id="channel-tabs"></div>
+      <button class="channel-add-btn" onclick="openCreateChannel()" title="チャンネルを追加">＋</button>
     </div>
-    <div id="panel-chat" class="chat-messages"></div>
+    <!-- メッセージ表示エリア（チャンネルごとに生成） -->
+    <div id="channel-messages-wrap" style="flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden;">
+      <div id="panel-chat" class="chat-messages"></div>
+    </div>
+    <!-- 個人メモ -->
     <textarea id="panel-notes" class="notes-area" style="display:none" placeholder="個人メモ（他の人には見えません）…"></textarea>
-    <div class="chat-input-area">
+    <!-- 入力欄 -->
+    <div class="chat-input-area" id="chat-input-area">
       <textarea class="chat-input" id="chat-input" placeholder="メッセージ… (Enter送信)" onkeydown="handleChatKey(event)"></textarea>
       <button class="send-btn" onclick="sendChat()">↑</button>
     </div>
@@ -735,6 +776,62 @@ header {
         <div class="err-msg" id="search-err"></div>
         <div class="suc-msg" id="invite-suc"></div>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- KP設定モーダル -->
+<div class="modal-overlay" id="kp-settings-modal">
+  <div class="modal-box" style="max-width:480px;width:100%;max-height:80vh;display:flex;flex-direction:column">
+    <div class="modal-header">
+      <span class="modal-title">⚙️ KP設定</span>
+      <button class="modal-close" onclick="closeKpSettings()">✕</button>
+    </div>
+    <div class="modal-body" style="overflow-y:auto;flex:1">
+
+      <!-- セッション名 -->
+      <div style="margin-bottom:20px">
+        <div class="invite-sec-title">セッション名</div>
+        <div style="display:flex;gap:8px;margin-top:6px">
+          <input id="kp-session-name" class="sc-input" type="text" style="flex:1" placeholder="セッション名">
+          <button class="sc-btn" onclick="saveSessionName()">変更</button>
+        </div>
+        <div id="kp-session-name-msg" style="font-size:11px;margin-top:4px;color:var(--gold-dim)"></div>
+      </div>
+
+      <!-- プレイヤーロール -->
+      <div style="margin-bottom:20px">
+        <div class="invite-sec-title">プレイヤーロール</div>
+        <div id="kp-player-list" style="display:flex;flex-direction:column;gap:6px;margin-top:8px"></div>
+      </div>
+
+      <!-- チャンネル管理 -->
+      <div>
+        <div class="invite-sec-title">チャンネル管理</div>
+        <div id="kp-channel-list" style="display:flex;flex-direction:column;gap:6px;margin-top:8px"></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- チャンネル作成モーダル -->
+<div class="modal-overlay" id="channel-modal">
+  <div class="modal-box" style="max-width:400px;width:100%">
+    <div class="modal-header">
+      <span class="modal-title">チャンネルを作成</span>
+      <button class="modal-close" onclick="closeChannelModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group" style="margin-bottom:14px">
+        <label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:5px">チャンネル名</label>
+        <input id="ch-name-input" class="sc-input" type="text" placeholder="例：KP↔田中専用" style="width:100%">
+      </div>
+      <div class="form-group">
+        <label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:5px">参加メンバー（自分は自動で含まれます）</label>
+        <div class="ch-member-list" id="ch-member-list"></div>
+      </div>
+      <button class="sc-btn" style="width:100%;margin-top:16px" onclick="createChannel()">作成</button>
     </div>
   </div>
 </div>
@@ -826,6 +923,7 @@ onAuthStateChanged(auth, async user => {
 
   // Init UI
   setupCharSheet();
+  initChannels();
   listenRolls();
   listenChat();
   listenTimeline();
@@ -835,10 +933,112 @@ onAuthStateChanged(auth, async user => {
     ? `KP（${userData.handle}）`
     : (myChar?.name || userData.displayName || userData.handle);
   postSystemMessage(`${connectName} が接続しました`);
+  // KPボタン表示
+  if (myRole === 'KP') {
+    const kpWrap = document.getElementById('kp-settings-btn-wrap');
+    if (kpWrap) kpWrap.style.display = 'block';
+  }
   hideLoading();
 });
 
 window.goHome = () => { window.location.href = 'home.html'; };
+
+// ── KP設定モーダル ──
+window.openKpSettings = () => {
+  // セッション名をセット
+  document.getElementById('kp-session-name').value = sessionData?.name || '';
+  document.getElementById('kp-session-name-msg').textContent = '';
+
+  // プレイヤーリスト
+  const playerList = document.getElementById('kp-player-list');
+  playerList.innerHTML = '';
+  get(ref(db, `sessions/${sessionCode}/players`)).then(snap => {
+    const players = snap.val() || {};
+    Object.entries(players).forEach(([uid, p]) => {
+      get(ref(db, `users/${uid}`)).then(us => {
+        const u = us.val() || {};
+        const row = document.createElement('div');
+        row.className = 'kp-player-row';
+        row.innerHTML = `
+          <div class="kp-player-name">${u.displayName || u.handle || uid} <span style="font-size:10px;color:var(--text-dim)">@${u.handle||''}</span></div>
+          <select class="kp-role-select" data-uid="${uid}">
+            <option value="PL" ${p.role==='PL'?'selected':''}>PL</option>
+            <option value="KP" ${p.role==='KP'?'selected':''}>KP</option>
+          </select>
+          <button class="kp-ch-save-btn" onclick="savePlayerRole('${uid}', this.previousElementSibling.value)">保存</button>`;
+        // セレクト変更時にdata属性を更新
+        row.querySelector('select').onchange = function() {
+          this.dataset.changed = 'true';
+        };
+        playerList.appendChild(row);
+      });
+    });
+  });
+
+  // チャンネルリスト
+  renderKpChannelList();
+  document.getElementById('kp-settings-modal').classList.add('open');
+};
+
+function renderKpChannelList() {
+  const list = document.getElementById('kp-channel-list');
+  list.innerHTML = '';
+  const DEFAULT_IDS = ['main','info','casual'];
+  Object.values(loadedChannels)
+    .sort((a,b) => (a.id < b.id ? -1 : 1))
+    .forEach(ch => {
+      if (ch.type === 'personal') return; // 個人メモは管理対象外
+      const isDefault = DEFAULT_IDS.includes(ch.id);
+      const lockIcon  = ch.type === 'custom' ? ' 🔒' : '';
+      const row = document.createElement('div');
+      row.className = 'kp-ch-row';
+      row.innerHTML = `
+        <input class="kp-ch-name-input" value="${ch.name}${lockIcon}" data-chid="${ch.id}" data-base="${ch.name}">
+        <button class="kp-ch-save-btn" onclick="saveChannelName('${ch.id}', this.previousElementSibling)">保存</button>
+        ${isDefault ? '' : `<button class="kp-ch-del-btn" onclick="deleteChannel('${ch.id}')" title="削除">🗑</button>`}`;
+      list.appendChild(row);
+    });
+}
+
+window.saveSessionName = () => {
+  const name = document.getElementById('kp-session-name').value.trim();
+  if (!name) return;
+  update(ref(db, `sessions/${sessionCode}`), { name }).then(() => {
+    document.getElementById('kp-session-name-msg').textContent = '✓ 変更しました';
+    document.getElementById('session-name-display').textContent = name;
+    sessionData.name = name;
+  });
+};
+
+window.savePlayerRole = (uid, role) => {
+  update(ref(db, `sessions/${sessionCode}/players/${uid}`), { role }).then(() => {
+    // KPボタン表示状態を更新（自分のロールが変わった場合）
+    if (uid === currentUser?.uid) {
+      myRole = role;
+      const kpWrap = document.getElementById('kp-settings-btn-wrap');
+      if (kpWrap) kpWrap.style.display = role === 'KP' ? 'block' : 'none';
+    }
+  });
+};
+
+window.saveChannelName = (chId, input) => {
+  const raw = input.value.replace(' 🔒','').trim();
+  if (!raw) return;
+  update(ref(db, `sessions/${sessionCode}/channels/${chId}`), { name: raw }).then(() => {
+    input.dataset.base = raw;
+    // タブ名も即時反映
+    renderChannelTabs();
+  });
+};
+
+window.deleteChannel = (chId) => {
+  if (!confirm('このチャンネルを削除しますか？メッセージも削除されます。')) return;
+  set(ref(db, `sessions/${sessionCode}/channels/${chId}`), null);
+  set(ref(db, `sessions/${sessionCode}/channel_msgs/${chId}`), null);
+  if (currentChannelId === chId) switchChannel('main');
+};
+
+window.closeKpSettings = () => document.getElementById('kp-settings-modal').classList.remove('open');
 
 // ── Tablet sidebar drawer ──
 window.toggleTabletSidebar = function() {
@@ -1079,12 +1279,48 @@ window.switchTab = (tab, btn) => {
 };
 
 window.switchPanelTab = (tab, btn) => {
-  document.querySelectorAll('.panel-tab').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  document.getElementById('panel-chat').style.display = tab === 'chat' ? 'flex' : 'none';
-  document.getElementById('panel-notes').style.display = tab === 'notes' ? 'block' : 'none';
-  if (tab === 'chat') document.getElementById('chat-input-area') && null;
+  // 旧API互換（使われていないが念のため）
 };
+
+// ── Panel resize (drag) ──
+(function() {
+  const handle = document.getElementById('panel-resize-handle');
+  const body   = document.querySelector('.app-body');
+  if (!handle || !body) return;
+  let dragging = false, startX = 0, startW = 0;
+  handle.addEventListener('mousedown', e => {
+    dragging = true; startX = e.clientX;
+    startW = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--right-panel-w') || '280');
+    handle.classList.add('dragging');
+    document.body.style.userSelect = 'none';
+    e.preventDefault();
+  });
+  document.addEventListener('mousemove', e => {
+    if (!dragging) return;
+    const delta = startX - e.clientX;
+    const newW  = Math.max(220, Math.min(600, startW + delta));
+    document.documentElement.style.setProperty('--right-panel-w', newW + 'px');
+  });
+  document.addEventListener('mouseup', () => {
+    if (!dragging) return;
+    dragging = false;
+    handle.classList.remove('dragging');
+    document.body.style.userSelect = '';
+  });
+  // タッチ対応
+  handle.addEventListener('touchstart', e => {
+    dragging = true; startX = e.touches[0].clientX;
+    startW = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--right-panel-w') || '280');
+    handle.classList.add('dragging');
+  }, {passive:true});
+  document.addEventListener('touchmove', e => {
+    if (!dragging) return;
+    const delta = startX - e.touches[0].clientX;
+    const newW  = Math.max(220, Math.min(600, startW + delta));
+    document.documentElement.style.setProperty('--right-panel-w', newW + 'px');
+  }, {passive:true});
+  document.addEventListener('touchend', () => { dragging = false; handle.classList.remove('dragging'); });
+})();
 
 // ── Dice ──
 const resultLabels = { critical:{text:'★ クリティカル！',cls:'critical'}, extreme:{text:'◆ 超成功',cls:'critical'}, hard:{text:'▲ 困難成功',cls:'success'}, success:{text:'✓ 成功',cls:'success'}, failure:{text:'✗ 失敗',cls:'failure'}, fumble:{text:'💀 ファンブル！',cls:'fumble'} };
@@ -1180,36 +1416,169 @@ function listenRolls() {
   });
 }
 
-// ── Chat ──
+// ── Channel system ──
+const DEFAULT_CHANNELS = [
+  { id: 'main',   name: 'メインチャット', type: 'default' },
+  { id: 'info',   name: '情報',           type: 'default' },
+  { id: 'casual', name: '雑談',           type: 'default' },
+];
+let currentChannelId = 'main';
+let channelListeners  = {}; // channelId -> unsubscribe
+let loadedChannels    = {}; // channelId -> {id, name, type, members}
+
+function canViewChannel(ch) {
+  if (!ch) return false;
+  // 個人メモは本人のみ（KPも他人のは見えない）
+  if (ch.type === 'personal') return ch.owner === currentUser?.uid;
+  if (myRole === 'KP') return true;
+  if (ch.type === 'default') return true;
+  if (ch.type === 'custom') return ch.members && ch.members[currentUser?.uid];
+  return false;
+}
+
+function initChannels() {
+  const myId = currentUser?.uid;
+  // デフォルト4チャンネルをFirebaseに確保
+  const defaults = [
+    { id:'main',   name:'メインチャット', type:'default' },
+    { id:'info',   name:'情報',           type:'default' },
+    { id:'casual', name:'雑談',           type:'default' },
+    { id:`memo_${myId}`, name:'個人メモ', type:'personal', owner: myId },
+  ];
+  defaults.forEach(ch => {
+    set(ref(db, `sessions/${sessionCode}/channels/${ch.id}`), ch);
+  });
+
+  // チャンネル一覧をリアルタイム監視
+  onValue(ref(db, `sessions/${sessionCode}/channels`), snap => {
+    const data = snap.val() || {};
+    loadedChannels = data;
+    renderChannelTabs();
+  });
+}
+
+function renderChannelTabs() {
+  const tabsEl = document.getElementById('channel-tabs');
+  tabsEl.innerHTML = '';
+  const myId = currentUser?.uid;
+  const ORDER = ['main','info','casual', `memo_${myId}`];
+
+  // 表示順：デフォルト4つ→カスタム
+  const visible = Object.values(loadedChannels)
+    .filter(ch => canViewChannel(ch))
+    .sort((a,b) => {
+      const ai = ORDER.indexOf(a.id), bi = ORDER.indexOf(b.id);
+      if (ai !== -1 && bi !== -1) return ai - bi;
+      if (ai !== -1) return -1;
+      if (bi !== -1) return 1;
+      return 0;
+    });
+
+  visible.forEach(ch => {
+    const btn = document.createElement('button');
+    btn.className = 'channel-tab' + (ch.id === currentChannelId ? ' active' : '');
+    // カスタムチャンネルは🔒マーク付き
+    const lockIcon = ch.type === 'custom' ? ' 🔒' : '';
+    btn.textContent = ch.name + lockIcon;
+    btn.onclick = () => switchChannel(ch.id);
+    tabsEl.appendChild(btn);
+    // まだ購読していなければ開始
+    if (!channelListeners[ch.id]) {
+      listenChannel(ch.id);
+    }
+  });
+
+  // 入力欄の表示切り替え（個人メモは textarea）
+  const isMemo = currentChannelId === `memo_${myId}`;
+  document.getElementById('chat-input-area').style.display = isMemo ? 'none' : 'flex';
+  document.getElementById('panel-notes').style.display      = isMemo ? 'block' : 'none';
+  document.getElementById('panel-chat').style.display       = isMemo ? 'none'  : 'flex';
+}
+
+function switchChannel(id) {
+  currentChannelId = id;
+  const myId = currentUser?.uid;
+  const isMemo = id === `memo_${myId}`;
+  document.getElementById('chat-input-area').style.display = isMemo ? 'none' : 'flex';
+  document.getElementById('panel-notes').style.display      = isMemo ? 'block' : 'none';
+  document.getElementById('panel-chat').style.display       = isMemo ? 'none'  : 'flex';
+
+  // アクティブタブ切り替え
+  document.querySelectorAll('.channel-tab').forEach(b => {
+    b.classList.toggle('active', b.textContent === (loadedChannels[id]?.name || ''));
+  });
+
+  // そのチャンネルのメッセージを表示
+  const chatEl = document.getElementById('panel-chat');
+  chatEl.innerHTML = '';
+  if (channelListeners[id]) {
+    // すでに監視中 → バッファから再描画
+    (channelMessages[id] || []).forEach(m => renderMsg(m, chatEl));
+  }
+  requestAnimationFrame(() => { chatEl.scrollTop = chatEl.scrollHeight; });
+}
+
+const channelMessages = {}; // channelId -> [msg, ...]
+
+function listenChannel(channelId) {
+  if (!channelMessages[channelId]) channelMessages[channelId] = [];
+  channelListeners[channelId] = true;
+  onChildAdded(ref(db, `sessions/${sessionCode}/channel_msgs/${channelId}`), snap => {
+    const msg = snap.val();
+    channelMessages[channelId].push(msg);
+    if (currentChannelId === channelId) {
+      const chatEl = document.getElementById('panel-chat');
+      renderMsg(msg, chatEl);
+    }
+  });
+}
+
+function renderMsg(msg, container) {
+  const { who, text, type, time } = msg;
+  const div = document.createElement('div'); div.className = `chat-msg ${type||'player'}`;
+  const icon = type==='gm'?'🕯️ ':type==='system'?'🔔 ':type==='dice'?'':'';
+  div.innerHTML = `<div class="msg-who">${icon}${who}</div><div class="msg-text">${text}</div><div class="msg-time">${time}</div>`;
+  const isAtBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 60;
+  container.appendChild(div);
+  if (isAtBottom) requestAnimationFrame(() => { container.scrollTop = container.scrollHeight; });
+}
+
+// 旧chat / rolls → mainチャンネルにも流す
 function listenChat() {
-  const chatArea = document.getElementById('panel-chat');
-  chatArea.innerHTML = '';
   onChildAdded(ref(db, `sessions/${sessionCode}/chat`), snap => {
     const { who, text, type, time } = snap.val();
-    addChatMessage(type||'player', who, text, time);
+    // 旧データ表示（後方互換）
+    const msg = { who, text, type: type||'player', time };
+    if (!channelMessages['main']) channelMessages['main'] = [];
+    channelMessages['main'].push(msg);
+    if (currentChannelId === 'main') {
+      const chatEl = document.getElementById('panel-chat');
+      renderMsg(msg, chatEl);
+    }
   });
 }
 
 function addChatMessage(type, who, text, time) {
-  const msgs = document.getElementById('panel-chat');
-  const msg = document.createElement('div'); msg.className = `chat-msg ${type}`;
-  const icon = type==='gm'?'🕯️ ':type==='system'?'🔔 ':type==='dice'?'':'';
-  msg.innerHTML = `<div class="msg-who">${icon}${who}</div><div class="msg-text">${text}</div><div class="msg-time">${time}</div>`;
-
-  // 追加前に一番下にいるか確認（手動スクロール中は追わない）
-  const isAtBottom = msgs.scrollHeight - msgs.scrollTop - msgs.clientHeight < 60;
-  msgs.appendChild(msg);
-  if (isAtBottom) {
-    requestAnimationFrame(() => { msgs.scrollTop = msgs.scrollHeight; });
+  // ダイスロールなどから呼ばれる → mainに表示＆保存
+  const msg = { who, text, type, time };
+  if (!channelMessages['main']) channelMessages['main'] = [];
+  channelMessages['main'].push(msg);
+  if (currentChannelId === 'main') {
+    const chatEl = document.getElementById('panel-chat');
+    renderMsg(msg, chatEl);
   }
 }
 
 function postSystemMessage(text) {
-  push(ref(db, `sessions/${sessionCode}/chat`), { who:'システム', text, type:'system', time: nowTime(), ts: Date.now() });
+  const msg = { who:'システム', text, type:'system', time: nowTime(), ts: Date.now() };
+  push(ref(db, `sessions/${sessionCode}/channel_msgs/main`), msg);
+  // 旧パスにも書いて後方互換
+  push(ref(db, `sessions/${sessionCode}/chat`), msg);
 }
 
 window.handleChatKey = e => { if (e.key==='Enter'&&!e.shiftKey) { e.preventDefault(); sendChat(); } };
 window.sendChat = () => {
+  if (currentChannelId === `memo_${currentUser?.uid}`) return;
   const input = document.getElementById('chat-input');
   const text = input.value.trim(); if (!text) return;
   const handle = userData?.handle || '？';
@@ -1220,8 +1589,73 @@ window.sendChat = () => {
     who = myChar?.name || userData?.displayName || handle;
   }
   const type = myRole === 'KP' ? 'gm' : 'player';
-  push(ref(db, `sessions/${sessionCode}/chat`), { who, text, type, time: nowTime(), ts: Date.now() });
+  const msg = { who, text, type, time: nowTime(), ts: Date.now() };
+  push(ref(db, `sessions/${sessionCode}/channel_msgs/${currentChannelId}`), msg);
+  // mainの場合は旧パスにも書く（後方互換）
+  if (currentChannelId === 'main') {
+    push(ref(db, `sessions/${sessionCode}/chat`), msg);
+  }
   input.value = '';
+};
+
+// ── チャンネル作成モーダル ──
+window.openCreateChannel = () => {
+  // 参加者リスト構築
+  const list = document.getElementById('ch-member-list');
+  list.innerHTML = '';
+  document.getElementById('ch-name-input').value = '';
+  // セッション参加者を取得
+  get(ref(db, `sessions/${sessionCode}/players`)).then(snap => {
+    const players = snap.val() || {};
+    const uids = Object.keys(players).filter(u => u !== currentUser?.uid);
+    if (uids.length === 0) {
+      list.innerHTML = '<div style="font-size:12px;color:var(--text-dim);padding:8px">他の参加者がいません</div>';
+      return;
+    }
+    uids.forEach(uid => {
+      get(ref(db, `users/${uid}`)).then(us => {
+        const u = us.val() || {};
+        const item = document.createElement('div');
+        item.className = 'ch-member-item';
+        item.dataset.uid = uid;
+        item.innerHTML = `<input type="checkbox" id="chm_${uid}"><label for="chm_${uid}" style="cursor:pointer;flex:1">${u.displayName || u.handle || uid} <span style="font-size:10px;color:var(--text-dim)">@${u.handle||uid}</span></label>`;
+        item.onclick = e => {
+          if (e.target.tagName !== 'INPUT') item.querySelector('input').click();
+          item.classList.toggle('selected', item.querySelector('input').checked);
+        };
+        list.appendChild(item);
+      });
+    });
+  });
+  document.getElementById('channel-modal').classList.add('open');
+};
+window.closeChannelModal = () => document.getElementById('channel-modal').classList.remove('open');
+
+window.createChannel = () => {
+  const name = document.getElementById('ch-name-input').value.trim();
+  if (!name) return;
+  const members = { [currentUser?.uid]: true };
+  document.querySelectorAll('#ch-member-list .ch-member-item input:checked').forEach(cb => {
+    members[cb.id.replace('chm_','')] = true;
+  });
+  // KPは自動追加
+  Object.values(loadedChannels).forEach(ch => {
+    Object.keys(loadedChannels).forEach(uid => {
+      // セッション参加者からKPを探して追加
+    });
+  });
+  const newRef = push(ref(db, `sessions/${sessionCode}/channels`));
+  set(newRef, { id: newRef.key, name, type:'custom', members, createdBy: currentUser?.uid, createdAt: Date.now() });
+  // KPのuidも自動追加
+  get(ref(db, `sessions/${sessionCode}/players`)).then(snap => {
+    const players = snap.val() || {};
+    Object.entries(players).forEach(([uid, p]) => {
+      if (p.role === 'KP') {
+        update(ref(db, `sessions/${sessionCode}/channels/${newRef.key}/members`), { [uid]: true });
+      }
+    });
+  });
+  closeChannelModal();
 };
 
 // ── Timeline ──
@@ -1401,12 +1835,12 @@ window.mobileNav = function(view) {
   if (view === 'chat') {
     right.style.display = 'flex';
     right.classList.add('mobile-active');
-    // チャットを一番下までスクロール
+    const isMemo = currentChannelId === `memo_${currentUser?.uid}`;
+    document.getElementById('panel-chat').style.display   = isMemo ? 'none' : 'flex';
+    document.getElementById('panel-notes').style.display  = isMemo ? 'block' : 'none';
+    document.getElementById('chat-input-area').style.display = isMemo ? 'none' : 'flex';
     const chat = document.getElementById('panel-chat');
     setTimeout(() => { chat.scrollTop = chat.scrollHeight; }, 80);
-    // チャットパネル表示
-    document.getElementById('panel-chat').style.display = 'flex';
-    document.getElementById('panel-notes').style.display = 'none';
 
   } else if (view === 'sidebar') {
     sidebar.style.display = 'flex';
