@@ -318,6 +318,7 @@ header {
 <header>
   <div class="header-logo">TRPG Table</div>
   <div class="header-right" style="position:relative">
+    <button class="theme-toggle" id="theme-toggle-btn" onclick="toggleTheme()">☀️ ライト</button>
     <div class="user-badge" id="user-badge-btn" onclick="toggleUserPopover()" style="cursor:pointer;user-select:none">
       <div class="user-avatar" id="header-avatar">？</div>
       <div>
@@ -333,7 +334,6 @@ header {
         <div style="font-size:11px;color:var(--text-dim)" id="popover-handle">—</div>
       </div>
       <button onclick="openSettingsModal();closeUserPopover()" style="width:100%;padding:11px 16px;background:transparent;border:none;color:var(--text-secondary);cursor:pointer;font-family:'Noto Serif JP',serif;font-size:13px;text-align:left;transition:background 0.15s" onmouseenter="this.style.background='var(--bg-hover)'" onmouseleave="this.style.background='transparent'">⚙️ 設定</button>
-      <button onclick="toggleTheme();updatePopoverThemeBtn()" style="width:100%;padding:11px 16px;background:transparent;border:none;color:var(--text-secondary);cursor:pointer;font-family:'Noto Serif JP',serif;font-size:13px;text-align:left;transition:background 0.15s" id="popover-theme-btn" onmouseenter="this.style.background='var(--bg-hover)'" onmouseleave="this.style.background='transparent'">☀️ ライトモード</button>
       <button onclick="doLogout()" style="width:100%;padding:11px 16px;background:transparent;border:none;color:#ff9999;cursor:pointer;font-family:'Noto Serif JP',serif;font-size:13px;text-align:left;border-top:1px solid var(--border);transition:background 0.15s" onmouseenter="this.style.background='var(--bg-hover)'" onmouseleave="this.style.background='transparent'">🚪 ログアウト</button>
     </div>
   </div>
@@ -1558,6 +1558,7 @@ window.toggleTheme = function() {
   const isLight = document.documentElement.classList.contains('light');
   localStorage.setItem('trpg-theme', isLight ? 'light' : 'dark');
   updateToggleBtn();
+  updateSettingsThemeBtn();
 };
 // Init button label after DOM ready
 document.addEventListener('DOMContentLoaded', updateToggleBtn);
