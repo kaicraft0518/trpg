@@ -1102,6 +1102,7 @@ function renderKpChannelList() {
     .sort((a,b) => (a.id < b.id ? -1 : 1))
     .forEach(ch => {
       if (ch.type === 'personal') return; // 個人メモは管理対象外
+      if (ch.type === 'log') return; // ログは管理対象外
       const isDefault = DEFAULT_IDS.includes(ch.id);
       const lockIcon  = ch.type === 'custom' ? ' 🔒' : '';
       const row = document.createElement('div');
@@ -1414,12 +1415,20 @@ function refreshVitalsDisplay() {
 window.changeVital = async (type, delta) => {
   if (!viewingChar || !viewingUid) return;
   const maxKey = type + 'Max';
-  viewingChar[type] = Math.max(0, Math.min(viewingChar[maxKey] ?? 99, (viewingChar[type] ?? 0) + delta));
+  const before = viewingChar[type] ?? 0;
+  viewingChar[type] = Math.max(0, Math.min(viewingChar[maxKey] ?? 99, before + delta));
+  const after = viewingChar[type];
   refreshVitalsDisplay();
-  // Write to session/vitals/{uid} for live sync
-  await update(ref(db, `sessions/${sessionCode}/vitals/${viewingUid}`), { [type]: viewingChar[type] });
-  // Also update user's character
-  if (viewingCharId) await update(ref(db, `users/${viewingUid}/characters/${viewingCharId}`), { [type]: viewingChar[type] });
+  await update(ref(db, `sessions/${sessionCode}/vitals/${viewingUid}`), { [type]: after });
+  if (viewingCharId) await update(ref(db, `users/${viewingUid}/characters/${viewingCharId}`), { [type]: after });
+  // HP/MP変化をログに投稿（SAN±はSANチェックとは別に記録）
+  if (before !== after) {
+    const charName = viewingChar?.name || userData?.displayName || '探索者';
+    const labelMap = { hp:'❤️ HP', san:'🔵 SAN', mp:'🟣 MP' };
+    const sign = after > before ? `+${after - before}` : `${after - before}`;
+    const text = `${charName} — ${labelMap[type]||type}: ${before} → ${after}（${sign}）`;
+    push(ref(db, `sessions/${sessionCode}/channel_msgs/log`), { who:'📊 ステータス', text, type:'system', time: nowTime(), ts: Date.now() });
+  }
 };
 
 // ── SANチェック ──
@@ -1528,8 +1537,9 @@ window.applySanResult = async () => {
     `SAN: ${beforeSan} → ${newSan}`
   ];
   const msg = { who: name, text: lines.join('\n'), type: 'san', time: nowTime(), ts: Date.now() };
-  const activeChId = document.querySelector('.ch-tab.active')?.dataset?.chid || 'main';
-  push(ref(db, `sessions/${sessionCode}/channel_msgs/${activeChId}`), msg);
+  // SANチェック結果はメインとログ両方に投稿
+  push(ref(db, `sessions/${sessionCode}/channel_msgs/main`), msg);
+  push(ref(db, `sessions/${sessionCode}/channel_msgs/log`),  msg);
 
   document.getElementById('san-apply-btns').style.display = 'none';
   document.getElementById('san-after-apply').style.display = 'block';
@@ -1675,7 +1685,12 @@ function pushRoll(what, num, result) {
   const who = myRole === 'KP'
     ? `KP（${handle}）`
     : (viewingChar?.name || userData?.displayName || handle);
-  push(ref(db, `sessions/${sessionCode}/rolls`), { who, what, num, result, time: nowTime(), ts: Date.now() });
+  const ts = Date.now(), time = nowTime();
+  push(ref(db, `sessions/${sessionCode}/rolls`), { who, what, num, result, time, ts });
+  // メインチャンネルに投稿
+  const ltext = { critical:'★ クリティカル！', extreme:'◆ 超成功', hard:'▲ 困難成功', success:'✓ 成功', failure:'✗ 失敗', fumble:'💀 ファンブル！' };
+  const text = `${who} — ${what} → ${num}${result ? ' ' + (ltext[result]||'') : ''}`;
+  push(ref(db, `sessions/${sessionCode}/channel_msgs/main`), { who: '🎲 ダイス', text, type:'dice', time, ts });
 }
 
 function listenRolls() {
@@ -1688,9 +1703,7 @@ function listenRolls() {
     const item = document.createElement('div'); item.className = 'h-item';
     item.innerHTML = `<span class="h-who">${who}</span><span class="h-what">${what}</span><span class="h-res">${num}</span>${result?`<span class="h-tag ${clsMap[result]||''}">${labelMap[result]||''}</span>`:''}<span class="h-time">${time}</span>`;
     hist.insertBefore(item, hist.firstChild);
-    // Chat
-    const ltext = { critical:'★ クリティカル！', extreme:'◆ 超成功', hard:'▲ 困難成功', success:'✓ 成功', failure:'✗ 失敗', fumble:'💀 ファンブル！' };
-    addChatMessage('dice', '🎲 ダイスロール', `${who} — ${what} → ${num} ${result ? ltext[result]||'' : ''}`, time);
+    // ログチャンネルに直接push済みのため addChatMessage は不要
   });
 }
 
@@ -1699,6 +1712,7 @@ const DEFAULT_CHANNELS = [
   { id: 'main',   name: 'メインチャット', type: 'default' },
   { id: 'info',   name: '情報',           type: 'default' },
   { id: 'casual', name: '雑談',           type: 'default' },
+  { id: 'log',    name: 'ログ',           type: 'log' },
 ];
 let currentChannelId = 'main';
 let channelListeners  = {}; // channelId -> unsubscribe
@@ -1709,7 +1723,7 @@ function canViewChannel(ch) {
   // 個人メモは本人のみ（KPも他人のは見えない）
   if (ch.type === 'personal') return ch.owner === currentUser?.uid;
   if (myRole === 'KP') return true;
-  if (ch.type === 'default') return true;
+  if (ch.type === 'default' || ch.type === 'log') return true;
   if (ch.type === 'custom') return ch.members && ch.members[currentUser?.uid];
   return false;
 }
@@ -1722,6 +1736,7 @@ function initChannels() {
     { id:'info',   name:'情報',           type:'default' },
     { id:'casual', name:'雑談',           type:'default' },
     { id:`memo_${myId}`, name:'個人メモ', type:'personal', owner: myId },
+    { id:'log', name:'ログ', type:'log' },
   ];
   defaults.forEach(ch => {
     set(ref(db, `sessions/${sessionCode}/channels/${ch.id}`), ch);
@@ -1739,7 +1754,7 @@ function renderChannelTabs() {
   const tabsEl = document.getElementById('channel-tabs');
   tabsEl.innerHTML = '';
   const myId = currentUser?.uid;
-  const ORDER = ['main','info','casual', `memo_${myId}`];
+  const ORDER = ['main','info','casual','log',`memo_${myId}`];
 
   // 表示順：デフォルト4つ→カスタム
   const visible = Object.values(loadedChannels)
@@ -1756,7 +1771,7 @@ function renderChannelTabs() {
     const btn = document.createElement('button');
     btn.className = 'channel-tab' + (ch.id === currentChannelId ? ' active' : '');
     // カスタムチャンネルは🔒マーク付き
-    const lockIcon = ch.type === 'custom' ? ' 🔒' : '';
+    const lockIcon = ch.type === 'custom' ? ' 🔒' : ch.type === 'log' ? ' 📋' : '';
     btn.textContent = ch.name + lockIcon;
     btn.onclick = () => switchChannel(ch.id);
     tabsEl.appendChild(btn);
@@ -1768,18 +1783,22 @@ function renderChannelTabs() {
 
   // 入力欄の表示切り替え（個人メモは textarea）
   const isMemo = currentChannelId === `memo_${myId}`;
-  document.getElementById('chat-input-area').style.display = isMemo ? 'none' : 'flex';
+  const isLog  = currentChannelId === 'log';
+  document.getElementById('chat-input-area').style.display = (isMemo||isLog) ? 'none' : 'flex';
   document.getElementById('panel-notes').style.display      = isMemo ? 'block' : 'none';
   document.getElementById('panel-chat').style.display       = isMemo ? 'none'  : 'flex';
+  if (isLog) document.getElementById('panel-chat').style.display = 'flex';
 }
 
 function switchChannel(id) {
   currentChannelId = id;
   const myId = currentUser?.uid;
   const isMemo = id === `memo_${myId}`;
-  document.getElementById('chat-input-area').style.display = isMemo ? 'none' : 'flex';
+  const isLog  = id === 'log';
+  document.getElementById('chat-input-area').style.display = (isMemo||isLog) ? 'none' : 'flex';
   document.getElementById('panel-notes').style.display      = isMemo ? 'block' : 'none';
   document.getElementById('panel-chat').style.display       = isMemo ? 'none'  : 'flex';
+  if (isLog) document.getElementById('panel-chat').style.display = 'flex';
 
   // アクティブタブ切り替え
   document.querySelectorAll('.channel-tab').forEach(b => {
@@ -1872,12 +1891,13 @@ function addChatMessage(type, who, text, time) {
 
 function postSystemMessage(text) {
   const msg = { who:'システム', text, type:'system', time: nowTime(), ts: Date.now() };
-  push(ref(db, `sessions/${sessionCode}/channel_msgs/main`), msg);
+  push(ref(db, `sessions/${sessionCode}/channel_msgs/log`), msg);
 }
 
 window.handleChatKey = e => { if (e.key==='Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); sendChat(); } };
 window.sendChat = () => {
   if (currentChannelId === `memo_${currentUser?.uid}`) return;
+  if (currentChannelId === 'log') return; // ログは自動投稿専用
   const input = document.getElementById('chat-input');
   const text = input.value.trim(); if (!text) return;
   const handle = userData?.handle || '？';
