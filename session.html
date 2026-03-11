@@ -2258,8 +2258,6 @@ window.mobileNav = function(view) {
   main.style.display    = 'none';
   right.style.display   = 'none';
   sidebar.style.display = 'none';
-  sidebar.style.position = '';
-  sidebar.style.zIndex   = '';
   // tablet overlayは常に閉じておく（スマホでは不要）
   document.getElementById('tablet-overlay')?.classList.remove('open');
 
@@ -2277,8 +2275,6 @@ window.mobileNav = function(view) {
     // tablet overlayが残っていれば閉じる
     document.getElementById('tablet-overlay')?.classList.remove('open');
     sidebar.style.display = 'flex';
-    sidebar.style.position = 'relative';
-    sidebar.style.zIndex = '';
     sidebar.classList.add('mobile-active');
 
   } else {
