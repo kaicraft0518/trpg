@@ -334,6 +334,21 @@ header {
 /* Modals */
 .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(4px); z-index: 200; display: none; align-items: center; justify-content: center; padding: 16px; }
 .modal-overlay.open { display: flex; }
+/* SANチェックモーダル */
+.san-check-step { display: none; }
+.san-check-step.active { display: block; }
+.san-result-box { text-align: center; padding: 16px; background: var(--bg-mid); border-radius: 10px; margin: 12px 0; border: 1px solid var(--border); }
+.san-roll-num { font-family: 'Cinzel Decorative', serif; font-size: 42px; line-height: 1; }
+.san-roll-num.success { color: #4ade80; text-shadow: 0 0 20px rgba(74,222,128,0.5); }
+.san-roll-num.failure { color: var(--red-glow); text-shadow: 0 0 20px rgba(255,68,68,0.5); }
+.san-judge-label { font-size: 13px; margin-top: 6px; }
+.san-judge-label.success { color: #4ade80; }
+.san-judge-label.failure { color: var(--red-glow); }
+.san-reduce-row { display: flex; align-items: center; gap: 10px; margin: 12px 0; }
+.san-reduce-input { background: var(--bg-mid); border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; color: var(--text-primary); font-family: 'Noto Serif JP', serif; font-size: 13px; flex: 1; }
+.san-reduce-input:focus { outline: none; border-color: var(--gold-dim); }
+.san-apply-info { font-size: 12px; color: var(--text-dim); text-align: center; margin-top: 8px; }
+.san-arrow { font-size: 13px; color: var(--text-dim); margin: 0 4px; }
 .modal { background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; width: 100%; max-width: 460px; max-height: 90vh; overflow-y: auto; box-shadow: 0 30px 80px rgba(0,0,0,0.8); animation: modalIn 0.25s ease; }
 @keyframes modalIn { from{opacity:0;transform:translateY(16px) scale(0.97)} to{opacity:1;transform:none} }
 .modal-header { padding: 16px 20px 12px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
@@ -594,8 +609,8 @@ header {
             <h2 id="char-name-display">—</h2>
             <div class="sheet-meta" id="char-meta-display">—</div>
           </div>
-          <div class="san-display">
-            <div class="sd-label">正気度</div>
+          <div class="san-display" id="san-display-btn" onclick="openSanCheck()" title="SANチェック" style="cursor:pointer;transition:all 0.2s" onmouseenter="this.style.borderColor='rgba(74,158,255,0.5)'" onmouseleave="this.style.borderColor='rgba(74,158,255,0.2)'">
+            <div class="sd-label">正気度 🌀</div>
             <div class="sd-val" id="san-big">—</div>
             <div class="sd-max" id="san-big-max">/ —</div>
           </div>
@@ -781,6 +796,59 @@ header {
         <div class="err-msg" id="search-err"></div>
         <div class="suc-msg" id="invite-suc"></div>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- SANチェックモーダル -->
+<div class="modal-overlay" id="san-check-modal">
+  <div class="modal-box" style="max-width:360px;width:100%">
+    <div class="modal-header">
+      <span class="modal-title">🌀 SANチェック</span>
+      <button class="modal-close" onclick="closeSanCheck()">✕</button>
+    </div>
+    <div class="modal-body">
+
+      <!-- Step1: 判定ロール -->
+      <div class="san-check-step active" id="san-step1">
+        <div style="font-size:12px;color:var(--text-dim);margin-bottom:12px;text-align:center" id="san-check-target-info">SAN: — / —</div>
+        <button class="sc-btn" style="width:100%;padding:12px;font-size:13px" onclick="doSanJudge()">🎲 1D100 判定ロール</button>
+      </div>
+
+      <!-- Step2: 減少ダイス入力 -->
+      <div class="san-check-step" id="san-step2">
+        <div class="san-result-box">
+          <div class="san-roll-num" id="san-judge-num">—</div>
+          <div class="san-judge-label" id="san-judge-label">—</div>
+          <div style="font-size:11px;color:var(--text-dim);margin-top:4px" id="san-judge-detail">—</div>
+        </div>
+        <div style="font-size:12px;color:var(--text-secondary);margin:12px 0 6px">SAN減少ダイス式</div>
+        <div class="san-reduce-row">
+          <input class="san-reduce-input" id="san-reduce-input" type="text" placeholder="例: 1D6, 1D3, 0" onkeydown="if(event.key==='Enter'&&!event.isComposing)doSanReduce()">
+          <button class="sc-btn" onclick="doSanReduce()">振る</button>
+        </div>
+        <div style="font-size:11px;color:var(--text-dim)">成功: 0 or 1 / 失敗: 1D3, 1D6, 1D10 など</div>
+      </div>
+
+      <!-- Step3: 確認・適用 -->
+      <div class="san-check-step" id="san-step3">
+        <div class="san-result-box">
+          <div style="font-size:11px;color:var(--text-dim);margin-bottom:6px">判定結果</div>
+          <div class="san-roll-num" id="san-final-judge-num" style="font-size:32px">—</div>
+          <div class="san-judge-label" id="san-final-judge-label">—</div>
+        </div>
+        <div class="san-result-box" style="margin-top:8px">
+          <div style="font-size:11px;color:var(--text-dim);margin-bottom:6px">SAN減少</div>
+          <div style="font-size:20px;font-family:'Cinzel Decorative',serif;color:var(--san-color)" id="san-reduce-detail">— → —</div>
+          <div style="font-size:11px;color:var(--text-dim);margin-top:4px" id="san-reduce-result-detail">—</div>
+        </div>
+        <div class="san-apply-info" id="san-after-apply" style="display:none;color:#4ade80">✓ 適用済み</div>
+        <div style="display:flex;gap:8px;margin-top:14px" id="san-apply-btns">
+          <button class="sc-btn" style="flex:1;padding:10px" onclick="applySanResult()">適用してチャットに投稿</button>
+          <button class="modal-close" style="padding:8px 12px;width:auto" onclick="closeSanCheck()">キャンセル</button>
+        </div>
+      </div>
+
     </div>
   </div>
 </div>
@@ -1340,6 +1408,128 @@ window.changeVital = async (type, delta) => {
   // Also update user's character
   if (viewingCharId) await update(ref(db, `users/${viewingUid}/characters/${viewingCharId}`), { [type]: viewingChar[type] });
 };
+
+// ── SANチェック ──
+let sanCheckState = {};
+
+window.openSanCheck = () => {
+  // PLは自分のキャラのみ、KPは全キャラOK
+  if (!viewingChar) return;
+  if (myRole !== 'KP' && viewingUid !== currentUser.uid) return;
+
+  sanCheckState = { judgeRoll: null, judged: null, reduceRoll: null, reduceAmt: null, applied: false };
+
+  // ステップをリセット
+  ['san-step1','san-step2','san-step3'].forEach((id,i) => {
+    document.getElementById(id).classList.toggle('active', i === 0);
+  });
+  document.getElementById('san-after-apply').style.display = 'none';
+  document.getElementById('san-apply-btns').style.display = 'flex';
+  document.getElementById('san-check-target-info').textContent =
+    `${viewingChar.name || '探索者'} — 現在SAN: ${viewingChar.san} / ${viewingChar.sanMax}`;
+  document.getElementById('san-check-modal').classList.add('open');
+};
+
+window.closeSanCheck = () => {
+  document.getElementById('san-check-modal').classList.remove('open');
+};
+
+window.doSanJudge = () => {
+  const san = viewingChar?.san ?? 0;
+  const roll = Math.floor(Math.random() * 100) + 1;
+  const success = roll <= san;
+  sanCheckState.judgeRoll = roll;
+  sanCheckState.judged = success ? 'success' : 'failure';
+
+  const numEl = document.getElementById('san-judge-num');
+  const lblEl = document.getElementById('san-judge-label');
+  const detEl = document.getElementById('san-judge-detail');
+  numEl.textContent = roll;
+  numEl.className = 'san-roll-num ' + sanCheckState.judged;
+  lblEl.textContent = success ? '成功' : '失敗';
+  lblEl.className = 'san-judge-label ' + sanCheckState.judged;
+  detEl.textContent = `${roll} vs SAN${san} → ${success ? '✓ 成功' : '✗ 失敗'}`;
+
+  // 推奨ダイス式をセット
+  document.getElementById('san-reduce-input').value = success ? '0' : '1D6';
+
+  document.getElementById('san-step1').classList.remove('active');
+  document.getElementById('san-step2').classList.add('active');
+};
+
+window.doSanReduce = () => {
+  const formula = document.getElementById('san-reduce-input').value.trim() || '0';
+  const { total, detail } = rollFormula(formula);
+  if (total === null) { alert('ダイス式が正しくありません（例: 1D6, 1D3, 0）'); return; }
+
+  sanCheckState.reduceAmt  = total;
+  sanCheckState.reduceFormula = formula;
+  sanCheckState.reduceDetail  = detail;
+
+  const curSan  = viewingChar?.san ?? 0;
+  const newSan  = Math.max(0, curSan - total);
+
+  // Step3に情報を反映
+  const jRoll = sanCheckState.judgeRoll;
+  const jSuccess = sanCheckState.judged === 'success';
+  document.getElementById('san-final-judge-num').textContent = jRoll;
+  document.getElementById('san-final-judge-num').className = 'san-roll-num ' + sanCheckState.judged;
+  document.getElementById('san-final-judge-label').textContent = jSuccess ? '成功' : '失敗';
+  document.getElementById('san-final-judge-label').className = 'san-judge-label ' + sanCheckState.judged;
+
+  document.getElementById('san-reduce-detail').textContent = `${curSan} → ${newSan}`;
+  document.getElementById('san-reduce-result-detail').textContent =
+    `${formula}${detail !== formula ? ` (${detail})` : ''} → ${total} 減少`;
+
+  sanCheckState.newSan = newSan;
+
+  document.getElementById('san-step2').classList.remove('active');
+  document.getElementById('san-step3').classList.add('active');
+};
+
+window.applySanResult = async () => {
+  if (sanCheckState.applied) return;
+  sanCheckState.applied = true;
+
+  const newSan = sanCheckState.newSan;
+  viewingChar.san = newSan;
+  refreshVitalsDisplay();
+  await update(ref(db, `sessions/${sessionCode}/vitals/${viewingUid}`), { san: newSan });
+  if (viewingCharId) await update(ref(db, `users/${viewingUid}/characters/${viewingCharId}`), { san: newSan });
+
+  // チャットに投稿
+  const name = viewingChar?.name || userData?.displayName || userData?.handle || '探索者';
+  const jSuccess = sanCheckState.judged === 'success';
+  const msg = [
+    `🌀 SANチェック ─ ${name}`,
+    `判定: ${sanCheckState.judgeRoll} / SAN${viewingChar.sanMax} → ${jSuccess ? '✅ 成功' : '❌ 失敗'}`,
+    `SAN減少: ${sanCheckState.reduceFormula}${sanCheckState.reduceDetail !== sanCheckState.reduceFormula ? ` (${sanCheckState.reduceDetail})` : ''} → ${sanCheckState.reduceAmt}`,
+    `SAN: ${viewingChar.san + sanCheckState.reduceAmt} → ${newSan}`
+  ].join('\n');
+
+  const activeChId = document.querySelector('.ch-tab.active')?.dataset?.chid || 'main';
+  if (activeChId === 'main') {
+    push(ref(db, `sessions/${sessionCode}/chat`), { who: name, text: msg, type: 'san', time: nowTime(), ts: Date.now() });
+  } else {
+    push(ref(db, `sessions/${sessionCode}/channel_msgs/${activeChId}`), { who: name, text: msg, type: 'san', time: nowTime(), ts: Date.now() });
+  }
+
+  document.getElementById('san-apply-btns').style.display = 'none';
+  document.getElementById('san-after-apply').style.display = 'block';
+  setTimeout(() => closeSanCheck(), 1200);
+};
+
+// ダイス式パーサー (例: "1D6", "2D3", "0", "1")
+function rollFormula(formula) {
+  const f = formula.trim().toUpperCase();
+  if (/^\d+$/.test(f)) { const n = parseInt(f); return { total: n, detail: f }; }
+  const m = f.match(/^(\d+)D(\d+)$/);
+  if (!m) return { total: null, detail: null };
+  const count = parseInt(m[1]), sides = parseInt(m[2]);
+  if (count < 1 || sides < 1 || count > 20 || sides > 100) return { total: null, detail: null };
+  const rolls = Array.from({ length: count }, () => Math.floor(Math.random() * sides) + 1);
+  return { total: rolls.reduce((a,b) => a+b, 0), detail: rolls.length > 1 ? rolls.join('+') : String(rolls[0]) };
+}
 
 // ── Tabs ──
 window.switchTab = (tab, btn) => {
