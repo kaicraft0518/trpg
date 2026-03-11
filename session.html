@@ -497,11 +497,15 @@ header {
   .sidebar.mobile-active,
   .right-panel.mobile-active { display: flex; flex-direction: column; }
   /* スマホ参加者タブを全画面・見やすく */
-  .sidebar.mobile-active { padding: 12px; gap: 8px; }
-  .sidebar.mobile-active .player-card { padding: 14px; }
+  .sidebar.mobile-active { padding: 0; }
+  .sidebar.mobile-active .sidebar-section { padding: 14px; }
+  .sidebar.mobile-active .player-card { padding: 14px; margin-bottom: 10px; }
   .sidebar.mobile-active .pc-name { font-size: 15px; }
-  .sidebar.mobile-active .pc-avatar { width: 44px; height: 44px; font-size: 22px; }
-  .sidebar.mobile-active .sidebar-section-title { font-size: 11px; margin-bottom: 8px; }
+  .sidebar.mobile-active .pc-avatar { width: 46px; height: 46px; font-size: 22px; border-radius: 8px; }
+  .sidebar.mobile-active .pc-bar-row { gap: 8px; }
+  .sidebar.mobile-active .pc-bar-lbl { font-size: 11px; width: 30px; }
+  .sidebar.mobile-active .pc-bar-val { font-size: 11px; }
+  .sidebar.mobile-active .sec-title { font-size: 12px; letter-spacing: 1px; margin-bottom: 10px; }
 
   /* 最初はメインを表示 */
   .main-content { display: flex; flex-direction: column; }
@@ -632,7 +636,7 @@ header {
       <div id="sheet-content" style="display:none">
         <div class="sheet-header">
           <div class="sheet-name-block" onclick="openCharSwitchModal()" style="cursor:pointer" title="キャラクターを切り替え">
-            <h2 id="char-name-display" style="display:flex;align-items:center;gap:6px">— <span style="font-size:11px;color:var(--gold-dim);font-family:'Noto Serif JP',serif;font-weight:normal">▼</span></h2>
+            <h2 id="char-name-display" style="display:flex;align-items:center;gap:8px">— <span id="char-name-arrow" style="font-size:12px;color:var(--gold-dim);font-family:'Noto Serif JP',serif;font-weight:normal;background:rgba(201,168,76,0.1);border:1px solid var(--gold-dim);border-radius:4px;padding:1px 6px;letter-spacing:0">切替 ▼</span></h2>
             <div class="sheet-meta" id="char-meta-display">—</div>
           </div>
           <div class="san-display" id="san-display-btn" onclick="openSanCheck()" title="SANチェック" style="cursor:pointer;transition:all 0.2s" onmouseenter="this.style.borderColor='rgba(74,158,255,0.5)'" onmouseleave="this.style.borderColor='rgba(74,158,255,0.2)'">
@@ -1445,7 +1449,8 @@ function selectViewChar(uid) {
 function renderCharSheet(char, canEdit) {
   document.getElementById('sheet-content').style.display = 'block';
   document.getElementById('no-char-msg').style.display = 'none';
-  document.getElementById('char-name-display').textContent = char.name || '—';
+  const nameEl = document.getElementById('char-name-display');
+  if (nameEl) nameEl.innerHTML = `${char.name || '—'} <span style="font-size:12px;color:var(--gold-dim);font-family:'Noto Serif JP',serif;font-weight:normal;background:rgba(201,168,76,0.1);border:1px solid var(--gold-dim);border-radius:4px;padding:1px 6px;letter-spacing:0">切替 ▼</span>`;
   document.getElementById('char-meta-display').textContent = [char.occupation, char.age ? char.age+'歳' : '', char.gender].filter(Boolean).join(' · ');
   document.getElementById('san-big').textContent = char.san ?? '—';
   document.getElementById('san-big-max').textContent = '/ ' + (char.sanMax ?? '—');
