@@ -496,6 +496,12 @@ header {
   .main-content.mobile-active,
   .sidebar.mobile-active,
   .right-panel.mobile-active { display: flex; flex-direction: column; }
+  /* スマホ参加者タブを全画面・見やすく */
+  .sidebar.mobile-active { padding: 12px; gap: 8px; }
+  .sidebar.mobile-active .player-card { padding: 14px; }
+  .sidebar.mobile-active .pc-name { font-size: 15px; }
+  .sidebar.mobile-active .pc-avatar { width: 44px; height: 44px; font-size: 22px; }
+  .sidebar.mobile-active .sidebar-section-title { font-size: 11px; margin-bottom: 8px; }
 
   /* 最初はメインを表示 */
   .main-content { display: flex; flex-direction: column; }
@@ -605,6 +611,12 @@ header {
 
     <!-- CHARACTER TAB -->
     <div class="tab-panel active" id="tab-sheet">
+      <!-- スマホKP用: 他キャラ閲覧中の戻るボタン -->
+      <div id="mobile-back-btn" style="display:none;margin-bottom:10px">
+        <button onclick="mobileBackToMyChar()" style="display:flex;align-items:center;gap:6px;background:var(--bg-mid);border:1px solid var(--border);border-radius:7px;padding:7px 12px;color:var(--text-secondary);cursor:pointer;font-family:'Noto Serif JP',serif;font-size:12px;width:100%">
+          ← 自分のキャラに戻る
+        </button>
+      </div>
       <div id="kp-char-select-area" style="display:none">
         <div class="section-label" style="margin-bottom:6px">キャラクター選択（KP）</div>
         <div class="kp-char-select" id="kp-char-select"></div>
@@ -619,8 +631,8 @@ header {
       </div>
       <div id="sheet-content" style="display:none">
         <div class="sheet-header">
-          <div class="sheet-name-block">
-            <h2 id="char-name-display">—</h2>
+          <div class="sheet-name-block" onclick="openCharSwitchModal()" style="cursor:pointer" title="キャラクターを切り替え">
+            <h2 id="char-name-display" style="display:flex;align-items:center;gap:6px">— <span style="font-size:11px;color:var(--gold-dim);font-family:'Noto Serif JP',serif;font-weight:normal">▼</span></h2>
             <div class="sheet-meta" id="char-meta-display">—</div>
           </div>
           <div class="san-display" id="san-display-btn" onclick="openSanCheck()" title="SANチェック" style="cursor:pointer;transition:all 0.2s" onmouseenter="this.style.borderColor='rgba(74,158,255,0.5)'" onmouseleave="this.style.borderColor='rgba(74,158,255,0.2)'">
@@ -810,6 +822,19 @@ header {
         <div class="err-msg" id="search-err"></div>
         <div class="suc-msg" id="invite-suc"></div>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- キャラ切り替えモーダル -->
+<div class="modal-overlay" id="char-switch-modal">
+  <div class="modal-box" style="max-width:380px;width:100%">
+    <div class="modal-header">
+      <span class="modal-title">🧍 キャラクター切り替え</span>
+      <button class="modal-close" onclick="document.getElementById('char-switch-modal').classList.remove('open')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="char-switch-list" style="display:flex;flex-direction:column;gap:8px"></div>
     </div>
   </div>
 </div>
@@ -1224,7 +1249,16 @@ function buildPlayerCard(uid, uData, char, role) {
   const div = document.createElement('div');
   div.className = 'player-card' + (uid === currentUser.uid ? ' mine' : '');
   div.id = 'pcard-' + uid;
-  div.onclick = () => { if (myRole === 'KP') selectViewChar(uid); };
+  div.onclick = () => {
+    if (myRole === 'KP') {
+      selectViewChar(uid);
+      // スマホならキャラタブに切り替え
+      if (window.innerWidth <= 640) {
+        mobileNav('chars');
+        showMobileBackBtn(uid, uData, char);
+      }
+    }
+  };
 
   const isOnline = onlineUids.has(uid);
   const avatarHtml = char?.iconUrl ? `<img src="${char.iconUrl}" alt="" onerror="this.parentElement.textContent='🧍'">` : '🧍';
@@ -1322,11 +1356,83 @@ function buildKpCharSelect() {
   });
 }
 
+window.openCharSwitchModal = () => {
+  const list = document.getElementById('char-switch-list');
+  list.innerHTML = '';
+
+  const entries = myRole === 'KP'
+    ? Object.entries(allSessionChars)
+    : Object.entries(allSessionChars); // PLも全員閲覧可（編集は自分のみ）
+
+  if (entries.length === 0) {
+    list.innerHTML = '<div style="font-size:12px;color:var(--text-dim);padding:8px">参加者のキャラが見つかりません</div>';
+    document.getElementById('char-switch-modal').classList.add('open');
+    return;
+  }
+
+  entries.forEach(([uid, info]) => {
+    const char   = info?.char;
+    const uData  = info;
+    const name   = char?.name || uData?.displayName || uData?.handle || '探索者';
+    const meta   = char ? [char.occupation, char.age ? char.age+'歳' : '', char.gender].filter(Boolean).join(' · ') : '';
+    const isActive = uid === viewingUid;
+    const isMe   = uid === currentUser.uid;
+
+    const btn = document.createElement('div');
+    btn.style.cssText = `display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--bg-card);border:1px solid ${isActive ? 'var(--gold-dim)' : 'var(--border)'};border-radius:10px;cursor:pointer;transition:all 0.15s`;
+    const avatarHtml = char?.iconUrl
+      ? `<img src="${char.iconUrl}" style="width:38px;height:38px;border-radius:50%;object-fit:cover;flex-shrink:0">`
+      : `<div style="width:38px;height:38px;border-radius:50%;background:var(--bg-mid);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">🧍</div>`;
+    btn.innerHTML = `
+      ${avatarHtml}
+      <div style="flex:1;min-width:0">
+        <div style="font-size:13px;color:${isActive ? 'var(--gold)' : 'var(--text-primary)'};font-weight:600">${name}</div>
+        <div style="font-size:11px;color:var(--text-dim)">${meta}${isMe ? ' · 自分' : ''}</div>
+      </div>
+      ${isActive ? '<div style="font-size:11px;color:var(--gold);flex-shrink:0">表示中</div>' : ''}`;
+    btn.onmouseenter = () => { btn.style.borderColor = 'var(--border-glow)'; btn.style.background = 'var(--bg-hover)'; };
+    btn.onmouseleave = () => { btn.style.borderColor = isActive ? 'var(--gold-dim)' : 'var(--border)'; btn.style.background = 'var(--bg-card)'; };
+    btn.onclick = () => {
+      selectViewChar(uid);
+      if (uid !== currentUser.uid) {
+        showMobileBackBtn(uid, uData, char);
+      } else {
+        hideMobileBackBtn();
+      }
+      document.getElementById('char-switch-modal').classList.remove('open');
+    };
+    list.appendChild(btn);
+  });
+
+  document.getElementById('char-switch-modal').classList.add('open');
+};
+
+function showMobileBackBtn(uid, uData, char) {
+  const btn = document.getElementById('mobile-back-btn');
+  if (!btn) return;
+  const name = char?.name || uData?.displayName || uData?.handle || '探索者';
+  const readOnly = myRole !== 'KP' ? ' （閲覧のみ）' : '';
+  btn.style.display = 'block';
+  btn.querySelector('button').textContent = `← 自分のキャラに戻る（${name}を閲覧中${readOnly}）`;
+}
+
+function hideMobileBackBtn() {
+  const btn = document.getElementById('mobile-back-btn');
+  if (btn) btn.style.display = 'none';
+}
+
+window.mobileBackToMyChar = () => {
+  selectViewChar(currentUser.uid);
+  hideMobileBackBtn();
+};
+
 function selectViewChar(uid) {
   viewingUid = uid;
   const info = allSessionChars[uid];
   viewingChar = info?.char || null;
   viewingCharId = info?.charId || null;
+  // 自分のキャラに戻ったら戻るボタンを隠す
+  if (uid === currentUser.uid) hideMobileBackBtn();
   document.querySelectorAll('.kp-char-btn').forEach(b => b.classList.remove('active'));
   document.querySelectorAll('.kp-char-btn').forEach(b => { if (b.textContent === (info?.char?.name || info?.displayName)) b.classList.add('active'); });
   document.querySelectorAll('.player-card').forEach(c => c.classList.remove('selected-char'));
