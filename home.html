@@ -1038,9 +1038,25 @@ function parseIaCharaTxt(txt) {
   }
   const cs=lines.find(l=>l.startsWith('現在SAN値')); if(cs){const m=cs.match(/現在SAN値\s+(\d+)\s*\/\s*(\d+)/);if(m){char.san=parseInt(m[1]);char.sanMax=parseInt(m[2]);}}
   const dl=lines.find(l=>l.startsWith('DB')); if(dl){const m=dl.match(/DB\s+([\+\-\d]+d?\d*)/i);if(m)char.db=m[1];}
+  // 技能カテゴリ辞書
+  const SKILL_CATEGORIES = {
+    '探索':['目星','聞き耳','図書館','追跡','ナビゲート','写真術','隠す','隠れる'],
+    '対人':['説得','言いくるめ','信用','値切り','心理学','母国語','威圧','魅惑','尋問'],
+    '戦闘':['回避','こぶし','キック','頭突き','組み付き','投擲','拳銃','ライフル','ショットガン','サブマシンガン','マシンガン','刀剣','斧','鞭','チェーンソー','ドリル','手榴弾','弓','杖'],
+    '知識':['歴史','クトゥルフ神話','医学','法律','オカルト','人類学','考古学','天文学','生物学','地質学','物理学','化学','薬学','電子工学','コンピューター','経済学','博物学'],
+    '行動':['跳躍','水泳','登攀','忍び歩き','走る','乗馬','潜水'],
+    '技術':['機械修理','電気修理','操縦','鍵開け','爆発物','応急手当','製作','変装'],
+    '芸術':['芸術','他言語','催眠','精神分析','運転'],
+  };
+  function getSkillCategory(name) {
+    for (const [cat, list] of Object.entries(SKILL_CATEGORIES)) {
+      if (list.some(s => name === s || name.startsWith(s))) return cat;
+    }
+    return 'その他';
+  }
   // 技能
   const ski=lines.findIndex(l=>l==='【技能値】');
-  if(ski!==-1){for(let i=ski+1;i<lines.length;i++){const l=lines[i];if(l==='【戦闘・武器・防具】'||l==='【所持品】')break;if(!l||l.startsWith('技能名')||l.startsWith('職業')||l.startsWith('興味')||l.startsWith('『')||l.startsWith('』'))continue;const m=l.match(/^(.+?)\s{2,}(\d+)\s+(\d+)/);if(m)char.skills[m[1].trim()]={total:parseInt(m[2]),base:parseInt(m[3])};}}
+  if(ski!==-1){for(let i=ski+1;i<lines.length;i++){const l=lines[i];if(l==='【戦闘・武器・防具】'||l==='【所持品】')break;if(!l||l.startsWith('技能名')||l.startsWith('職業')||l.startsWith('興味')||l.startsWith('『')||l.startsWith('』'))continue;const m=l.match(/^(.+?)\s{2,}(\d+)\s+(\d+)/);if(m){const nm=m[1].trim();char.skills[nm]={total:parseInt(m[2]),base:parseInt(m[3]),category:getSkillCategory(nm)};}}}
   // 所持品
   const ii=lines.findIndex(l=>l==='【所持品】');
   if(ii!==-1){for(let i=ii+1;i<lines.length;i++){const l=lines[i];if(l.startsWith('【'))break;if(!l||l.startsWith('名称'))continue;if(l.startsWith('現在の所持金:')){const m=l.match(/(\d+)/);if(m)char.money=parseInt(m[1]);continue;}if(l.startsWith('借金:'))continue;const im=l.match(/^(\S.+?)\s{2,}/);if(im)char.items.push(im[1].trim());}}

@@ -182,11 +182,19 @@ header {
 .stat-box .s-sub { font-size: 9px; color: var(--text-dim); margin-top: 1px; }
 
 /* Skills */
-.skills-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 6px; }
-.skill-item { display: flex; align-items: center; justify-content: space-between; background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px; cursor: pointer; transition: all 0.15s; }
-.skill-item:hover { border-color: var(--border-glow); background: var(--bg-hover); }
-.sk-name { font-size: 11px; color: var(--text-secondary); }
-.sk-val { font-family: 'Cinzel Decorative', serif; font-size: 13px; color: var(--gold); background: rgba(201,168,76,0.08); border-radius: 4px; padding: 1px 5px; min-width: 28px; text-align: center; }
+.skill-category { margin-bottom: 6px; }
+.skill-cat-header { display: flex; align-items: center; justify-content: space-between; padding: 4px 2px; cursor: pointer; user-select: none; border-bottom: 1px solid var(--border); margin-bottom: 3px; }
+.skill-cat-label { font-size: 11px; color: var(--gold-dim); font-weight: 600; letter-spacing: 1px; display: flex; align-items: center; gap: 4px; }
+.skill-cat-arrow { font-size: 9px; color: var(--text-dim); transition: transform 0.2s; margin-left: 4px; }
+.skill-category.collapsed .skill-cat-arrow { transform: rotate(-90deg); }
+.skill-cat-body { padding: 0 0 6px 0; }
+.skill-category.collapsed .skill-cat-body { display: none; }
+.skill-item { display: flex; align-items: center; justify-content: space-between; padding: 5px 6px; cursor: pointer; border-radius: 5px; transition: background 0.12s; }
+.skill-item:hover { background: var(--bg-hover); }
+.sk-name { font-size: 12px; color: var(--text-secondary); }
+.sk-val { font-size: 12px; color: var(--gold); min-width: 28px; text-align: right; }
+.skills-toggle-all { font-size: 10px; color: var(--text-dim); background: none; border: none; cursor: pointer; font-family: 'Noto Serif JP', serif; padding: 0; margin-bottom: 8px; }
+.skills-toggle-all:hover { color: var(--text-secondary); }
 
 /* KP char selector */
 .kp-char-select { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
@@ -459,6 +467,7 @@ header {
   .v-btn       { width: 28px; height: 28px; }
   .stats-grid  { grid-template-columns: repeat(5, 1fr); gap: 5px; }
   .skills-grid { grid-template-columns: repeat(2, 1fr); }
+  .skill-cat-header { padding: 6px 8px; }
   .nav-tabs    { overflow-x: auto; flex-wrap: nowrap; }
   .nav-tab     { white-space: nowrap; padding: 10px 14px; }
   .tab-panel   { padding: 14px 12px; }
@@ -584,8 +593,11 @@ header {
         </div>
         <div class="section-label">基本能力値</div>
         <div class="stats-grid" id="stats-grid"></div>
-        <div class="section-label" style="margin-top:14px">技能</div>
-        <div class="skills-grid" id="skills-grid"></div>
+        <div class="section-label" style="margin-top:14px;display:flex;align-items:center;justify-content:space-between">
+          <span>技能</span>
+          <button class="skills-toggle-all" id="skills-toggle-btn" onclick="toggleAllSkillCats()">すべて閉じる</button>
+        </div>
+        <div id="skills-grid"></div>
       </div>
     </div>
 
@@ -995,14 +1007,48 @@ function renderCharSheet(char, canEdit) {
     sg.appendChild(d);
   });
 
-  // Skills
+  // Skills (カテゴリ別アコーディオン)
   const skgrid = document.getElementById('skills-grid'); skgrid.innerHTML = '';
   if (char.skills) {
-    Object.entries(char.skills).sort((a,b) => b[1].total - a[1].total).forEach(([name, v]) => {
-      const d = document.createElement('div'); d.className = 'skill-item';
-      d.innerHTML = `<span class="sk-name">${name}</span><span class="sk-val">${v.total}</span>`;
-      d.onclick = () => rollSkill(name, v.total);
-      skgrid.appendChild(d);
+    const CAT_ORDER = ['探索','対人','戦闘','知識','行動','技術','芸術','その他'];
+    const CAT_ICON  = {'探索':'🔍','対人':'🗣️','戦闘':'⚔️','知識':'🧠','行動':'🏃','技術':'🔧','芸術':'🎨','その他':'📦'};
+    // カテゴリごとにグループ化
+    const grouped = {};
+    Object.entries(char.skills).forEach(([name, v]) => {
+      const cat = v.category || 'その他';
+      if (!grouped[cat]) grouped[cat] = [];
+      grouped[cat].push([name, v]);
+    });
+    // カテゴリ順に表示
+    CAT_ORDER.forEach(cat => {
+      if (!grouped[cat] || grouped[cat].length === 0) return;
+      const items = grouped[cat].sort((a,b) => b[1].total - a[1].total);
+      // アコーディオンブロック
+      const block = document.createElement('div');
+      block.className = 'skill-category';
+      const header = document.createElement('div');
+      header.className = 'skill-cat-header';
+      header.innerHTML = `
+        <span class="skill-cat-label">${CAT_ICON[cat] || '📦'} ${cat}</span>
+        <span style="display:flex;align-items:center;gap:6px">
+          <span class="skill-cat-count">${items.length}技能</span>
+          <span class="skill-cat-arrow">▼</span>
+        </span>`;
+      header.onclick = () => block.classList.toggle('collapsed');
+      const body = document.createElement('div');
+      body.className = 'skill-cat-body';
+      const grid = document.createElement('div');
+      grid.className = 'skills-grid';
+      items.forEach(([name, v]) => {
+        const d = document.createElement('div'); d.className = 'skill-item';
+        d.innerHTML = `<span class="sk-name">${name}</span><span class="sk-val">${v.total}</span>`;
+        d.onclick = () => rollSkill(name, v.total);
+        grid.appendChild(d);
+      });
+      body.appendChild(grid);
+      block.appendChild(header);
+      block.appendChild(body);
+      skgrid.appendChild(block);
     });
   }
 }
