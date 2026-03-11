@@ -579,6 +579,10 @@ header {
         <div class="section-label" style="margin-bottom:6px">キャラクター選択（KP）</div>
         <div class="kp-char-select" id="kp-char-select"></div>
       </div>
+      <div id="pl-char-select-area" style="display:none">
+        <div class="section-label" style="margin-bottom:6px">キャラクター切り替え</div>
+        <div class="kp-char-select" id="pl-char-select"></div>
+      </div>
       <div id="no-char-msg" style="display:none; text-align:center; padding:40px; color:var(--text-dim); font-style:italic; font-size:13px;">
         キャラクターが登録されていません。<br>
         <a href="home.html" style="color:var(--gold-dim);">ホームからインポート</a>してください。
@@ -912,7 +916,10 @@ onAuthStateChanged(auth, async user => {
   if (cSnap.exists()) {
     const chars = Object.entries(cSnap.val());
     if (chars.length > 0) {
-      [myCharId, myChar] = chars[0]; // Use first char by default
+      // ホームで選択したキャラがあればそれを使う、なければ先頭
+      const savedCharId = localStorage.getItem(`activeChar_${sessionCode}`);
+      const found = savedCharId ? chars.find(([id]) => id === savedCharId) : null;
+      [myCharId, myChar] = found || chars[0];
     }
   }
 
@@ -1147,13 +1154,44 @@ function updatePlayerCardBars(uid, vitals) {
 function setupCharSheet() {
   if (myRole === 'KP') {
     document.getElementById('kp-char-select-area').style.display = 'block';
-    // KP can select any player's char
     if (myChar) { viewingChar = myChar; viewingUid = currentUser.uid; viewingCharId = myCharId; }
   } else {
-    if (myChar) { viewingChar = myChar; viewingUid = currentUser.uid; viewingCharId = myCharId; renderCharSheet(myChar, true); }
-    else { document.getElementById('no-char-msg').style.display = 'block'; }
+    if (myChar) {
+      viewingChar = myChar; viewingUid = currentUser.uid; viewingCharId = myCharId;
+      renderCharSheet(myChar, true);
+      // 複数キャラ持ちなら切り替えボタンを表示
+      buildPlCharSelect();
+    } else {
+      document.getElementById('no-char-msg').style.display = 'block';
+    }
   }
   if (viewingChar) renderCharSheet(viewingChar, viewingUid === currentUser.uid || myRole === 'KP');
+}
+
+async function buildPlCharSelect() {
+  const cSnap = await get(ref(db, `users/${currentUser.uid}/characters`));
+  if (!cSnap.exists()) return;
+  const chars = Object.entries(cSnap.val());
+  if (chars.length <= 1) return; // 1枚だけなら表示不要
+  const area = document.getElementById('pl-char-select');
+  area.innerHTML = '';
+  chars.forEach(([charId, char]) => {
+    const btn = document.createElement('button');
+    btn.className = 'kp-char-btn' + (charId === myCharId ? ' active' : '');
+    btn.textContent = char.name || '(名前なし)';
+    btn.onclick = () => switchMyChar(charId, char, btn);
+    area.appendChild(btn);
+  });
+  document.getElementById('pl-char-select-area').style.display = 'block';
+}
+
+function switchMyChar(charId, char, btn) {
+  myCharId = charId;
+  myChar = char;
+  viewingChar = char; viewingUid = currentUser.uid; viewingCharId = charId;
+  document.querySelectorAll('#pl-char-select .kp-char-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderCharSheet(char, true);
 }
 
 function buildKpCharSelect() {
