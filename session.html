@@ -1954,7 +1954,8 @@ function listenChannel(channelId) {
       renderMsg(msg, chatEl);
     }
     // チャットパネルが表示されていないとき（スマホ）は未読バッジを増やす
-    if (msg.who !== 'システム' && msg.type !== 'system') {
+    // ログチャンネルとシステムメッセージは除外
+    if (channelId !== 'log' && msg.who !== 'システム' && msg.type !== 'system') {
       const chatVisible = currentMobileView === 'chat' || window.innerWidth > 640;
       if (!chatVisible) {
         chatUnreadCount++;
