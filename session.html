@@ -844,7 +844,7 @@ header {
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
-import { getDatabase, ref, get, set, push, update, onValue, onChildAdded } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+import { getDatabase, ref, get, set, push, update, onValue, onChildAdded, onDisconnect } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
 import { CAT_ORDER, CAT_ICON } from './skills-config.js';
 
 const firebaseConfig = {
@@ -868,11 +868,16 @@ let allSessionChars = {}; // uid -> {charId, char, role}
 let invRole = 'PL', foundUserData = null;
 
 // ── Connection status ──
+const onlineUids = new Set();
+
 onValue(ref(db, '.info/connected'), snap => {
   const dot = document.getElementById('conn-dot');
   const txt = document.getElementById('conn-text');
-  if (snap.val()) { dot.classList.remove('offline'); txt.textContent = '接続中'; }
-  else { dot.classList.add('offline'); txt.textContent = '切断'; }
+  if (snap.val()) {
+    dot.classList.remove('offline'); txt.textContent = '接続中';
+  } else {
+    dot.classList.add('offline'); txt.textContent = '切断';
+  }
 });
 
 function setLoading(msg) { document.getElementById('loading-text').textContent = msg; }
@@ -928,6 +933,25 @@ onAuthStateChanged(auth, async user => {
   onValue(ref(db, `sessions/${sessionCode}/players`), snap => {
     const players = snap.val() || {};
     loadAllPlayerChars(players);
+  });
+
+  // プレゼンスを書き込み（ここで sessionCode が確定している）
+  const myPresRef = ref(db, `sessions/${sessionCode}/presence/${currentUser.uid}`);
+  set(myPresRef, true);
+  onDisconnect(myPresRef).remove();
+
+  // 他ユーザーのオンライン状態を監視してドットをリアルタイム更新
+  onValue(ref(db, `sessions/${sessionCode}/presence`), snap => {
+    onlineUids.clear();
+    if (snap.exists()) Object.keys(snap.val()).forEach(uid => onlineUids.add(uid));
+    // 既存のプレイヤーカードのドットを更新
+    document.querySelectorAll('.player-card').forEach(card => {
+      const uid = card.id.replace('pcard-', '');
+      const dot = card.querySelector('.status-dot');
+      if (dot) {
+        dot.className = 'status-dot ' + (onlineUids.has(uid) ? 'online' : 'offline');
+      }
+    });
   });
 
   // Init UI
@@ -1009,14 +1033,22 @@ function renderKpChannelList() {
     });
 }
 
-window.saveSessionName = () => {
+window.saveSessionName = async () => {
   const name = document.getElementById('kp-session-name').value.trim();
   if (!name) return;
-  update(ref(db, `sessions/${sessionCode}`), { name }).then(() => {
-    document.getElementById('kp-session-name-msg').textContent = '✓ 変更しました';
-    document.getElementById('session-name-display').textContent = name;
-    sessionData.name = name;
-  });
+  await update(ref(db, `sessions/${sessionCode}`), { name });
+  // 全参加者の users/{uid}/sessions/{code}/name も更新
+  const playersSnap = await get(ref(db, `sessions/${sessionCode}/players`));
+  if (playersSnap.exists()) {
+    const updates = {};
+    Object.keys(playersSnap.val()).forEach(uid => {
+      updates[`users/${uid}/sessions/${sessionCode}/name`] = name;
+    });
+    if (Object.keys(updates).length) await update(ref(db), updates);
+  }
+  document.getElementById('kp-session-name-msg').textContent = '✓ 変更しました';
+  document.getElementById('session-name-display').textContent = name;
+  sessionData.name = name;
 };
 
 window.savePlayerRole = (uid, role) => {
@@ -1111,7 +1143,7 @@ function buildPlayerCard(uid, uData, char, role) {
   div.id = 'pcard-' + uid;
   div.onclick = () => { if (myRole === 'KP') selectViewChar(uid); };
 
-  const isOnline = true; // Could be enhanced with presence
+  const isOnline = onlineUids.has(uid);
   const avatarHtml = char?.iconUrl ? `<img src="${char.iconUrl}" alt="" onerror="this.parentElement.textContent='🧍'">` : '🧍';
   const hp = char?.hp ?? 0, hpMax = char?.hpMax ?? 1;
   const san = char?.san ?? 0, sanMax = char?.sanMax ?? 1;
@@ -1615,7 +1647,7 @@ function postSystemMessage(text) {
   push(ref(db, `sessions/${sessionCode}/chat`), msg);
 }
 
-window.handleChatKey = e => { if (e.key==='Enter'&&!e.shiftKey) { e.preventDefault(); sendChat(); } };
+window.handleChatKey = e => { if (e.key==='Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); sendChat(); } };
 window.sendChat = () => {
   if (currentChannelId === `memo_${currentUser?.uid}`) return;
   const input = document.getElementById('chat-input');
