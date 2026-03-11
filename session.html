@@ -1075,19 +1075,15 @@ window.rollSkillCheck = () => {
 };
 
 function rollStat(name, val) {
+  document.getElementById('sc-val').value = val;
+  document.getElementById('sc-name').value = name;
   switchTab('dice', document.querySelectorAll('.nav-tab')[1]);
-  const roll = Math.floor(Math.random()*100)+1;
-  const result = getCheckResult(roll, val);
-  showResultLocal(`${name} [${val}]`, roll, 100, result);
-  pushRoll(`${name} [${val}]`, roll, result);
 }
 
 function rollSkill(name, val) {
+  document.getElementById('sc-val').value = val;
+  document.getElementById('sc-name').value = name;
   switchTab('dice', document.querySelectorAll('.nav-tab')[1]);
-  const roll = Math.floor(Math.random()*100)+1;
-  const result = getCheckResult(roll, val);
-  showResultLocal(`${name} [${val}]`, roll, 100, result);
-  pushRoll(`${name} [${val}]`, roll, result);
 }
 
 function showResultLocal(label, num, sides, result) {
