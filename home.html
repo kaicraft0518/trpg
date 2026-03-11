@@ -381,10 +381,10 @@ header {
           <input class="form-input" id="create-name" type="text" placeholder="インスマスを覆う影">
         </div>
         <div class="form-group">
-          <label class="form-label">招待コード</label>
+          <label class="form-label">招待コード（自動生成・8文字固定）</label>
           <div class="code-row">
-            <input class="form-input" id="create-code" type="text" placeholder="ARKHAM2024" oninput="this.value=this.value.toUpperCase()">
-            <button class="gen-btn" onclick="generateCode()" title="ランダム生成">🎲</button>
+            <input class="form-input" id="create-code" type="text" readonly style="cursor:default;opacity:0.8;letter-spacing:2px;font-family:'Cinzel Decorative',serif">
+            <button class="gen-btn" onclick="generateCode()" title="再生成">🔄</button>
           </div>
           <div class="err-msg" id="create-code-err"></div>
         </div>
@@ -755,7 +755,9 @@ window.deleteChar = async (e, charId) => {
 // ── Session ──
 window.setCreateRole = r => { createRole = r; document.getElementById('create-role-kp').classList.toggle('active', r==='KP'); document.getElementById('create-role-pl').classList.toggle('active', r==='PL'); };
 window.setJoinRole   = r => { joinRole = r;   document.getElementById('join-role-pl').classList.toggle('active', r==='PL'); document.getElementById('join-role-kp').classList.toggle('active', r==='KP'); };
-window.generateCode  = () => { const c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; document.getElementById('create-code').value = Array.from({length:8},()=>c[Math.floor(Math.random()*c.length)]).join(''); };
+window.generateCode = () => { const c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; document.getElementById('create-code').value = Array.from({length:8},()=>c[Math.floor(Math.random()*c.length)]).join(''); };
+// ページ読み込み時に自動生成
+window.generateCode();
 
 window.createSession = async () => {
   const name = document.getElementById('create-name').value.trim() || '名称未設定のセッション';
@@ -763,10 +765,16 @@ window.createSession = async () => {
   const errEl = document.getElementById('create-code-err');
   const sucEl = document.getElementById('create-suc');
   errEl.classList.remove('show'); sucEl.classList.remove('show');
-  if (!code) { errEl.textContent = '招待コードを入力してください'; errEl.classList.add('show'); return; }
-  if (!/^[A-Z0-9]{4,12}$/.test(code)) { errEl.textContent = '4〜12文字の半角英数字（大文字）'; errEl.classList.add('show'); return; }
+  // 万が一空の場合は再生成
+  if (!code) { generateCode(); return; }
   const snap = await get(ref(db, `sessions/${code}`));
-  if (snap.exists()) { errEl.textContent = 'このコードはすでに使用されています'; errEl.classList.add('show'); return; }
+  if (snap.exists()) {
+    // 重複時は自動で再生成して再試行
+    generateCode();
+    errEl.textContent = 'コードが重複したため再生成しました。もう一度お試しください';
+    errEl.classList.add('show');
+    return;
+  }
   await set(ref(db, `sessions/${code}`), { name, createdBy: currentUser.uid, createdAt: Date.now(), players: { [currentUser.uid]: { role: createRole, joinedAt: Date.now() } } });
   await set(ref(db, `users/${currentUser.uid}/sessions/${code}`), { name, role: createRole, joinedAt: Date.now() });
   sucEl.innerHTML = `作成完了！ <a href="session.html?session=${code}" style="color:var(--gold)">入室する →</a><br><span style="font-size:11px;color:var(--text-dim)">コード: ${code}</span>`;
