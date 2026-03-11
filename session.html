@@ -1169,7 +1169,7 @@ window.saveSessionName = async () => {
     Object.keys(playersSnap.val()).forEach(uid => {
       updates[`users/${uid}/sessions/${sessionCode}/name`] = name;
     });
-    if (Object.keys(updates).length) await update(ref(db), updates);
+    if (Object.keys(updates).length) await update(ref(db, '/'), updates);
   }
   document.getElementById('kp-session-name-msg').textContent = '✓ 変更しました';
   document.getElementById('session-name-display').textContent = name;

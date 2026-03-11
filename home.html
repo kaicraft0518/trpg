@@ -859,7 +859,7 @@ window.markAllRead = async () => {
   if (!snap.exists()) return;
   const updates = {};
   Object.entries(snap.val()).forEach(([code, inv]) => { if (inv.status === 'pending') updates[`invites/${currentUser.uid}/${code}/status`] = 'declined'; });
-  await update(ref(db), updates);
+  await update(ref(db, '/'), updates);
 };
 
 // ── Invite modal ──
