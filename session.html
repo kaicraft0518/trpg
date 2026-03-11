@@ -83,6 +83,9 @@ header {
 .mobile-nav-btn { flex: 1; padding: 10px 4px 8px; background: transparent; border: none; color: var(--text-dim); cursor: pointer; font-size: 10px; font-family: 'Noto Serif JP', serif; display: flex; flex-direction: column; align-items: center; gap: 3px; transition: color 0.2s; }
 .mobile-nav-btn .mn-icon { font-size: 18px; }
 .mobile-nav-btn.active { color: var(--gold); }
+.mobile-nav-btn { position: relative; }
+.mnav-badge { position: absolute; top: 6px; right: 6px; background: #ef4444; color: #fff; font-size: 9px; font-family: sans-serif; font-weight: 700; border-radius: 999px; padding: 1px 4px; min-width: 14px; text-align: center; line-height: 14px; display: none; }
+.mnav-badge.show { display: block; }
 .mobile-nav-btn.active .mn-icon { filter: drop-shadow(0 0 4px rgba(201,168,76,0.6)); }
 
 /* ── LEFT SIDEBAR ── */
@@ -497,7 +500,7 @@ header {
   .sidebar.mobile-active,
   .right-panel.mobile-active { display: flex; flex-direction: column; }
   /* スマホ参加者タブを全画面・見やすく */
-  .sidebar.mobile-active { padding: 0; }
+  .sidebar.mobile-active { padding: 0; animation: fadeIn 0.25s ease; }
   .sidebar.mobile-active .sidebar-section { padding: 14px; }
   .sidebar.mobile-active .player-card { padding: 14px; margin-bottom: 10px; }
   .sidebar.mobile-active .pc-name { font-size: 15px; }
@@ -636,7 +639,7 @@ header {
       <div id="sheet-content" style="display:none">
         <div class="sheet-header">
           <div class="sheet-name-block" onclick="openCharSwitchModal()" style="cursor:pointer" title="キャラクターを切り替え">
-            <h2 id="char-name-display" style="display:flex;align-items:center;gap:8px">— <span id="char-name-arrow" style="font-size:12px;color:var(--gold-dim);font-family:'Noto Serif JP',serif;font-weight:normal;background:rgba(201,168,76,0.1);border:1px solid var(--gold-dim);border-radius:4px;padding:1px 6px;letter-spacing:0">切替 ▼</span></h2>
+            <h2 id="char-name-display" style="display:flex;align-items:center;gap:8px">— <span id="char-name-arrow" style="font-size:12px;color:var(--gold-dim);font-family:'Noto Serif JP',serif;font-weight:normal;background:rgba(201,168,76,0.1);border:1px solid var(--gold-dim);border-radius:4px;padding:1px 6px;letter-spacing:0">▼</span></h2>
             <div class="sheet-meta" id="char-meta-display">—</div>
           </div>
           <div class="san-display" id="san-display-btn" onclick="openSanCheck()" title="SANチェック" style="cursor:pointer;transition:all 0.2s" onmouseenter="this.style.borderColor='rgba(74,158,255,0.5)'" onmouseleave="this.style.borderColor='rgba(74,158,255,0.2)'">
@@ -729,7 +732,7 @@ header {
         <div class="section-label">タイムライン</div>
         <div class="timeline" id="timeline"></div>
         <div class="tl-input-row">
-          <input class="tl-input" id="tl-input" type="text" placeholder="出来事を記録…" onkeydown="if(event.key==='Enter')addTimeline()">
+          <input class="tl-input" id="tl-input" type="text" placeholder="出来事を記録…" onkeydown="if(event.key==='Enter'&&!event.isComposing)addTimeline()">
           <button class="tl-add-btn" onclick="addTimeline()">記録</button>
         </div>
       </div>
@@ -781,6 +784,7 @@ header {
     </button>
     <button class="mobile-nav-btn" id="mnav-chat" onclick="mobileNav('chat')">
       <span class="mn-icon">💬</span>チャット
+      <span class="mnav-badge" id="chat-unread-badge"></span>
     </button>
   </div>
 </nav>
@@ -816,7 +820,7 @@ header {
           <button class="role-btn kp" id="inv-role-kp" onclick="setInvRole('KP')">🕯️ KP</button>
         </div>
         <div class="id-search-row">
-          <input class="form-input" id="inv-handle-input" type="text" placeholder="相手のユーザーID" onkeydown="if(event.key==='Enter')searchUser()">
+          <input class="form-input" id="inv-handle-input" type="text" placeholder="相手のユーザーID" onkeydown="if(event.key==='Enter'&&!event.isComposing)searchUser()">
           <button class="search-btn" onclick="searchUser()">検索</button>
         </div>
         <div class="found-user" id="found-user">
@@ -975,6 +979,7 @@ const db = getDatabase(app);
 let currentUser = null, userData = null, sessionCode = '', sessionData = null;
 let myRole = 'PL', myCharId = null, myChar = null;
 let viewingCharId = null, viewingChar = null, viewingUid = null;
+let chatUnreadCount = 0;
 let allSessionChars = {}; // uid -> {charId, char, role}
 let invRole = 'PL', foundUserData = null;
 
@@ -1050,6 +1055,14 @@ onAuthStateChanged(auth, async user => {
   const myPresRef = ref(db, `sessions/${sessionCode}/presence/${currentUser.uid}`);
   set(myPresRef, true);
   onDisconnect(myPresRef).remove();
+  // 切断時にログに通知
+  const disconnectName = myRole === 'KP'
+    ? `KP（${userData.handle}）`
+    : (myChar?.name || userData.displayName || userData.handle);
+  push(ref(db, `sessions/${sessionCode}/channel_msgs/log`), {
+    who: 'システム', text: `${disconnectName} が切断しました`, type: 'system',
+    time: new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'}), ts: Date.now()
+  });
 
   // 他ユーザーのオンライン状態を監視してドットをリアルタイム更新
   onValue(ref(db, `sessions/${sessionCode}/presence`), snap => {
@@ -1254,13 +1267,12 @@ function buildPlayerCard(uid, uData, char, role) {
   div.className = 'player-card' + (uid === currentUser.uid ? ' mine' : '');
   div.id = 'pcard-' + uid;
   div.onclick = () => {
-    if (myRole === 'KP') {
-      selectViewChar(uid);
-      // スマホならキャラタブに切り替え
-      if (window.innerWidth <= 640) {
-        mobileNav('chars');
-        showMobileBackBtn(uid, uData, char);
-      }
+    // KP: 全員閲覧+編集可, PL: 全員閲覧のみ
+    selectViewChar(uid);
+    if (window.innerWidth <= 640) {
+      mobileNav('chars');
+      if (uid !== currentUser.uid) showMobileBackBtn(uid, uData, char);
+      else hideMobileBackBtn();
     }
   };
 
@@ -1450,7 +1462,7 @@ function renderCharSheet(char, canEdit) {
   document.getElementById('sheet-content').style.display = 'block';
   document.getElementById('no-char-msg').style.display = 'none';
   const nameEl = document.getElementById('char-name-display');
-  if (nameEl) nameEl.innerHTML = `${char.name || '—'} <span style="font-size:12px;color:var(--gold-dim);font-family:'Noto Serif JP',serif;font-weight:normal;background:rgba(201,168,76,0.1);border:1px solid var(--gold-dim);border-radius:4px;padding:1px 6px;letter-spacing:0">切替 ▼</span>`;
+  if (nameEl) nameEl.innerHTML = `${char.name || '—'} <span style="font-size:12px;color:var(--gold-dim);font-family:'Noto Serif JP',serif;font-weight:normal;background:rgba(201,168,76,0.1);border:1px solid var(--gold-dim);border-radius:4px;padding:1px 6px;letter-spacing:0">▼</span>`;
   document.getElementById('char-meta-display').textContent = [char.occupation, char.age ? char.age+'歳' : '', char.gender].filter(Boolean).join(' · ');
   document.getElementById('san-big').textContent = char.san ?? '—';
   document.getElementById('san-big-max').textContent = '/ ' + (char.sanMax ?? '—');
@@ -1462,6 +1474,9 @@ function renderCharSheet(char, canEdit) {
   document.getElementById('mp-max-display').textContent  = '最大: ' + (char.mpMax  ?? '—');
   // Enable/disable buttons
   ['hp-minus','hp-plus','san-minus','san-plus','mp-minus','mp-plus'].forEach(id => { const el = document.getElementById(id); if (el) el.disabled = !canEdit; });
+  // 他人キャラ閲覧中はSANチェックボタンを非表示（自分 or KPのみ表示）
+  const sanBtn = document.getElementById('san-display-btn');
+  if (sanBtn) sanBtn.style.visibility = canEdit ? 'visible' : 'hidden';
 
   // Stats
   const sg = document.getElementById('stats-grid'); sg.innerHTML = '';
@@ -1939,6 +1954,15 @@ function listenChannel(channelId) {
       const chatEl = document.getElementById('panel-chat');
       renderMsg(msg, chatEl);
     }
+    // チャットパネルが表示されていないとき（スマホ）は未読バッジを増やす
+    if (msg.who !== 'システム' || msg.type !== 'system') {
+      const chatVisible = currentMobileView === 'chat' || window.innerWidth > 640;
+      if (!chatVisible) {
+        chatUnreadCount++;
+        const badge = document.getElementById('chat-unread-badge');
+        if (badge) { badge.textContent = chatUnreadCount > 99 ? '99+' : chatUnreadCount; badge.classList.add('show'); }
+      }
+    }
   });
 }
 
@@ -2262,6 +2286,10 @@ window.mobileNav = function(view) {
   document.getElementById('tablet-overlay')?.classList.remove('open');
 
   if (view === 'chat') {
+    // 未読バッジをリセット
+    chatUnreadCount = 0;
+    const badge = document.getElementById('chat-unread-badge');
+    if (badge) { badge.textContent = ''; badge.classList.remove('show'); }
     right.style.display = 'flex';
     right.classList.add('mobile-active');
     const isMemo = currentChannelId === `memo_${currentUser?.uid}`;
