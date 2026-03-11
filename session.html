@@ -232,7 +232,7 @@ header {
 .roll-history { max-height: 180px; overflow-y: auto; }
 .h-item { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-bottom: 1px solid rgba(58,46,34,0.4); font-size: 12px; animation: slideIn 0.2s ease; }
 @keyframes slideIn { from{opacity:0;transform:translateX(-8px)} to{opacity:1;transform:none} }
-.h-who { color: var(--text-secondary); width: 60px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; }
+.h-who { color: var(--text-secondary); min-width: 90px; max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; flex-shrink: 0; }
 .h-what { color: var(--text-dim); flex: 1; font-size: 11px; }
 .h-res { font-family: 'Cinzel Decorative', serif; color: var(--gold); font-size: 14px; }
 .h-tag { font-size: 10px; padding: 1px 6px; border-radius: 8px; }
@@ -385,13 +385,13 @@ header {
 /* ── TABLET SIDEBAR DRAWER ── */
 .tablet-only { display: none; }
 .tablet-sidebar-overlay {
-  display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5);
-  z-index: 80; backdrop-filter: blur(2px);
+  display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+  z-index: 105; backdrop-filter: blur(0px);
 }
 .tablet-sidebar-overlay.open { display: block; }
 .sidebar.tablet-drawer {
   position: fixed; top: 52px; left: 0; bottom: 0; width: 260px;
-  z-index: 90; transform: translateX(-100%);
+  z-index: 110; transform: translateX(-100%);
   transition: transform 0.25s ease; display: flex !important;
   box-shadow: 4px 0 20px rgba(0,0,0,0.5);
 }
@@ -438,6 +438,7 @@ header {
 @media (max-width: 640px) {
   /* ヘッダー */
   header { padding: 0 10px; gap: 6px; height: 50px; }
+  .nav-tabs { display: none; } /* スマホはモバイルナビに統一 */
   .header-logo { font-size: 11px; letter-spacing: 1px; }
   .session-code-badge { display: none; }
   .conn-badge { display: none; }
@@ -648,7 +649,7 @@ header {
           <div class="dice-btn" onclick="rollDice(6,1)"><span class="d-icon">🎲</span><span class="d-label">D6</span></div>
           <div class="dice-btn" onclick="rollDice(8,1)"><span class="d-icon">🎲</span><span class="d-label">D8</span></div>
           <div class="dice-btn" onclick="rollDice(10,1)"><span class="d-icon">🎲</span><span class="d-label">D10</span></div>
-          <div class="dice-btn d100" onclick="rollDice(100,1)"><span class="d-icon">🎱</span><span class="d-label" style="color:var(--gold)">D100</span></div>
+          <div class="dice-btn d100" onclick="rollDice(100,1)"><span class="d-icon">🎲</span><span class="d-label" style="color:var(--gold)">D100</span></div>
           <div class="dice-btn" onclick="rollDice(12,1)"><span class="d-icon">🎲</span><span class="d-label">D12</span></div>
           <div class="dice-btn" onclick="rollDice(20,1)"><span class="d-icon">🎲</span><span class="d-label">D20</span></div>
         </div>

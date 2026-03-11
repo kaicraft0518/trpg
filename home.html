@@ -365,6 +365,13 @@ header {
 
   <!-- SESSIONS TAB -->
   <div class="tab-panel" id="panel-sessions">
+    <div style="margin-bottom:24px;">
+      <div class="section-title">最近のセッション</div>
+      <div class="history-list" id="session-history">
+        <div style="font-size:12px;color:var(--text-dim);font-style:italic;padding:8px 0">参加履歴はありません</div>
+      </div>
+    </div>
+
     <div class="session-layout">
       <div class="session-card">
         <h3>セッションを作成</h3>
@@ -409,13 +416,6 @@ header {
           </div>
         </div>
         <button class="submit-btn" onclick="joinSession()">参加する</button>
-      </div>
-    </div>
-
-    <div style="margin-top:24px;">
-      <div class="section-title">最近のセッション</div>
-      <div class="history-list" id="session-history">
-        <div style="font-size:12px;color:var(--text-dim);font-style:italic;padding:8px 0">参加履歴はありません</div>
       </div>
     </div>
   </div>
