@@ -840,6 +840,7 @@ header {
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import { getDatabase, ref, get, set, push, update, onValue, onChildAdded } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
+import { CAT_ORDER, CAT_ICON } from './skills-config.js';
 
 const firebaseConfig = {
   apiKey: "AIzaSyB_JYoE53JPCyTTaAdHUj6EPX2K5P6HjYs",
@@ -1212,8 +1213,7 @@ function renderCharSheet(char, canEdit) {
   // Skills (カテゴリ別リスト)
   const skgrid = document.getElementById('skills-grid'); skgrid.innerHTML = '';
   if (char.skills) {
-    const CAT_ORDER = ['探索','対人','戦闘','知識','行動','技術','芸術','その他'];
-    const CAT_ICON  = {'探索':'🔍','対人':'🗣️','戦闘':'⚔️','知識':'🧠','行動':'🏃','技術':'🔧','芸術':'🎨','その他':'📦'};
+    // カテゴリ定義はskills-config.jsで管理
     const grouped = {};
     Object.entries(char.skills).forEach(([name, v]) => {
       const cat = v.category || 'その他';
