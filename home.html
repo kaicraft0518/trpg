@@ -58,7 +58,7 @@ body::before {
 header {
   background: rgba(17,14,11,0.95); border-bottom: 1px solid var(--border);
   padding: 0 28px; height: 60px; display: flex; align-items: center; justify-content: space-between;
-  position: sticky; top: 0; z-index: 100; backdrop-filter: blur(10px);
+  position: sticky; top: 0; z-index: 100; backdrop-filter: blur(10px); overflow: hidden;
 }
 .header-logo { font-family: 'Cinzel Decorative', serif; font-size: 16px; color: var(--gold); letter-spacing: 2px; text-shadow: 0 0 15px rgba(201,168,76,0.3); display: flex; align-items: center; gap: 8px; }
 .header-logo::before { content: '👁'; font-size: 18px; filter: sepia(1) hue-rotate(30deg) saturate(2); }
@@ -262,6 +262,19 @@ header {
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border-glow); border-radius: 3px; }
 @media (max-width: 800px) { .char-layout, .session-layout { grid-template-columns: 1fr; } }
+
+@media (max-width: 520px) {
+  /* ユーザー名を小さく、ハンドルを非表示 */
+  .user-badge { padding: 4px 10px 4px 8px; gap: 6px; font-size: 11px; }
+  .user-avatar { width: 22px; height: 22px; font-size: 10px; }
+  .user-name { font-size: 11px; }
+  .user-handle { display: none; }
+  /* ログアウトボタンはコンパクトに・折り返しさせない */
+  .logout-btn { padding: 4px 8px; font-size: 11px; white-space: nowrap; }
+  .theme-toggle { padding: 4px 7px; font-size: 12px; }
+  /* ヘッダー全体 */
+  header { padding: 0 12px; gap: 8px; }
+}
 </style>
 </head>
 <body>
