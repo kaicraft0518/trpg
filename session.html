@@ -467,6 +467,7 @@ header {
   /* ヘッダー */
   header { padding: 0 10px; gap: 6px; height: 50px; }
   .nav-tabs { display: none; } /* スマホはモバイルナビに統一 */
+  .tablet-only { display: none; } /* 上バーの👥はスマホ非表示 */
   .header-logo { font-size: 11px; letter-spacing: 1px; }
   .session-code-badge { display: none; }
   .conn-badge { display: none; }
@@ -758,9 +759,6 @@ header {
     </button>
     <button class="mobile-nav-btn" id="mnav-session" onclick="mobileNav('session')">
       <span class="mn-icon">📜</span>セッション
-    </button>
-    <button class="mobile-nav-btn" id="mnav-sidebar" onclick="mobileNav('sidebar')">
-      <span class="mn-icon">👥</span>参加者
     </button>
     <button class="mobile-nav-btn" id="mnav-chat" onclick="mobileNav('chat')">
       <span class="mn-icon">💬</span>チャット
