@@ -1165,11 +1165,10 @@ window.saveSessionName = async () => {
   // 全参加者の users/{uid}/sessions/{code}/name も更新
   const playersSnap = await get(ref(db, `sessions/${sessionCode}/players`));
   if (playersSnap.exists()) {
-    const updates = {};
-    Object.keys(playersSnap.val()).forEach(uid => {
-      updates[`users/${uid}/sessions/${sessionCode}/name`] = name;
-    });
-    if (Object.keys(updates).length) await update(ref(db, '/'), updates);
+    const uids = Object.keys(playersSnap.val());
+    await Promise.all(uids.map(uid =>
+      update(ref(db, `users/${uid}/sessions/${sessionCode}`), { name })
+    ));
   }
   document.getElementById('kp-session-name-msg').textContent = '✓ 変更しました';
   document.getElementById('session-name-display').textContent = name;
