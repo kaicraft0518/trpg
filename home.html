@@ -193,6 +193,40 @@ header {
 .file-name-display { font-size: 11px; color: var(--text-dim); margin-bottom: 6px; min-height: 16px; font-style: italic; }
 .char-share-btn { background: transparent; border: 1px solid var(--gold-dim); border-radius: 6px; padding: 4px 10px; color: var(--gold-dim); cursor: pointer; font-size: 11px; font-family: 'Noto Serif JP', serif; transition: all 0.2s; white-space: nowrap; }
 .char-share-btn:hover { background: rgba(201,168,76,0.1); color: var(--gold); }
+.char-edit-btn { background: transparent; border: 1px solid var(--border-glow); border-radius: 6px; padding: 4px 10px; color: var(--text-secondary); cursor: pointer; font-size: 11px; font-family: 'Noto Serif JP', serif; transition: all 0.2s; white-space: nowrap; }
+.char-edit-btn:hover { border-color: var(--gold-dim); color: var(--gold); }
+/* 編集モーダル */
+.edit-tabs { display: flex; border-bottom: 1px solid var(--border); margin-bottom: 16px; }
+.edit-tab { padding: 8px 16px; background: transparent; border: none; color: var(--text-dim); cursor: pointer; font-family: 'Noto Serif JP', serif; font-size: 12px; border-bottom: 2px solid transparent; transition: all 0.2s; }
+.edit-tab:hover { color: var(--text-secondary); }
+.edit-tab.active { color: var(--gold); border-bottom-color: var(--gold); }
+.edit-panel { display: none; }
+.edit-panel.active { display: block; }
+.edit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.edit-field { display: flex; flex-direction: column; gap: 4px; }
+.edit-field.full { grid-column: 1 / -1; }
+.edit-label { font-size: 10px; color: var(--text-dim); letter-spacing: 1px; }
+.edit-input { background: var(--bg-mid); border: 1px solid var(--border); border-radius: 6px; padding: 7px 10px; color: var(--text-primary); font-family: 'Noto Serif JP', serif; font-size: 13px; transition: border-color 0.15s; }
+.edit-input:focus { outline: none; border-color: var(--gold-dim); }
+.stat-edit-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.stat-edit-box { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.stat-edit-box .edit-label { font-size: 10px; }
+.stat-edit-box .edit-input { width: 100%; text-align: center; padding: 6px 4px; }
+.skill-edit-row { display: flex; align-items: center; gap: 6px; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
+.skill-edit-name { flex: 1; background: transparent; border: none; color: var(--text-secondary); font-family: 'Noto Serif JP', serif; font-size: 12px; padding: 3px 4px; border-bottom: 1px solid transparent; }
+.skill-edit-name:focus { outline: none; border-bottom-color: var(--border-glow); }
+.skill-edit-val { width: 52px; background: var(--bg-mid); border: 1px solid var(--border); border-radius: 4px; color: var(--gold); font-family: 'Cinzel Decorative', serif; font-size: 12px; text-align: center; padding: 3px 4px; }
+.skill-edit-val:focus { outline: none; border-color: var(--gold-dim); }
+.skill-edit-del { width: 20px; height: 20px; background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 13px; display: flex; align-items: center; justify-content: center; transition: color 0.15s; flex-shrink: 0; }
+.skill-edit-del:hover { color: var(--red-glow); }
+.skill-cat-header-edit { font-size: 10px; color: var(--gold-dim); letter-spacing: 1px; padding: 8px 0 3px; font-weight: 600; }
+.add-skill-row { display: flex; gap: 6px; margin-top: 8px; }
+.item-edit-row { display: flex; align-items: center; gap: 6px; padding: 4px 0; }
+.item-edit-name { flex: 1; background: var(--bg-mid); border: 1px solid var(--border); border-radius: 5px; color: var(--text-primary); font-family: 'Noto Serif JP', serif; font-size: 12px; padding: 5px 8px; }
+.item-edit-name:focus { outline: none; border-color: var(--gold-dim); }
+.icon-preview { width: 60px; height: 60px; border-radius: 8px; background: var(--bg-mid); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 24px; overflow: hidden; flex-shrink: 0; }
+.icon-preview img { width: 100%; height: 100%; object-fit: cover; }
+.unsaved-badge { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--gold); margin-left: 6px; vertical-align: middle; }
 /* Share char modal */
 .share-id-display { font-family: 'Cinzel Decorative', serif; font-size: 13px; letter-spacing: 2px; color: var(--gold); background: var(--bg-mid); border: 1px solid var(--border); border-radius: 7px; padding: 10px 14px; text-align: center; margin-bottom: 10px; }
 .share-note { font-size: 12px; color: var(--text-dim); font-style: italic; line-height: 1.6; margin-top: 8px; }
@@ -703,8 +737,9 @@ function buildCharCard(charId, char) {
       </div>
     </div>
     <div style="display:flex;flex-direction:column;gap:5px;flex-shrink:0;align-self:flex-start">
+      <button class="char-edit-btn"  onclick="openCharEdit(event,'${charId}')">編集</button>
       <button class="char-share-btn" onclick="shareChar(event,'${charId}')">共有</button>
-      <button class="char-del-btn" onclick="deleteChar(event,'${charId}')">削除</button>
+      <button class="char-del-btn"   onclick="deleteChar(event,'${charId}')">削除</button>
     </div>`;
   return div;
 }
@@ -1083,6 +1118,214 @@ function updateToggleBtn() {
   const btn = document.getElementById('theme-toggle-btn');
   if (btn) btn.textContent = isLight ? '🌙 ダーク' : '☀️ ライト';
 }
+// ── キャラクター編集 ──
+let editingCharId = null;
+let editingChar   = null;
+let editUnsaved   = false;
+
+window.openCharEdit = async (e, charId) => {
+  e.stopPropagation();
+  editingCharId = charId;
+  editUnsaved   = false;
+  document.getElementById('edit-unsaved').style.display = 'none';
+  const snap = await get(ref(db, `users/${currentUser.uid}/characters/${charId}`));
+  editingChar = snap.val();
+  if (!editingChar) return;
+  const c = editingChar;
+
+  // 基本情報
+  ['name','kana','occupation','age','gender','origin','height','weight'].forEach(f => {
+    const el = document.getElementById(`edit-${f}`);
+    if (el) el.value = c[f] || '';
+  });
+  document.getElementById('edit-iconUrl').value = (c.iconUrl && !c.iconUrl.startsWith('data:')) ? c.iconUrl : '';
+  const prev = document.getElementById('edit-icon-preview');
+  if (c.iconUrl) { prev.innerHTML = `<img src="${c.iconUrl}" alt="">`; }
+  else { prev.textContent = '🧍'; }
+  document.getElementById('edit-icon-file').value = '';
+
+  // 能力値
+  ['str','con','pow','dex','app','siz','int','edu','hpMax','sanMax','mpMax','luck','db'].forEach(f => {
+    const el = document.getElementById(`edit-${f}`);
+    if (el) el.value = c[f] !== undefined ? c[f] : '';
+  });
+
+  // 技能
+  renderSkillEditList(c.skills || {});
+
+  // 所持品
+  renderItemEditList(c.items || []);
+
+  // タブをリセット
+  switchEditTab('basic', document.querySelector('.edit-tab'));
+  document.getElementById('char-edit-modal').classList.add('open');
+};
+
+window.closeCharEdit = () => {
+  if (editUnsaved && !confirm('保存されていない変更があります。閉じますか？')) return;
+  document.getElementById('char-edit-modal').classList.remove('open');
+};
+
+window.markUnsaved = () => {
+  editUnsaved = true;
+  document.getElementById('edit-unsaved').style.display = 'inline';
+};
+
+window.switchEditTab = (tab, btn) => {
+  document.querySelectorAll('.edit-tab').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.edit-panel').forEach(p => p.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  document.getElementById(`edit-panel-${tab}`).classList.add('active');
+};
+
+// アイコン処理
+window.handleIconUpload = (input) => {
+  const file = input.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    // Canvas でリサイズ（最大300px）
+    const img = new Image();
+    img.onload = () => {
+      const MAX = 300;
+      let w = img.width, h = img.height;
+      if (w > h) { if (w > MAX) { h = h * MAX / w; w = MAX; } }
+      else       { if (h > MAX) { w = w * MAX / h; h = MAX; } }
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+      document.getElementById('edit-iconUrl').value = '';
+      document.getElementById('edit-icon-preview').innerHTML = `<img src="${dataUrl}" alt="">`;
+      editingChar._pendingIconData = dataUrl;
+      markUnsaved();
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+};
+
+window.previewIconUrl = (url) => {
+  const prev = document.getElementById('edit-icon-preview');
+  if (url) { prev.innerHTML = `<img src="${url}" alt="" onerror="this.parentElement.textContent='🧍'">`; }
+  else { prev.textContent = '🧍'; }
+  editingChar._pendingIconData = null;
+  markUnsaved();
+};
+
+// 技能編集リスト
+function renderSkillEditList(skills) {
+  const container = document.getElementById('skill-edit-list');
+  container.innerHTML = '';
+  const CAT_ORDER = ['探索','対人','戦闘','知識','行動','技術','芸術','その他'];
+  const grouped = {};
+  Object.entries(skills).forEach(([name, v]) => {
+    const cat = v.category || 'その他';
+    if (!grouped[cat]) grouped[cat] = [];
+    grouped[cat].push([name, v]);
+  });
+  CAT_ORDER.forEach(cat => {
+    if (!grouped[cat]?.length) return;
+    const header = document.createElement('div');
+    header.className = 'skill-cat-header-edit';
+    header.textContent = cat;
+    container.appendChild(header);
+    grouped[cat].sort((a,b) => b[1].total - a[1].total).forEach(([name, v]) => {
+      container.appendChild(makeSkillRow(name, v.total));
+    });
+  });
+}
+
+function makeSkillRow(name, val) {
+  const row = document.createElement('div');
+  row.className = 'skill-edit-row';
+  row.innerHTML = `
+    <input class="skill-edit-name" value="${name}" oninput="markUnsaved()">
+    <input class="skill-edit-val"  value="${val}"  type="number" oninput="markUnsaved()">
+    <button class="skill-edit-del" onclick="this.closest('.skill-edit-row').remove();markUnsaved()">✕</button>`;
+  return row;
+}
+
+window.addSkillRow = () => {
+  const nameEl = document.getElementById('new-skill-name');
+  const valEl  = document.getElementById('new-skill-val');
+  const name = nameEl.value.trim(); const val = parseInt(valEl.value) || 0;
+  if (!name) return;
+  document.getElementById('skill-edit-list').appendChild(makeSkillRow(name, val));
+  nameEl.value = ''; valEl.value = '';
+  markUnsaved();
+};
+
+// 所持品編集リスト
+function renderItemEditList(items) {
+  const container = document.getElementById('item-edit-list');
+  container.innerHTML = '';
+  items.forEach(item => container.appendChild(makeItemRow(item)));
+}
+
+function makeItemRow(name) {
+  const row = document.createElement('div');
+  row.className = 'item-edit-row';
+  row.innerHTML = `
+    <input class="item-edit-name" value="${name}" oninput="markUnsaved()">
+    <button class="skill-edit-del" onclick="this.closest('.item-edit-row').remove();markUnsaved()">✕</button>`;
+  return row;
+}
+
+window.addItemRow = () => {
+  const el = document.getElementById('new-item-name');
+  const name = el.value.trim(); if (!name) return;
+  document.getElementById('item-edit-list').appendChild(makeItemRow(name));
+  el.value = '';
+  markUnsaved();
+};
+
+// 保存
+window.saveCharEdit = async () => {
+  const c = { ...editingChar };
+
+  // 基本情報
+  ['name','kana','occupation','gender','origin','height','weight'].forEach(f => {
+    c[f] = document.getElementById(`edit-${f}`)?.value.trim() || c[f];
+  });
+  c.age = parseInt(document.getElementById('edit-age')?.value) || c.age;
+
+  // アイコン
+  const iconUrlInput = document.getElementById('edit-iconUrl').value.trim();
+  if (c._pendingIconData) { c.iconUrl = c._pendingIconData; }
+  else if (iconUrlInput)  { c.iconUrl = iconUrlInput; }
+  else if (!iconUrlInput) { c.iconUrl = c._pendingIconData ? c._pendingIconData : (c.iconUrl || null); }
+  delete c._pendingIconData;
+
+  // 能力値
+  ['str','con','pow','dex','app','siz','int','edu','hpMax','sanMax','mpMax','luck'].forEach(f => {
+    const v = parseInt(document.getElementById(`edit-${f}`)?.value);
+    if (!isNaN(v)) c[f] = v;
+  });
+  c.db = document.getElementById('edit-db')?.value.trim() || c.db;
+  // HP/SAN/MPの現在値が最大値を超えないよう調整
+  if (c.hp  > c.hpMax)  c.hp  = c.hpMax;
+  if (c.san > c.sanMax) c.san = c.sanMax;
+  if (c.mp  > c.mpMax)  c.mp  = c.mpMax;
+
+  // 技能（行から再収集）
+  const skills = {};
+  document.querySelectorAll('#skill-edit-list .skill-edit-row').forEach(row => {
+    const name = row.querySelector('.skill-edit-name').value.trim();
+    const val  = parseInt(row.querySelector('.skill-edit-val').value) || 0;
+    if (name) skills[name] = { total: val, base: editingChar.skills?.[name]?.base || 0, category: getSkillCategory(name) };
+  });
+  c.skills = skills;
+
+  // 所持品
+  c.items = [...document.querySelectorAll('#item-edit-list .item-edit-name')].map(el => el.value.trim()).filter(Boolean);
+
+  await set(ref(db, `users/${currentUser.uid}/characters/${editingCharId}`), c);
+  editingChar  = c;
+  editUnsaved  = false;
+  document.getElementById('edit-unsaved').style.display = 'none';
+  document.getElementById('char-edit-modal').classList.remove('open');
+};
+
 // ── セッション入室キャラ選択 ──
 let enterSessionTarget = null;
 
@@ -1146,6 +1389,93 @@ window.toggleTheme = function() {
 // Init button label after DOM ready
 document.addEventListener('DOMContentLoaded', updateToggleBtn);
 </script>
+
+<!-- キャラクター編集モーダル -->
+<div class="modal-overlay" id="char-edit-modal">
+  <div class="modal-box" style="max-width:580px;width:100%;max-height:88vh;display:flex;flex-direction:column">
+    <div class="modal-header">
+      <span class="modal-title">✏️ キャラクター編集 <span id="edit-unsaved" style="display:none"><span class="unsaved-badge"></span></span></span>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button class="sc-btn" onclick="saveCharEdit()">保存</button>
+        <button class="modal-close" onclick="closeCharEdit()">✕</button>
+      </div>
+    </div>
+    <div class="edit-tabs">
+      <button class="edit-tab active" onclick="switchEditTab('basic',this)">基本情報</button>
+      <button class="edit-tab" onclick="switchEditTab('stats',this)">能力値</button>
+      <button class="edit-tab" onclick="switchEditTab('skills',this)">技能</button>
+      <button class="edit-tab" onclick="switchEditTab('items',this)">所持品</button>
+    </div>
+    <div style="overflow-y:auto;flex:1;padding:0 4px 4px">
+
+      <!-- 基本情報 -->
+      <div class="edit-panel active" id="edit-panel-basic">
+        <div style="display:flex;gap:14px;align-items:flex-start;margin-bottom:14px">
+          <div>
+            <div class="edit-label" style="margin-bottom:6px">アイコン</div>
+            <div class="icon-preview" id="edit-icon-preview">🧍</div>
+          </div>
+          <div style="flex:1;display:flex;flex-direction:column;gap:6px">
+            <div class="edit-field">
+              <label class="edit-label">画像アップロード</label>
+              <input type="file" id="edit-icon-file" accept="image/*" onchange="handleIconUpload(this)" style="font-size:11px;color:var(--text-dim)">
+            </div>
+            <div class="edit-field">
+              <label class="edit-label">または画像URL</label>
+              <input class="edit-input" id="edit-iconUrl" type="text" placeholder="https://..." oninput="previewIconUrl(this.value)">
+            </div>
+          </div>
+        </div>
+        <div class="edit-grid">
+          <div class="edit-field"><label class="edit-label">名前</label><input class="edit-input" id="edit-name" type="text" oninput="markUnsaved()"></div>
+          <div class="edit-field"><label class="edit-label">よみ</label><input class="edit-input" id="edit-kana" type="text" oninput="markUnsaved()"></div>
+          <div class="edit-field"><label class="edit-label">職業</label><input class="edit-input" id="edit-occupation" type="text" oninput="markUnsaved()"></div>
+          <div class="edit-field"><label class="edit-label">年齢</label><input class="edit-input" id="edit-age" type="number" oninput="markUnsaved()"></div>
+          <div class="edit-field"><label class="edit-label">性別</label><input class="edit-input" id="edit-gender" type="text" oninput="markUnsaved()"></div>
+          <div class="edit-field"><label class="edit-label">出身</label><input class="edit-input" id="edit-origin" type="text" oninput="markUnsaved()"></div>
+          <div class="edit-field"><label class="edit-label">身長</label><input class="edit-input" id="edit-height" type="text" oninput="markUnsaved()"></div>
+          <div class="edit-field"><label class="edit-label">体重</label><input class="edit-input" id="edit-weight" type="text" oninput="markUnsaved()"></div>
+        </div>
+      </div>
+
+      <!-- 能力値 -->
+      <div class="edit-panel" id="edit-panel-stats">
+        <div class="stat-edit-grid">
+          ${['STR','CON','POW','DEX','APP','SIZ','INT','EDU'].map(s=>`<div class="stat-edit-box"><label class="edit-label">${s}</label><input class="edit-input" id="edit-${s.toLowerCase()}" type="number" min="1" max="99" oninput="markUnsaved()"></div>`).join('')}
+        </div>
+        <div style="margin-top:14px;border-top:1px solid var(--border);padding-top:14px">
+          <div class="stat-edit-grid">
+            <div class="stat-edit-box"><label class="edit-label">HP最大</label><input class="edit-input" id="edit-hpMax" type="number" min="1" oninput="markUnsaved()"></div>
+            <div class="stat-edit-box"><label class="edit-label">SAN最大</label><input class="edit-input" id="edit-sanMax" type="number" min="1" oninput="markUnsaved()"></div>
+            <div class="stat-edit-box"><label class="edit-label">MP最大</label><input class="edit-input" id="edit-mpMax" type="number" min="1" oninput="markUnsaved()"></div>
+            <div class="stat-edit-box"><label class="edit-label">幸運</label><input class="edit-input" id="edit-luck" type="number" oninput="markUnsaved()"></div>
+            <div class="stat-edit-box" style="grid-column:span 2"><label class="edit-label">DB</label><input class="edit-input" id="edit-db" type="text" placeholder="例: +1D4" oninput="markUnsaved()"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 技能 -->
+      <div class="edit-panel" id="edit-panel-skills">
+        <div id="skill-edit-list"></div>
+        <div class="add-skill-row">
+          <input class="edit-input" id="new-skill-name" type="text" placeholder="技能名" style="flex:1">
+          <input class="edit-input" id="new-skill-val"  type="number" placeholder="値" style="width:60px;text-align:center">
+          <button class="sc-btn" onclick="addSkillRow()">追加</button>
+        </div>
+      </div>
+
+      <!-- 所持品 -->
+      <div class="edit-panel" id="edit-panel-items">
+        <div id="item-edit-list"></div>
+        <div style="display:flex;gap:6px;margin-top:8px">
+          <input class="edit-input" id="new-item-name" type="text" placeholder="アイテム名" style="flex:1" onkeydown="if(event.key==='Enter')addItemRow()">
+          <button class="sc-btn" onclick="addItemRow()">追加</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
 
 <!-- セッション入室時キャラ選択モーダル -->
 <div class="modal-overlay" id="enter-session-modal">
