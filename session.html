@@ -1166,13 +1166,9 @@ window.saveSessionName = async () => {
   const playersSnap = await get(ref(db, `sessions/${sessionCode}/players`));
   if (playersSnap.exists()) {
     const uids = Object.keys(playersSnap.val());
-    console.log('[saveSessionName] updating uids:', uids, 'name:', name);
-    await Promise.all(uids.map(async uid => {
-      await update(ref(db, `users/${uid}/sessions/${sessionCode}`), { name });
-      // 書き込み確認
-      const check = await get(ref(db, `users/${uid}/sessions/${sessionCode}/name`));
-      console.log(`[saveSessionName] uid=${uid} written name=`, check.val());
-    }));
+    await Promise.all(uids.map(uid =>
+      update(ref(db, `users/${uid}/sessions/${sessionCode}`), { name })
+    ));
   }
   document.getElementById('kp-session-name-msg').textContent = '✓ 変更しました';
   document.getElementById('session-name-display').textContent = name;
