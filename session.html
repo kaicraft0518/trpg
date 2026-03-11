@@ -1502,22 +1502,29 @@ window.doSanReduce = () => {
 
 window.applySanResult = async () => {
   if (sanCheckState.applied) return;
+  if (sanCheckState.newSan === null || sanCheckState.newSan === undefined) return;
   sanCheckState.applied = true;
 
-  const newSan = sanCheckState.newSan;
+  const newSan    = sanCheckState.newSan;
+  const beforeSan = (viewingChar?.san ?? 0);   // ← 上書き前に取得
+
   viewingChar.san = newSan;
   refreshVitalsDisplay();
   await update(ref(db, `sessions/${sessionCode}/vitals/${viewingUid}`), { san: newSan });
   if (viewingCharId) await update(ref(db, `users/${viewingUid}/characters/${viewingCharId}`), { san: newSan });
 
-  // チャットに投稿（sendChatと同じパターン）
-  const name = viewingChar?.name || userData?.displayName || userData?.handle || '探索者';
+  // チャットに投稿
+  const name     = viewingChar?.name || userData?.displayName || userData?.handle || '探索者';
   const jSuccess = sanCheckState.judged === 'success';
-  const beforeSan = viewingChar.san + sanCheckState.reduceAmt;
+  const formula  = sanCheckState.reduceFormula  ?? '?';
+  const detail   = sanCheckState.reduceDetail   ?? formula;
+  const reduceAmt = sanCheckState.reduceAmt     ?? 0;
+  const reduceStr = detail !== formula ? `${formula} [${detail}]` : formula;
+
   const lines = [
     `🌀 SANチェック — ${name}`,
     `判定: ${sanCheckState.judgeRoll} / SAN${viewingChar.sanMax} → ${jSuccess ? '✅ 成功' : '❌ 失敗'}`,
-    `減少: ${sanCheckState.reduceFormula}${sanCheckState.reduceDetail !== sanCheckState.reduceFormula ? ` [${sanCheckState.reduceDetail}]` : ''} = ${sanCheckState.reduceAmt}`,
+    `減少: ${reduceStr} = ${reduceAmt}`,
     `SAN: ${beforeSan} → ${newSan}`
   ];
   const msg = { who: name, text: lines.join('\n'), type: 'san', time: nowTime(), ts: Date.now() };
