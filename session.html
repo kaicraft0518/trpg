@@ -1007,45 +1007,37 @@ function renderCharSheet(char, canEdit) {
     sg.appendChild(d);
   });
 
-  // Skills (カテゴリ別アコーディオン)
+  // Skills (カテゴリ別リスト)
   const skgrid = document.getElementById('skills-grid'); skgrid.innerHTML = '';
   if (char.skills) {
     const CAT_ORDER = ['探索','対人','戦闘','知識','行動','技術','芸術','その他'];
     const CAT_ICON  = {'探索':'🔍','対人':'🗣️','戦闘':'⚔️','知識':'🧠','行動':'🏃','技術':'🔧','芸術':'🎨','その他':'📦'};
-    // カテゴリごとにグループ化
     const grouped = {};
     Object.entries(char.skills).forEach(([name, v]) => {
       const cat = v.category || 'その他';
       if (!grouped[cat]) grouped[cat] = [];
       grouped[cat].push([name, v]);
     });
-    // カテゴリ順に表示
     CAT_ORDER.forEach(cat => {
       if (!grouped[cat] || grouped[cat].length === 0) return;
       const items = grouped[cat].sort((a,b) => b[1].total - a[1].total);
-      // アコーディオンブロック
       const block = document.createElement('div');
       block.className = 'skill-category';
       const header = document.createElement('div');
       header.className = 'skill-cat-header';
-      header.innerHTML = `
-        <span class="skill-cat-label">${CAT_ICON[cat] || '📦'} ${cat}</span>
-        <span style="display:flex;align-items:center;gap:6px">
-          <span class="skill-cat-count">${items.length}技能</span>
-          <span class="skill-cat-arrow">▼</span>
-        </span>`;
-      header.onclick = () => block.classList.toggle('collapsed');
+      header.innerHTML = `<span class="skill-cat-label">${CAT_ICON[cat] || '📦'} ${cat}<span class="skill-cat-arrow">▼</span></span>`;
+      header.onclick = () => {
+        block.classList.toggle('collapsed');
+        updateSkillToggleBtn();
+      };
       const body = document.createElement('div');
       body.className = 'skill-cat-body';
-      const grid = document.createElement('div');
-      grid.className = 'skills-grid';
       items.forEach(([name, v]) => {
         const d = document.createElement('div'); d.className = 'skill-item';
         d.innerHTML = `<span class="sk-name">${name}</span><span class="sk-val">${v.total}</span>`;
         d.onclick = () => rollSkill(name, v.total);
-        grid.appendChild(d);
+        body.appendChild(d);
       });
-      body.appendChild(grid);
       block.appendChild(header);
       block.appendChild(body);
       skgrid.appendChild(block);
@@ -1109,6 +1101,20 @@ window.rollDice = (sides, count) => {
   let total = 0; for (let i=0; i<count; i++) total += Math.floor(Math.random()*sides)+1;
   showResultLocal(`${count}D${sides}`, total, sides, null);
   pushRoll(`${count}D${sides}`, total, null);
+};
+
+function updateSkillToggleBtn() {
+  const btn = document.getElementById('skills-toggle-btn');
+  if (!btn) return;
+  const cats = document.querySelectorAll('#skills-grid .skill-category');
+  const allClosed = [...cats].every(c => c.classList.contains('collapsed'));
+  btn.textContent = allClosed ? 'すべて開く' : 'すべて閉じる';
+}
+window.toggleAllSkillCats = () => {
+  const cats = document.querySelectorAll('#skills-grid .skill-category');
+  const allClosed = [...cats].every(c => c.classList.contains('collapsed'));
+  cats.forEach(c => allClosed ? c.classList.remove('collapsed') : c.classList.add('collapsed'));
+  updateSkillToggleBtn();
 };
 
 window.rollSkillCheck = () => {
