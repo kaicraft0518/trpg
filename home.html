@@ -211,11 +211,11 @@ header {
 .stat-edit-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
 .stat-edit-box { display: flex; flex-direction: column; align-items: center; gap: 4px; }
 .stat-edit-box .edit-label { font-size: 10px; }
-.stat-edit-box .edit-input { width: 100%; text-align: center; padding: 6px 4px; }
+.stat-edit-box .edit-input { width: 100%; text-align: center; padding: 6px 4px; color: var(--text-primary); }
 .skill-edit-row { display: flex; align-items: center; gap: 6px; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
-.skill-edit-name { flex: 1; background: transparent; border: none; color: var(--text-secondary); font-family: 'Noto Serif JP', serif; font-size: 12px; padding: 3px 4px; border-bottom: 1px solid transparent; }
-.skill-edit-name:focus { outline: none; border-bottom-color: var(--border-glow); }
-.skill-edit-val { width: 52px; background: var(--bg-mid); border: 1px solid var(--border); border-radius: 4px; color: var(--gold); font-family: 'Cinzel Decorative', serif; font-size: 12px; text-align: center; padding: 3px 4px; }
+.skill-edit-name { flex: 1; background: var(--bg-mid); border: 1px solid transparent; border-radius: 5px; color: var(--text-primary); font-family: 'Noto Serif JP', serif; font-size: 12px; padding: 4px 6px; }
+.skill-edit-name:focus { outline: none; border-color: var(--border-glow); background: var(--bg-card); }
+.skill-edit-val { width: 52px; background: var(--bg-mid); border: 1px solid var(--border); border-radius: 4px; color: var(--text-primary); font-size: 12px; text-align: center; padding: 4px 4px; }
 .skill-edit-val:focus { outline: none; border-color: var(--gold-dim); }
 .skill-edit-del { width: 20px; height: 20px; background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 13px; display: flex; align-items: center; justify-content: center; transition: color 0.15s; flex-shrink: 0; }
 .skill-edit-del:hover { color: var(--red-glow); }
@@ -1181,6 +1181,8 @@ window.switchEditTab = (tab, btn) => {
 // アイコン処理
 window.handleIconUpload = (input) => {
   const file = input.files[0]; if (!file) return;
+  const nameEl = document.getElementById('edit-icon-filename');
+  if (nameEl) nameEl.textContent = file.name;
   const reader = new FileReader();
   reader.onload = e => {
     // Canvas でリサイズ（最大300px）
@@ -1418,7 +1420,11 @@ document.addEventListener('DOMContentLoaded', updateToggleBtn);
           <div style="flex:1;display:flex;flex-direction:column;gap:6px">
             <div class="edit-field">
               <label class="edit-label">画像アップロード</label>
-              <input type="file" id="edit-icon-file" accept="image/*" onchange="handleIconUpload(this)" style="font-size:11px;color:var(--text-dim)">
+              <label style="display:inline-flex;align-items:center;gap:8px;padding:6px 12px;background:var(--bg-mid);border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:12px;color:var(--text-secondary);transition:border-color 0.15s" onmouseenter="this.style.borderColor='var(--border-glow)'" onmouseleave="this.style.borderColor='var(--border)'">
+                📁 ファイルを選択
+                <input type="file" id="edit-icon-file" accept="image/*" onchange="handleIconUpload(this)" style="display:none">
+              </label>
+              <span id="edit-icon-filename" style="font-size:11px;color:var(--text-dim);margin-top:3px"></span>
             </div>
             <div class="edit-field">
               <label class="edit-label">または画像URL</label>
@@ -1441,7 +1447,14 @@ document.addEventListener('DOMContentLoaded', updateToggleBtn);
       <!-- 能力値 -->
       <div class="edit-panel" id="edit-panel-stats">
         <div class="stat-edit-grid">
-          ${['STR','CON','POW','DEX','APP','SIZ','INT','EDU'].map(s=>`<div class="stat-edit-box"><label class="edit-label">${s}</label><input class="edit-input" id="edit-${s.toLowerCase()}" type="number" min="1" max="99" oninput="markUnsaved()"></div>`).join('')}
+          <div class="stat-edit-box"><label class="edit-label">STR</label><input class="edit-input" id="edit-str" type="number" min="1" max="99" oninput="markUnsaved()"></div>
+          <div class="stat-edit-box"><label class="edit-label">CON</label><input class="edit-input" id="edit-con" type="number" min="1" max="99" oninput="markUnsaved()"></div>
+          <div class="stat-edit-box"><label class="edit-label">POW</label><input class="edit-input" id="edit-pow" type="number" min="1" max="99" oninput="markUnsaved()"></div>
+          <div class="stat-edit-box"><label class="edit-label">DEX</label><input class="edit-input" id="edit-dex" type="number" min="1" max="99" oninput="markUnsaved()"></div>
+          <div class="stat-edit-box"><label class="edit-label">APP</label><input class="edit-input" id="edit-app" type="number" min="1" max="99" oninput="markUnsaved()"></div>
+          <div class="stat-edit-box"><label class="edit-label">SIZ</label><input class="edit-input" id="edit-siz" type="number" min="1" max="99" oninput="markUnsaved()"></div>
+          <div class="stat-edit-box"><label class="edit-label">INT</label><input class="edit-input" id="edit-int" type="number" min="1" max="99" oninput="markUnsaved()"></div>
+          <div class="stat-edit-box"><label class="edit-label">EDU</label><input class="edit-input" id="edit-edu" type="number" min="1" max="99" oninput="markUnsaved()"></div>
         </div>
         <div style="margin-top:14px;border-top:1px solid var(--border);padding-top:14px">
           <div class="stat-edit-grid">
