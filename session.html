@@ -182,17 +182,18 @@ header {
 .stat-box .s-sub { font-size: 9px; color: var(--text-dim); margin-top: 1px; }
 
 /* Skills */
-.skill-category { margin-bottom: 6px; }
-.skill-cat-header { display: flex; align-items: center; justify-content: space-between; padding: 4px 2px; cursor: pointer; user-select: none; border-bottom: 1px solid var(--border); margin-bottom: 3px; }
+.skill-category { margin-bottom: 10px; }
+.skill-cat-header { display: flex; align-items: center; justify-content: space-between; padding: 4px 2px; cursor: pointer; user-select: none; border-bottom: 1px solid var(--border); margin-bottom: 5px; }
 .skill-cat-label { font-size: 11px; color: var(--gold-dim); font-weight: 600; letter-spacing: 1px; display: flex; align-items: center; gap: 4px; }
 .skill-cat-arrow { font-size: 9px; color: var(--text-dim); transition: transform 0.2s; margin-left: 4px; }
 .skill-category.collapsed .skill-cat-arrow { transform: rotate(-90deg); }
-.skill-cat-body { padding: 0 0 6px 0; }
+.skill-cat-body { padding: 0 0 4px 0; }
 .skill-category.collapsed .skill-cat-body { display: none; }
-.skill-item { display: flex; align-items: center; justify-content: space-between; padding: 5px 6px; cursor: pointer; border-radius: 5px; transition: background 0.12s; }
-.skill-item:hover { background: var(--bg-hover); }
-.sk-name { font-size: 12px; color: var(--text-secondary); }
-.sk-val { font-size: 12px; color: var(--gold); min-width: 28px; text-align: right; }
+.skill-cat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 5px; }
+.skill-item { display: flex; align-items: center; justify-content: space-between; gap: 4px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 7px; padding: 7px 10px; cursor: pointer; transition: all 0.15s; }
+.skill-item:hover { border-color: var(--border-glow); background: var(--bg-hover); }
+.sk-name { font-size: 12px; color: var(--text-secondary); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sk-val { font-family: 'Cinzel Decorative', serif; font-size: 13px; color: var(--gold); background: rgba(201,168,76,0.08); border-radius: 4px; padding: 1px 6px; min-width: 30px; text-align: center; flex-shrink: 0; }
 .skills-toggle-all { font-size: 10px; color: var(--text-dim); background: none; border: none; cursor: pointer; font-family: 'Noto Serif JP', serif; padding: 0; margin-bottom: 8px; }
 .skills-toggle-all:hover { color: var(--text-secondary); }
 
@@ -466,7 +467,8 @@ header {
   .v-num       { font-size: 20px; }
   .v-btn       { width: 28px; height: 28px; }
   .stats-grid  { grid-template-columns: repeat(5, 1fr); gap: 5px; }
-  .skills-grid { grid-template-columns: repeat(2, 1fr); }
+  .skill-cat-grid { grid-template-columns: repeat(2, 1fr); }
+  .skill-item { padding: 6px 8px; }
   .skill-cat-header { padding: 6px 8px; }
   .nav-tabs    { overflow-x: auto; flex-wrap: nowrap; }
   .nav-tab     { white-space: nowrap; padding: 10px 14px; }
@@ -1032,12 +1034,15 @@ function renderCharSheet(char, canEdit) {
       };
       const body = document.createElement('div');
       body.className = 'skill-cat-body';
+      const grid = document.createElement('div');
+      grid.className = 'skill-cat-grid';
       items.forEach(([name, v]) => {
         const d = document.createElement('div'); d.className = 'skill-item';
         d.innerHTML = `<span class="sk-name">${name}</span><span class="sk-val">${v.total}</span>`;
         d.onclick = () => rollSkill(name, v.total);
-        body.appendChild(d);
+        grid.appendChild(d);
       });
+      body.appendChild(grid);
       block.appendChild(header);
       block.appendChild(body);
       skgrid.appendChild(block);
