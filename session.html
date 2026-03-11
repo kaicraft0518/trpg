@@ -334,7 +334,20 @@ header {
 /* Modals */
 .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(4px); z-index: 200; display: none; align-items: center; justify-content: center; padding: 16px; }
 .modal-overlay.open { display: flex; }
-/* SANチェックモーダル */
+/* SANチェックメッセージ */
+.chat-msg.san .msg-who { color: var(--san-color); }
+.san-msg-box { background: rgba(74,158,255,0.06); border: 1px solid rgba(74,158,255,0.2); border-radius: 7px; padding: 8px 10px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; }
+.san-msg-title { font-size: 11px; color: var(--san-color); letter-spacing: 1px; margin-bottom: 4px; font-weight: 600; border-bottom: 1px solid rgba(74,158,255,0.15); padding-bottom: 4px; }
+.san-line { font-size: 12px; color: var(--text-secondary); line-height: 1.5; }
+.san-line.success { color: #4ade80; }
+.san-line.failure { color: var(--red-glow); }
+.san-line.san-final { color: var(--san-color); font-weight: 600; margin-top: 2px; border-top: 1px solid rgba(74,158,255,0.15); padding-top: 4px; }
+.san-msg-box { background: rgba(74,158,255,0.06); border: 1px solid rgba(74,158,255,0.2); border-radius: 8px; padding: 8px 10px; margin: 4px 0; }
+.san-msg-title { font-size: 11px; color: var(--san-color); letter-spacing: 1px; margin-bottom: 6px; font-weight: 600; }
+.san-line { font-size: 12px; color: var(--text-secondary); padding: 2px 0; line-height: 1.5; }
+.san-line.success { color: #4ade80; }
+.san-line.failure { color: var(--red-glow); }
+.san-line.san-final { color: var(--san-color); font-weight: 600; margin-top: 2px; padding-top: 4px; border-top: 1px solid rgba(74,158,255,0.15); }
 .san-check-step { display: none; }
 .san-check-step.active { display: block; }
 .san-result-box { text-align: center; padding: 16px; background: var(--bg-mid); border-radius: 10px; margin: 12px 0; border: 1px solid var(--border); }
@@ -1497,22 +1510,19 @@ window.applySanResult = async () => {
   await update(ref(db, `sessions/${sessionCode}/vitals/${viewingUid}`), { san: newSan });
   if (viewingCharId) await update(ref(db, `users/${viewingUid}/characters/${viewingCharId}`), { san: newSan });
 
-  // チャットに投稿
+  // チャットに投稿（sendChatと同じパターン）
   const name = viewingChar?.name || userData?.displayName || userData?.handle || '探索者';
   const jSuccess = sanCheckState.judged === 'success';
-  const msg = [
-    `🌀 SANチェック ─ ${name}`,
+  const beforeSan = viewingChar.san + sanCheckState.reduceAmt;
+  const lines = [
+    `🌀 SANチェック — ${name}`,
     `判定: ${sanCheckState.judgeRoll} / SAN${viewingChar.sanMax} → ${jSuccess ? '✅ 成功' : '❌ 失敗'}`,
-    `SAN減少: ${sanCheckState.reduceFormula}${sanCheckState.reduceDetail !== sanCheckState.reduceFormula ? ` (${sanCheckState.reduceDetail})` : ''} → ${sanCheckState.reduceAmt}`,
-    `SAN: ${viewingChar.san + sanCheckState.reduceAmt} → ${newSan}`
-  ].join('\n');
-
+    `減少: ${sanCheckState.reduceFormula}${sanCheckState.reduceDetail !== sanCheckState.reduceFormula ? ` [${sanCheckState.reduceDetail}]` : ''} = ${sanCheckState.reduceAmt}`,
+    `SAN: ${beforeSan} → ${newSan}`
+  ];
+  const msg = { who: name, text: lines.join('\n'), type: 'san', time: nowTime(), ts: Date.now() };
   const activeChId = document.querySelector('.ch-tab.active')?.dataset?.chid || 'main';
-  if (activeChId === 'main') {
-    push(ref(db, `sessions/${sessionCode}/chat`), { who: name, text: msg, type: 'san', time: nowTime(), ts: Date.now() });
-  } else {
-    push(ref(db, `sessions/${sessionCode}/channel_msgs/${activeChId}`), { who: name, text: msg, type: 'san', time: nowTime(), ts: Date.now() });
-  }
+  push(ref(db, `sessions/${sessionCode}/channel_msgs/${activeChId}`), msg);
 
   document.getElementById('san-apply-btns').style.display = 'none';
   document.getElementById('san-after-apply').style.display = 'block';
@@ -1798,7 +1808,29 @@ function renderMsg(msg, container) {
   const { who, text, type, time } = msg;
   const div = document.createElement('div'); div.className = `chat-msg ${type||'player'}`;
   const icon = type==='gm'?'🕯️ ':type==='system'?'🔔 ':type==='dice'?'':'';
-  div.innerHTML = `<div class="msg-who">${icon}${who}</div><div class="msg-text">${text}</div><div class="msg-time">${time}</div>`;
+
+  if (type === 'san') {
+    // SANチェック専用レイアウト
+    const lines = text.split('\n');
+    const title = lines[0] || '';
+    const rest  = lines.slice(1);
+    const bodyHtml = rest.map(l => {
+      if (l.includes('✅')) return `<div class="san-line success">${l}</div>`;
+      if (l.includes('❌')) return `<div class="san-line failure">${l}</div>`;
+      if (l.startsWith('SAN:')) return `<div class="san-line san-final">${l}</div>`;
+      return `<div class="san-line">${l}</div>`;
+    }).join('');
+    div.innerHTML = `
+      <div class="msg-who">🌀 ${who}</div>
+      <div class="san-msg-box">
+        <div class="san-msg-title">${title}</div>
+        ${bodyHtml}
+      </div>
+      <div class="msg-time">${time}</div>`;
+  } else {
+    div.innerHTML = `<div class="msg-who">${icon}${who}</div><div class="msg-text">${text}</div><div class="msg-time">${time}</div>`;
+  }
+
   const isAtBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 60;
   container.appendChild(div);
   if (isAtBottom) requestAnimationFrame(() => { container.scrollTop = container.scrollHeight; });
@@ -1806,16 +1838,17 @@ function renderMsg(msg, container) {
 
 // 旧chat / rolls → mainチャンネルにも流す
 function listenChat() {
-  onChildAdded(ref(db, `sessions/${sessionCode}/chat`), snap => {
-    const { who, text, type, time } = snap.val();
-    // 旧データ表示（後方互換）
-    const msg = { who, text, type: type||'player', time };
+  // 旧パス(chat/)は過去データの初期ロードのみ。新規はchannel_msgs/mainで受ける
+  get(ref(db, `sessions/${sessionCode}/chat`)).then(snap => {
+    if (!snap.exists()) return;
     if (!channelMessages['main']) channelMessages['main'] = [];
-    channelMessages['main'].push(msg);
-    if (currentChannelId === 'main') {
-      const chatEl = document.getElementById('panel-chat');
-      renderMsg(msg, chatEl);
-    }
+    const existing = new Set(channelMessages['main'].map(m => m.ts));
+    Object.values(snap.val()).forEach(v => {
+      if (!existing.has(v.ts)) {
+        channelMessages['main'].push({ who: v.who, text: v.text, type: v.type||'player', time: v.time, ts: v.ts });
+      }
+    });
+    channelMessages['main'].sort((a,b) => (a.ts||0)-(b.ts||0));
   });
 }
 
@@ -1833,8 +1866,6 @@ function addChatMessage(type, who, text, time) {
 function postSystemMessage(text) {
   const msg = { who:'システム', text, type:'system', time: nowTime(), ts: Date.now() };
   push(ref(db, `sessions/${sessionCode}/channel_msgs/main`), msg);
-  // 旧パスにも書いて後方互換
-  push(ref(db, `sessions/${sessionCode}/chat`), msg);
 }
 
 window.handleChatKey = e => { if (e.key==='Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); sendChat(); } };
@@ -1852,10 +1883,6 @@ window.sendChat = () => {
   const type = myRole === 'KP' ? 'gm' : 'player';
   const msg = { who, text, type, time: nowTime(), ts: Date.now() };
   push(ref(db, `sessions/${sessionCode}/channel_msgs/${currentChannelId}`), msg);
-  // mainの場合は旧パスにも書く（後方互換）
-  if (currentChannelId === 'main') {
-    push(ref(db, `sessions/${sessionCode}/chat`), msg);
-  }
   input.value = '';
 };
 
