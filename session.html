@@ -227,18 +227,16 @@ header {
 .dice-result { background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; padding: 24px; text-align: center; margin-bottom: 16px; min-height: 130px; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; overflow: hidden; }
 .dice-result::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at center, rgba(201,168,76,0.03) 0%, transparent 70%); }
 /* シークレットモード */
-@keyframes secretPulse { 0%,100%{background:rgba(168,85,247,0.03)} 50%{background:rgba(168,85,247,0.09)} }
-@keyframes secretBorder { 0%,100%{box-shadow:0 0 0 1px rgba(168,85,247,0.3),inset 0 0 40px rgba(168,85,247,0.04)} 50%{box-shadow:0 0 0 1px rgba(168,85,247,0.7),inset 0 0 60px rgba(168,85,247,0.1)} }
+@keyframes secretPulse { 0%,100%{background:rgba(168,85,247,0.04)} 50%{background:rgba(168,85,247,0.10)} }
 @keyframes secretOn { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:translateY(0)} }
-@keyframes secretTabFlash { 0%{background:transparent} 30%{background:rgba(168,85,247,0.12)} 100%{background:rgba(168,85,247,0.04)} }
-/* タブ全体 */
-#tab-dice.secret-mode { animation: secretTabFlash 0.5s ease forwards, secretPulse 3s ease-in-out 0.5s infinite; border-radius: 12px; }
-/* ダイスエリア */
-.dice-area.secret-mode { animation: secretBorder 2.5s ease-in-out infinite; border-radius: 16px; }
+@keyframes secretTabFlash { 0%{background:transparent} 30%{background:rgba(168,85,247,0.14)} 100%{background:rgba(168,85,247,0.04)} }
+/* タブ全体に背景だけ */
+#tab-dice.secret-mode { animation: secretTabFlash 0.5s ease forwards, secretPulse 3s ease-in-out 0.5s infinite; transition: background 0.4s; }
+/* ダイスエリアは枠なし・背景透明のまま */
+.dice-area.secret-mode { background: transparent; }
 .dice-area.secret-mode .dice-title { color: #c084fc; transition: color 0.4s; }
-.dice-area.secret-mode .dice-btn { border-color: rgba(168,85,247,0.5); }
+.dice-area.secret-mode .dice-btn { border-color: rgba(168,85,247,0.5); position: relative; }
 .dice-area.secret-mode .dice-btn::after { content: '🔒'; position: absolute; top: -6px; right: -6px; font-size: 10px; }
-.dice-area.secret-mode .dice-btn { position: relative; }
 /* バナー */
 .secret-banner { display: none; background: linear-gradient(135deg, rgba(168,85,247,0.15), rgba(139,92,246,0.08)); border: 1px solid rgba(168,85,247,0.5); border-radius: 10px; padding: 10px 16px; font-size: 13px; color: #c084fc; text-align: center; margin-bottom: 16px; letter-spacing: 0.5px; }
 .secret-banner.show { display: block; animation: secretOn 0.35s ease; }
