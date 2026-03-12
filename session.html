@@ -100,6 +100,7 @@ header {
 .player-card:hover { border-color: var(--border-glow); background: var(--bg-hover); }
 .player-card:hover::before, .player-card.mine::before { opacity: 1; }
 .player-card.mine { border-color: rgba(201,168,76,0.3); }
+.player-card.selected-char { border-color: rgba(201,168,76,0.6); background: rgba(201,168,76,0.06); }
 .player-card.selected-char { border-color: var(--gold-dim); background: var(--bg-hover); }
 .pc-header { display: flex; align-items: center; gap: 7px; margin-bottom: 7px; }
 .pc-avatar { width: 28px; height: 28px; border-radius: 5px; background: var(--bg-mid); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 12px; overflow: hidden; flex-shrink: 0; }
@@ -652,10 +653,6 @@ header {
         <button onclick="mobileBackToMyChar()" style="display:flex;align-items:center;gap:6px;background:var(--bg-mid);border:1px solid var(--border);border-radius:7px;padding:7px 12px;color:var(--text-secondary);cursor:pointer;font-family:'Noto Serif JP',serif;font-size:12px;width:100%">
           ← 自分のキャラに戻る
         </button>
-      </div>
-      <div id="kp-char-select-area" style="display:none">
-        <div class="section-label" style="margin-bottom:6px">キャラクター選択（KP）</div>
-        <div class="kp-char-select" id="kp-char-select"></div>
       </div>
       <div id="pl-char-select-area" style="display:none">
         <div class="section-label" style="margin-bottom:6px">キャラクター切り替え</div>
@@ -1349,8 +1346,7 @@ async function loadAllPlayerChars(players) {
     });
   }
 
-  // KP char select
-  buildKpCharSelect();
+
 }
 
 function buildPlayerCard(uid, uData, char, role) {
@@ -1410,7 +1406,7 @@ function updatePlayerCardBars(uid, vitals) {
 // ── Character sheet ──
 function setupCharSheet() {
   if (myRole === 'KP') {
-    document.getElementById('kp-char-select-area').style.display = 'block';
+
     if (myChar) { viewingChar = myChar; viewingUid = currentUser.uid; viewingCharId = myCharId; }
   } else {
     if (myChar) {
@@ -1454,17 +1450,7 @@ function switchMyChar(charId, char, btn) {
   renderCharSheet(char, true);
 }
 
-function buildKpCharSelect() {
-  const area = document.getElementById('kp-char-select');
-  area.innerHTML = '';
-  Object.entries(allSessionChars).forEach(([uid, info]) => {
-    const btn = document.createElement('button');
-    btn.className = 'kp-char-btn' + (uid === viewingUid ? ' active' : '');
-    btn.textContent = info.char?.name || info.displayName || info.handle;
-    btn.onclick = () => selectViewChar(uid);
-    area.appendChild(btn);
-  });
-}
+
 
 window.openCharSwitchModal = async () => {
   const list = document.getElementById('char-switch-list');
@@ -1581,8 +1567,6 @@ function selectViewChar(uid) {
   viewingCharId = info?.charId || null;
   // 自分のキャラに戻ったら戻るボタンを隠す
   if (uid === currentUser.uid) hideMobileBackBtn();
-  document.querySelectorAll('.kp-char-btn').forEach(b => b.classList.remove('active'));
-  document.querySelectorAll('.kp-char-btn').forEach(b => { if (b.textContent === (info?.char?.name || info?.displayName)) b.classList.add('active'); });
   document.querySelectorAll('.player-card').forEach(c => c.classList.remove('selected-char'));
   const card = document.getElementById('pcard-' + uid);
   if (card) card.classList.add('selected-char');
