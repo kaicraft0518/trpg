@@ -337,6 +337,7 @@ header {
 /* Modals */
 .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(4px); z-index: 200; display: none; align-items: center; justify-content: center; padding: 16px; }
 .modal-overlay.open { display: flex; }
+.chat-msg.secret { background: rgba(201,168,76,0.04); border-left: 2px solid var(--gold-dim); opacity: 0.7; }
 /* SANチェックメッセージ */
 .chat-msg.san .msg-who { color: var(--san-color); }
 .san-msg-box { background: rgba(74,158,255,0.06); border: 1px solid rgba(74,158,255,0.2); border-radius: 7px; padding: 8px 10px; margin-top: 4px; display: flex; flex-direction: column; gap: 3px; }
@@ -700,6 +701,13 @@ header {
           <div class="dice-btn d100" onclick="rollDice(100,1)"><span class="d-icon">🎲</span><span class="d-label" style="color:var(--gold)">D100</span></div>
           <div class="dice-btn" onclick="rollDice(12,1)"><span class="d-icon">🎲</span><span class="d-label">D12</span></div>
           <div class="dice-btn" onclick="rollDice(20,1)"><span class="d-icon">🎲</span><span class="d-label">D20</span></div>
+        </div>
+        <!-- KP専用シークレットダイス -->
+        <div id="secret-dice-toggle" style="display:none;margin-bottom:10px">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:var(--text-dim);user-select:none">
+            <input type="checkbox" id="secret-dice-check" style="width:14px;height:14px;accent-color:var(--gold);cursor:pointer">
+            <span id="secret-dice-label">🔒 シークレットダイス（KPのみ結果が見える）</span>
+          </label>
         </div>
         <div class="skill-check-row">
           <span style="color:var(--text-dim);font-size:12px">技能値</span>
@@ -1094,6 +1102,8 @@ onAuthStateChanged(auth, async user => {
   if (myRole === 'KP') {
     const kpWrap = document.getElementById('kp-settings-btn-wrap');
     if (kpWrap) kpWrap.style.display = 'block';
+    const secretToggle = document.getElementById('secret-dice-toggle');
+    if (secretToggle) secretToggle.style.display = 'block';
   }
   hideLoading();
 });
@@ -1766,7 +1776,8 @@ window.rollDice = (sides, count) => {
   btn.classList.add('rolling'); setTimeout(() => btn.classList.remove('rolling'), 350);
   let total = 0; for (let i=0; i<count; i++) total += Math.floor(Math.random()*sides)+1;
   showResultLocal(`${count}D${sides}`, total, sides, null);
-  pushRoll(`${count}D${sides}`, total, null);
+  const isSecret = myRole === 'KP' && document.getElementById('secret-dice-check')?.checked;
+  pushRoll(`${count}D${sides}`, total, null, isSecret);
 };
 
 function updateSkillToggleBtn() {
@@ -1789,7 +1800,8 @@ window.rollSkillCheck = () => {
   const roll = Math.floor(Math.random()*100)+1;
   const result = getCheckResult(roll, val);
   showResultLocal(`${name} [${val}]`, roll, 100, result);
-  pushRoll(`${name} [${val}]`, roll, result);
+  const isSecret = myRole === 'KP' && document.getElementById('secret-dice-check')?.checked;
+  pushRoll(`${name} [${val}]`, roll, result, isSecret);
 };
 
 function rollStat(name, val) {
@@ -1817,30 +1829,39 @@ function showResultLocal(label, num, sides, result) {
   numEl.style.animation='none'; numEl.offsetHeight; numEl.style.animation='fadeIn 0.3s ease';
 }
 
-function pushRoll(what, num, result) {
+function pushRoll(what, num, result, isSecret = false) {
   const handle = userData?.handle || '？';
   const who = myRole === 'KP'
     ? `KP（${handle}）`
     : (viewingChar?.name || userData?.displayName || handle);
   const ts = Date.now(), time = nowTime();
-  push(ref(db, `sessions/${sessionCode}/rolls`), { who, what, num, result, time, ts });
-  // メインチャンネルに投稿
-  const ltext = { critical:'★ クリティカル！', extreme:'◆ 超成功', hard:'▲ 困難成功', success:'✓ 成功', failure:'✗ 失敗', fumble:'💀 ファンブル！' };
-  const text = `${who} — ${what} → ${num}${result ? ' ' + (ltext[result]||'') : ''}`;
-  push(ref(db, `sessions/${sessionCode}/channel_msgs/main`), { who: '🎲 ダイス', text, type:'dice', time, ts });
+  push(ref(db, `sessions/${sessionCode}/rolls`), { who, what, num, result, time, ts, secret: isSecret });
+
+  if (isSecret) {
+    // シークレット: KPのロール履歴にのみ表示、メインには「振りました」とだけ通知
+    push(ref(db, `sessions/${sessionCode}/channel_msgs/main`), {
+      who: '🔒 シークレット', text: `KP がシークレットダイスを振りました`, type: 'secret', time, ts
+    });
+  } else {
+    // 通常: メインチャンネルに結果を投稿
+    const ltext = { critical:'★ クリティカル！', extreme:'◆ 超成功', hard:'▲ 困難成功', success:'✓ 成功', failure:'✗ 失敗', fumble:'💀 ファンブル！' };
+    const text = `${who} — ${what} → ${num}${result ? ' ' + (ltext[result]||'') : ''}`;
+    push(ref(db, `sessions/${sessionCode}/channel_msgs/main`), { who: '🎲 ダイス', text, type:'dice', time, ts });
+  }
 }
 
 function listenRolls() {
   const hist = document.getElementById('roll-history');
   onChildAdded(ref(db, `sessions/${sessionCode}/rolls`), snap => {
-    const { who, what, num, result, time } = snap.val();
-    // History
+    const { who, what, num, result, time, secret } = snap.val();
+    // シークレットロールはKPのみ履歴に表示
+    if (secret && myRole !== 'KP') return;
     const labelMap = { critical:'クリティカル', extreme:'超成功', hard:'困難成功', success:'成功', failure:'失敗', fumble:'ファンブル' };
     const clsMap   = { critical:'critical', extreme:'critical', hard:'success', success:'success', failure:'failure', fumble:'fumble' };
     const item = document.createElement('div'); item.className = 'h-item';
-    item.innerHTML = `<span class="h-who">${who}</span><span class="h-what">${what}</span><span class="h-res">${num}</span>${result?`<span class="h-tag ${clsMap[result]||''}">${labelMap[result]||''}</span>`:''}<span class="h-time">${time}</span>`;
+    const secretBadge = secret ? '<span class="h-tag" style="background:rgba(201,168,76,0.15);color:var(--gold-dim);border:1px solid var(--gold-dim)">🔒</span>' : '';
+    item.innerHTML = `${secretBadge}<span class="h-who">${who}</span><span class="h-what">${what}</span><span class="h-res">${num}</span>${result?`<span class="h-tag ${clsMap[result]||''}">${labelMap[result]||''}</span>`:''}<span class="h-time">${time}</span>`;
     hist.insertBefore(item, hist.firstChild);
-    // ログチャンネルに直接push済みのため addChatMessage は不要
   });
 }
 
