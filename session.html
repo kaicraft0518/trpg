@@ -1099,6 +1099,10 @@ onAuthStateChanged(auth, async user => {
   onValue(ref(db, `sessions/${sessionCode}/players`), async snap => {
     const players = snap.val() || {};
     await loadAllPlayerChars(players);
+    // 初回のみ自分のキャラを自動選択
+    if (viewingUid === null) {
+      selectViewChar(currentUser.uid);
+    }
     hideLoading();
   });
 
@@ -1580,7 +1584,8 @@ function selectViewChar(uid) {
   document.querySelectorAll('.player-card').forEach(c => c.classList.remove('selected-char'));
   const card = document.getElementById('pcard-' + uid);
   if (card) card.classList.add('selected-char');
-  if (viewingChar) { renderCharSheet(viewingChar, true); document.getElementById('no-char-msg').style.display = 'none'; document.getElementById('sheet-content').style.display = 'block'; }
+  const canEdit = myRole === 'KP' || uid === currentUser.uid;
+  if (viewingChar) { renderCharSheet(viewingChar, canEdit); document.getElementById('no-char-msg').style.display = 'none'; document.getElementById('sheet-content').style.display = 'block'; }
   else { document.getElementById('no-char-msg').style.display = 'block'; document.getElementById('sheet-content').style.display = 'none'; }
 }
 
