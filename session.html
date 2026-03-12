@@ -1238,7 +1238,18 @@ async function loadAllPlayerChars(players) {
     const uData = uSnap.val();
     const cSnap = await get(ref(db, `users/${uid}/characters`));
     let charId = null, char = null;
-    if (cSnap.exists()) { const chars = Object.entries(cSnap.val()); if (chars.length > 0) [charId, char] = chars[0]; }
+    if (cSnap.exists()) {
+      const chars = Object.entries(cSnap.val());
+      if (chars.length > 0) {
+        if (uid === currentUser.uid && myCharId) {
+          // 自分は選択済みのキャラを使う
+          const found = chars.find(([id]) => id === myCharId);
+          [charId, char] = found || chars[0];
+        } else {
+          [charId, char] = chars[0];
+        }
+      }
+    }
 
     allSessionChars[uid] = { charId, char, role: pInfo.role, handle: uData.handle, displayName: uData.displayName };
 
