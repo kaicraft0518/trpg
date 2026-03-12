@@ -1069,6 +1069,10 @@ onAuthStateChanged(auth, async user => {
       const savedCharId = localStorage.getItem(`activeChar_${sessionCode}`);
       const found = savedCharId ? chars.find(([id]) => id === savedCharId) : null;
       [myCharId, myChar] = found || chars[0];
+      // 選択中のcharIdをFirebaseに保存（他PLが参照できるよう）
+      if (myCharId) {
+        update(ref(db, `sessions/${sessionCode}/players/${user.uid}`), { charId: myCharId });
+      }
     }
   }
 
@@ -1277,7 +1281,10 @@ async function loadAllPlayerChars(players) {
           const found = chars.find(([id]) => id === myCharId);
           [charId, char] = found || chars[0];
         } else {
-          [charId, char] = chars[0];
+          // 他PLはFirebaseに保存されたcharIdを参照
+          const savedId = pInfo.charId;
+          const found = savedId ? chars.find(([id]) => id === savedId) : null;
+          [charId, char] = found || chars[0];
         }
       }
     }
@@ -1394,6 +1401,7 @@ async function buildPlCharSelect() {
 
 function switchMyChar(charId, char, btn) {
   myCharId = charId;
+  update(ref(db, `sessions/${sessionCode}/players/${currentUser.uid}`), { charId: myCharId });
   myChar = char;
   viewingChar = char; viewingUid = currentUser.uid; viewingCharId = charId;
   document.querySelectorAll('#pl-char-select .kp-char-btn').forEach(b => b.classList.remove('active'));
