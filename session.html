@@ -226,6 +226,11 @@ header {
 .sc-btn:hover { background: rgba(201,168,76,0.2); }
 .dice-result { background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; padding: 24px; text-align: center; margin-bottom: 16px; min-height: 130px; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; overflow: hidden; }
 .dice-result::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at center, rgba(201,168,76,0.03) 0%, transparent 70%); }
+/* トグルスイッチ */
+.toggle-switch { width:44px;height:24px;border-radius:12px;background:var(--bg-mid);border:1px solid var(--border);position:relative;cursor:pointer;transition:background 0.2s,border-color 0.2s;flex-shrink:0 }
+.toggle-switch.on { background:rgba(74,222,128,0.2);border-color:rgba(74,222,128,0.5) }
+.toggle-knob { width:18px;height:18px;border-radius:50%;background:var(--text-dim);position:absolute;top:2px;left:2px;transition:transform 0.2s,background 0.2s }
+.toggle-switch.on .toggle-knob { transform:translateX(20px);background:#4ade80 }
 /* シークレットモード */
 @keyframes secretPulse { 0%,100%{background:rgba(168,85,247,0.04)} 50%{background:rgba(168,85,247,0.10)} }
 @keyframes secretOn { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:translateY(0)} }
@@ -936,6 +941,22 @@ header {
     </div>
     <div class="modal-body" style="overflow-y:auto;flex:1">
 
+      <!-- セッション設定 -->
+      <div style="margin-bottom:20px">
+        <div class="invite-sec-title">セッション設定</div>
+        <div style="margin-top:10px;display:flex;flex-direction:column;gap:10px">
+          <label style="display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer">
+            <div>
+              <div style="font-size:13px;color:var(--text-primary)">PLのキャラクター切り替え</div>
+              <div style="font-size:11px;color:var(--text-dim);margin-top:2px">許可しない場合、PLはセッション中にキャラを変更できません</div>
+            </div>
+            <div class="toggle-switch" id="toggle-allow-char-switch" onclick="toggleSetting('allowCharSwitch')" style="flex-shrink:0">
+              <div class="toggle-knob"></div>
+            </div>
+          </label>
+        </div>
+      </div>
+
       <!-- セッション名 -->
       <div style="margin-bottom:20px">
         <div class="invite-sec-title">セッション名</div>
@@ -1077,6 +1098,7 @@ onAuthStateChanged(auth, async user => {
   }
 
   // Listen for session players
+  listenSessionSettings();
   onValue(ref(db, `sessions/${sessionCode}/players`), snap => {
     const players = snap.val() || {};
     loadAllPlayerChars(players);
@@ -1136,6 +1158,22 @@ onAuthStateChanged(auth, async user => {
 window.goHome = () => { window.location.href = 'home.html'; };
 
 // ── KP設定モーダル ──
+// セッション設定のリアルタイム監視
+let sessionSettings = { allowCharSwitch: true };
+function listenSessionSettings() {
+  onValue(ref(db, `sessions/${sessionCode}/settings`), snap => {
+    sessionSettings = { allowCharSwitch: true, ...(snap.val() || {}) };
+    // トグルUIを更新
+    const toggle = document.getElementById('toggle-allow-char-switch');
+    if (toggle) toggle.classList.toggle('on', sessionSettings.allowCharSwitch !== false);
+  });
+}
+
+window.toggleSetting = async (key) => {
+  const current = sessionSettings[key] !== false; // デフォルトtrue
+  await update(ref(db, `sessions/${sessionCode}/settings`), { [key]: !current });
+};
+
 window.openKpSettings = () => {
   // セッション名をセット
   document.getElementById('kp-session-name').value = sessionData?.name || '';
@@ -1422,6 +1460,13 @@ function buildKpCharSelect() {
 }
 
 window.openCharSwitchModal = async () => {
+  // PLのキャラ切り替えが許可されていない場合はモーダルを開かない
+  if (myRole !== 'KP' && sessionSettings.allowCharSwitch === false) {
+    // 軽くシェイクして「できない」を伝える
+    const nameBlock = document.querySelector('.sheet-name-block');
+    if (nameBlock) { nameBlock.style.animation='none'; nameBlock.offsetHeight; nameBlock.style.animation='shake 0.35s ease'; }
+    return;
+  }
   const list = document.getElementById('char-switch-list');
   list.innerHTML = '';
 
