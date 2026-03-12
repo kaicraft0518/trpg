@@ -1153,7 +1153,13 @@ onAuthStateChanged(auth, async user => {
   hideLoading();
 });
 
-window.goHome = () => { window.location.href = 'home.html'; };
+window.goHome = async () => {
+  // プレゼンスを削除してからホームへ
+  try {
+    await set(ref(db, `sessions/${sessionCode}/presence/${currentUser.uid}`), null);
+  } catch(e) {}
+  window.location.href = 'home.html';
+};
 
 // ── KP設定モーダル ──
 // セッション設定のリアルタイム監視
