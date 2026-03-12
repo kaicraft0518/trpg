@@ -1348,7 +1348,11 @@ async function loadAllPlayerChars(players) {
     const vSnap = await get(ref(db, `sessions/${sessionCode}/vitals/${uid}`));
     if (vSnap.exists() && char) { Object.assign(char, vSnap.val()); }
 
-    list.appendChild(buildPlayerCard(uid, uData, char, pInfo.role));
+    const card = buildPlayerCard(uid, uData, char, pInfo.role);
+    // presence状態を最新に反映
+    const dot = card.querySelector('.status-dot');
+    if (dot) dot.className = 'status-dot ' + (onlineUids.has(uid) ? 'online' : 'offline');
+    list.appendChild(card);
 
     // Listen to vitals changes
     onValue(ref(db, `sessions/${sessionCode}/vitals/${uid}`), vs => {
@@ -2123,8 +2127,14 @@ function initChannels() {
     { id:`memo_${myId}`, name:'個人メモ', type:'personal', owner: myId },
     { id:'log', name:'ログ', type:'log' },
   ];
-  defaults.forEach(ch => {
-    set(ref(db, `sessions/${sessionCode}/channels/${ch.id}`), ch);
+  // 存在しないチャンネルのみ初期化（既存データを上書きしない）
+  get(ref(db, `sessions/${sessionCode}/channels`)).then(snap => {
+    const existing = snap.val() || {};
+    defaults.forEach(ch => {
+      if (!existing[ch.id]) {
+        set(ref(db, `sessions/${sessionCode}/channels/${ch.id}`), ch);
+      }
+    });
   });
 
   // チャンネル一覧をリアルタイム監視
@@ -2152,6 +2162,9 @@ function renderChannelTabs() {
       return 0;
     });
 
+  // 初回のみメインチャンネルに切り替え
+  const firstRender = tabsEl.children.length === 0;
+
   visible.forEach(ch => {
     const btn = document.createElement('button');
     btn.className = 'channel-tab' + (ch.id === currentChannelId ? ' active' : '');
@@ -2165,6 +2178,11 @@ function renderChannelTabs() {
       listenChannel(ch.id);
     }
   });
+
+  // 初回レンダリング時にメインチャンネルを表示
+  if (firstRender && visible.find(ch => ch.id === 'main')) {
+    switchChannel('main');
+  }
 
   // 入力欄の表示切り替え（個人メモは textarea）
   const isMemo = currentChannelId === `memo_${myId}`;
