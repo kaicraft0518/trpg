@@ -1105,11 +1105,12 @@ onAuthStateChanged(auth, async user => {
   const myPresRef = ref(db, `sessions/${sessionCode}/presence/${currentUser.uid}`);
   set(myPresRef, true);
   onDisconnect(myPresRef).remove();
-  // 切断時にログに通知
+  // 切断時にログへ通知（onDisconnectで切断時のみ実行）
   const disconnectName = myRole === 'KP'
     ? `KP（${userData.handle}）`
     : (myChar?.name || userData.displayName || userData.handle);
-  push(ref(db, `sessions/${sessionCode}/channel_msgs/log`), {
+  const disconnectLogRef = ref(db, `sessions/${sessionCode}/channel_msgs/log`);
+  onDisconnect(disconnectLogRef).push({
     who: 'システム', text: `${disconnectName} が切断しました`, type: 'system',
     time: new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'}), ts: Date.now()
   });

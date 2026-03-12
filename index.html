@@ -523,11 +523,8 @@ const googleProvider = new GoogleAuthProvider();
 
 // ── Already logged in? → redirect to home ──
 onAuthStateChanged(auth, async user => {
-  console.log('[onAuthStateChanged] user:', user?.uid, 'pending:', sessionStorage.getItem('pendingGoogleUid'));
   if (!user) return;
-  // setup-handle待ちのGoogleユーザーは home.html に飛ばさない
   if (sessionStorage.getItem('pendingGoogleUid') === user.uid) return;
-  console.log('[onAuthStateChanged] redirecting to home.html');
   window.location.href = 'home.html';
 });
 
@@ -660,9 +657,7 @@ window.submitLogin = async function() {
   setLoading('login-btn', true);
 
   try {
-    console.log('[submitLogin] trying:', toFakeEmail(handle));
     await signInWithEmailAndPassword(auth, toFakeEmail(handle), password);
-    console.log('[submitLogin] signIn success, waiting for onAuthStateChanged...');
     // onAuthStateChanged will redirect to home.html
   } catch (e) {
     const msgs = {
