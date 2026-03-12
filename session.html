@@ -225,6 +225,15 @@ header {
 .sc-btn:hover { background: rgba(201,168,76,0.2); }
 .dice-result { background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; padding: 24px; text-align: center; margin-bottom: 16px; min-height: 130px; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; overflow: hidden; }
 .dice-result::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at center, rgba(201,168,76,0.03) 0%, transparent 70%); }
+/* シークレットモード */
+@keyframes secretPulse { 0%,100%{box-shadow:0 0 12px rgba(168,85,247,0.3),inset 0 0 20px rgba(168,85,247,0.05)} 50%{box-shadow:0 0 24px rgba(168,85,247,0.6),inset 0 0 30px rgba(168,85,247,0.1)} }
+@keyframes secretOn { from{opacity:0;transform:scale(0.95)} to{opacity:1;transform:scale(1)} }
+.dice-area.secret-mode { border: 1px solid rgba(168,85,247,0.5); border-radius: 16px; padding: 16px; animation: secretPulse 2s ease-in-out infinite; background: rgba(168,85,247,0.03); transition: all 0.4s ease; }
+.dice-area.secret-mode .dice-title { color: #c084fc; }
+.dice-area.secret-mode .dice-btn { border-color: rgba(168,85,247,0.4); position: relative; }
+.dice-area.secret-mode .dice-btn::after { content: '🔒'; position: absolute; top: -6px; right: -6px; font-size: 10px; }
+.secret-banner { display: none; background: rgba(168,85,247,0.1); border: 1px solid rgba(168,85,247,0.4); border-radius: 8px; padding: 8px 14px; font-size: 12px; color: #c084fc; text-align: center; margin-bottom: 12px; animation: secretOn 0.3s ease; }
+.secret-banner.show { display: block; }
 .r-dice { font-size: 11px; color: var(--text-dim); letter-spacing: 2px; text-transform: uppercase; margin-bottom: 6px; }
 .r-num { font-family: 'Cinzel Decorative', serif; font-size: 60px; color: var(--gold); line-height: 1; text-shadow: 0 0 25px rgba(201,168,76,0.4); transition: all 0.2s; }
 .r-label { font-size: 14px; font-style: italic; color: var(--text-secondary); margin-top: 6px; }
@@ -690,7 +699,8 @@ header {
 
     <!-- DICE TAB -->
     <div class="tab-panel" id="tab-dice">
-      <div class="dice-area">
+      <div class="dice-area" id="dice-area">
+        <div class="secret-banner" id="secret-banner">🔒 シークレットモード — あなただけに結果が見えています</div>
         <h2 class="dice-title">ダイスロール</h2>
         <p class="dice-subtitle">振りたいダイスを選んでください</p>
         <div class="dice-buttons">
@@ -705,7 +715,7 @@ header {
         <!-- KP専用シークレットダイス -->
         <div id="secret-dice-toggle" style="display:none;margin-bottom:10px">
           <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:var(--text-dim);user-select:none">
-            <input type="checkbox" id="secret-dice-check" style="width:14px;height:14px;accent-color:var(--gold);cursor:pointer">
+            <input type="checkbox" id="secret-dice-check" style="width:14px;height:14px;accent-color:var(--gold);cursor:pointer" onchange="toggleSecretMode(this.checked)">
             <span id="secret-dice-label">🔒 シークレットダイス（KPのみ結果が見える）</span>
           </label>
         </div>
@@ -1770,6 +1780,18 @@ function getCheckResult(roll, val) {
 }
 
 function nowTime() { const d = new Date(); return d.getHours() + ':' + String(d.getMinutes()).padStart(2,'0'); }
+
+window.toggleSecretMode = (on) => {
+  const area = document.getElementById('dice-area');
+  const banner = document.getElementById('secret-banner');
+  if (on) {
+    area.classList.add('secret-mode');
+    banner.classList.add('show');
+  } else {
+    area.classList.remove('secret-mode');
+    banner.classList.remove('show');
+  }
+};
 
 window.rollDice = (sides, count) => {
   const btn = event.currentTarget;
