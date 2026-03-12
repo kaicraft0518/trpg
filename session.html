@@ -1114,8 +1114,8 @@ onAuthStateChanged(auth, async user => {
   const disconnectName = myRole === 'KP'
     ? `KP（${userData.handle}）`
     : (myChar?.name || userData.displayName || userData.handle);
-  const disconnectLogRef = ref(db, `sessions/${sessionCode}/channel_msgs/log`);
-  onDisconnect(disconnectLogRef).push({
+  const disconnectLogRef = ref(db, `sessions/${sessionCode}/channel_msgs/log/disconnect_${currentUser.uid}`);
+  onDisconnect(disconnectLogRef).set({
     who: 'システム', text: `${disconnectName} が切断しました`, type: 'system',
     time: new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'}), ts: Date.now()
   });
