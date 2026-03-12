@@ -1166,6 +1166,11 @@ function listenSessionSettings() {
     // トグルUIを更新
     const toggle = document.getElementById('toggle-allow-char-switch');
     if (toggle) toggle.classList.toggle('on', sessionSettings.allowCharSwitch !== false);
+    // PLのキャラ選択エリアの表示切り替え
+    if (myRole !== 'KP') {
+      const area = document.getElementById('pl-char-select-area');
+      if (area) area.style.display = sessionSettings.allowCharSwitch === false ? 'none' : '';
+    }
   });
 }
 
@@ -1438,6 +1443,8 @@ async function buildPlCharSelect() {
 }
 
 function switchMyChar(charId, char, btn) {
+  // KPが切り替え禁止にしている場合はPLは変更不可
+  if (myRole !== 'KP' && sessionSettings.allowCharSwitch === false) return;
   myCharId = charId;
   update(ref(db, `sessions/${sessionCode}/players/${currentUser.uid}`), { charId: myCharId });
   myChar = char;
