@@ -1,1 +1,1 @@
-const APP_VERSION = 'v1.0.2-hotfix';
+const APP_VERSION = 'v1.1.0-preview';
