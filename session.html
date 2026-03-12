@@ -1460,18 +1460,11 @@ function buildKpCharSelect() {
 }
 
 window.openCharSwitchModal = async () => {
-  // PLのキャラ切り替えが許可されていない場合はモーダルを開かない
-  if (myRole !== 'KP' && sessionSettings.allowCharSwitch === false) {
-    // 軽くシェイクして「できない」を伝える
-    const nameBlock = document.querySelector('.sheet-name-block');
-    if (nameBlock) { nameBlock.style.animation='none'; nameBlock.offsetHeight; nameBlock.style.animation='shake 0.35s ease'; }
-    return;
-  }
   const list = document.getElementById('char-switch-list');
   list.innerHTML = '';
 
-  // PL: 自分のキャラが複数あれば先頭に「自分のキャラ切り替え」セクション
-  if (myRole !== 'KP') {
+  // PL: 自分のキャラが複数あれば先頭に「自分のキャラ切り替え」セクション（KPが許可している場合のみ）
+  if (myRole !== 'KP' && sessionSettings.allowCharSwitch !== false) {
     const cSnap = await get(ref(db, `users/${currentUser.uid}/characters`));
     if (cSnap.exists()) {
       const chars = Object.entries(cSnap.val());
