@@ -614,6 +614,10 @@ header {
 
   <!-- LEFT SIDEBAR -->
   <aside class="sidebar" id="main-sidebar">
+    <!-- KP専用：一括ダメージボタン -->
+    <div id="bulk-dmg-btn-wrap" style="display:none;padding:10px 12px 0">
+      <button onclick="openBulkDamage()" style="width:100%;background:rgba(255,107,107,0.08);border:1px solid rgba(255,107,107,0.35);border-radius:10px;padding:8px 12px;color:#ff9999;cursor:pointer;font-family:'Noto Serif JP',serif;font-size:12px;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:6px" onmouseenter="this.style.background='rgba(255,107,107,0.15)'" onmouseleave="this.style.background='rgba(255,107,107,0.08)'">⚔️ 一括ダメージ適用</button>
+    </div>
     <div class="sidebar-section">
       <div class="sec-title">探索者</div>
       <div id="player-list"></div>
@@ -1119,6 +1123,8 @@ onAuthStateChanged(auth, async user => {
     if (kpWrap) kpWrap.style.display = 'block';
     const secretBtn = document.getElementById('secret-toggle-btn');
     if (secretBtn) secretBtn.style.display = 'block';
+    const bulkWrap = document.getElementById('bulk-dmg-btn-wrap');
+    if (bulkWrap) bulkWrap.style.display = 'block';
   }
   hideLoading();
 });
@@ -1787,6 +1793,100 @@ function getCheckResult(roll, val) {
 function nowTime() { const d = new Date(); return d.getHours() + ':' + String(d.getMinutes()).padStart(2,'0'); }
 
 let secretModeOn = false;
+// ── 一括ダメージ ──
+let bulkInitEntries = []; // initiative NPCのスナップショット
+
+window.openBulkDamage = () => {
+  const list = document.getElementById('bulk-target-list');
+  list.innerHTML = '';
+
+  // PLキャラ
+  Object.entries(allSessionChars).forEach(([uid, info]) => {
+    if (!info.char) return;
+    const name = info.char.name || info.displayName || uid;
+    const hp = info.char.hp ?? '?'; const hpMax = info.char.hpMax ?? '?';
+    const el = document.createElement('label');
+    el.style.cssText = 'display:flex;align-items:center;gap:8px;cursor:pointer;padding:6px 8px;border-radius:8px;background:var(--bg-card);border:1px solid var(--border);font-size:13px';
+    el.innerHTML = `<input type="checkbox" data-uid="${uid}" data-type="pl" style="accent-color:var(--gold);width:14px;height:14px" checked>
+      <span style="flex:1">${name}</span><span style="font-size:11px;color:#ff6b6b">HP ${hp}/${hpMax}</span>`;
+    list.appendChild(el);
+  });
+
+  // イニシアティブのNPC
+  get(ref(db, `sessions/${sessionCode}/initiative`)).then(snap => {
+    bulkInitEntries = [];
+    if (snap.exists()) {
+      Object.entries(snap.val()).forEach(([key, item]) => {
+        if (!item.isNpc) return;
+        bulkInitEntries.push({ key, ...item });
+        const el = document.createElement('label');
+        el.style.cssText = 'display:flex;align-items:center;gap:8px;cursor:pointer;padding:6px 8px;border-radius:8px;background:var(--bg-card);border:1px solid var(--border);font-size:13px';
+        el.innerHTML = `<input type="checkbox" data-key="${key}" data-type="npc" style="accent-color:var(--gold);width:14px;height:14px" checked>
+          <span style="flex:1">${item.name}</span><span style="font-size:11px;color:#ff9999">NPC　HP ${item.hp ?? '?'}</span>`;
+        list.appendChild(el);
+      });
+    }
+  });
+
+  document.getElementById('bulk-dmg-val').value = 1;
+  document.getElementById('bulk-dmg-msg').textContent = '';
+  document.getElementById('bulk-dmg-modal').classList.add('open');
+};
+
+window.bulkSelectAll = (checked) => {
+  document.querySelectorAll('#bulk-target-list input[type=checkbox]').forEach(cb => cb.checked = checked);
+};
+
+window.closeBulkDamage = () => {
+  document.getElementById('bulk-dmg-modal').classList.remove('open');
+};
+
+window.applyBulkDamage = async () => {
+  const val = parseInt(document.getElementById('bulk-dmg-val').value) || 0;
+  if (val === 0) return;
+  const type = document.querySelector('input[name=bulk-type]:checked')?.value || 'hp';
+  const typeLabel = { hp:'HP', san:'SAN', mp:'MP' }[type];
+  const sign = val > 0 ? '-' : '+';
+  const absVal = Math.abs(val);
+  const checks = document.querySelectorAll('#bulk-target-list input[type=checkbox]:checked');
+  if (!checks.length) { document.getElementById('bulk-dmg-msg').textContent = '対象を選択してください'; return; }
+
+  const promises = [];
+  const names = [];
+
+  checks.forEach(cb => {
+    if (cb.dataset.type === 'pl') {
+      const uid = cb.dataset.uid;
+      const info = allSessionChars[uid];
+      if (!info) return;
+      const cur = info.char?.[type] ?? 0;
+      const max = info.char?.[type + 'Max'] ?? cur;
+      const next = Math.min(max, Math.max(0, cur - val));
+      promises.push(update(ref(db, `sessions/${sessionCode}/vitals/${uid}`), { [type]: next }));
+      names.push(info.char?.name || info.displayName || uid);
+    } else if (cb.dataset.type === 'npc' && type === 'hp') {
+      // NPCはHPのみ（initiative内）
+      const key = cb.dataset.key;
+      const entry = bulkInitEntries.find(e => e.key === key);
+      if (!entry) return;
+      const cur = entry.hp ?? 0;
+      const next = Math.max(0, cur - val);
+      promises.push(update(ref(db, `sessions/${sessionCode}/initiative/${key}`), { hp: next }));
+      names.push(entry.name);
+    }
+  });
+
+  await Promise.all(promises);
+
+  // ログチャンネルに通知
+  const time = nowTime(), ts = Date.now();
+  const text = `⚔️ 一括適用：${names.join('・')} に ${typeLabel} ${sign}${absVal}`;
+  push(ref(db, `sessions/${sessionCode}/channel_msgs/log`), { who: 'システム', text, type: 'system', time, ts });
+
+  document.getElementById('bulk-dmg-msg').textContent = `✓ ${names.length}名に適用しました`;
+  setTimeout(() => closeBulkDamage(), 1200);
+};
+
 window.toggleSecretMode = () => {
   secretModeOn = !secretModeOn;
   const tab    = document.getElementById('tab-dice');
@@ -2421,5 +2521,47 @@ window.toggleTheme = function() {
 // Init button label after DOM ready
 document.addEventListener('DOMContentLoaded', updateToggleBtn);
 </script>
+<!-- 一括ダメージモーダル -->
+<div class="modal-overlay" id="bulk-dmg-modal" onclick="if(event.target===this)closeBulkDamage()">
+  <div class="modal-box" style="max-width:460px;width:92%">
+    <div class="modal-title">⚔️ 一括ダメージ適用</div>
+
+    <div style="margin-bottom:14px">
+      <div class="section-label" style="margin-bottom:8px">対象を選択</div>
+      <div style="display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+        <button onclick="bulkSelectAll(true)" class="sc-btn" style="font-size:11px;padding:4px 10px">全選択</button>
+        <button onclick="bulkSelectAll(false)" class="sc-btn" style="font-size:11px;padding:4px 10px">全解除</button>
+      </div>
+      <div id="bulk-target-list" style="display:flex;flex-direction:column;gap:6px;max-height:180px;overflow-y:auto;padding-right:4px"></div>
+    </div>
+
+    <div style="margin-bottom:14px">
+      <div class="section-label" style="margin-bottom:8px">種別</div>
+      <div style="display:flex;gap:8px">
+        <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:13px">
+          <input type="radio" name="bulk-type" value="hp" checked style="accent-color:#ff6b6b"> <span style="color:#ff6b6b">HP</span>
+        </label>
+        <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:13px">
+          <input type="radio" name="bulk-type" value="san" style="accent-color:#4a9eff"> <span style="color:#4a9eff">SAN</span>
+        </label>
+        <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:13px">
+          <input type="radio" name="bulk-type" value="mp" style="accent-color:#a78bfa"> <span style="color:#a78bfa">MP</span>
+        </label>
+      </div>
+    </div>
+
+    <div style="margin-bottom:18px">
+      <div class="section-label" style="margin-bottom:8px">数値 <span style="font-size:11px;color:var(--text-dim);font-weight:400">（マイナスで回復）</span></div>
+      <input type="number" id="bulk-dmg-val" class="form-input" value="1" min="-999" max="999" style="width:120px;text-align:center;font-size:20px">
+    </div>
+
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button onclick="closeBulkDamage()" class="sc-btn">キャンセル</button>
+      <button onclick="applyBulkDamage()" style="background:rgba(255,107,107,0.12);border:1px solid rgba(255,107,107,0.5);border-radius:8px;padding:8px 20px;color:#ff9999;cursor:pointer;font-family:'Noto Serif JP',serif;font-size:13px;transition:all 0.2s" onmouseenter="this.style.background='rgba(255,107,107,0.22)'" onmouseleave="this.style.background='rgba(255,107,107,0.12)'">⚔️ 適用</button>
+    </div>
+    <div id="bulk-dmg-msg" style="font-size:11px;color:var(--gold);margin-top:8px;min-height:16px;text-align:center"></div>
+  </div>
+</div>
+
 </body>
 </html>
