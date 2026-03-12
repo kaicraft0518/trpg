@@ -2964,12 +2964,12 @@ function listenNpcs() {
       };
       if (myRole === 'KP') {
         const pubBtn = document.createElement('button');
-        pubBtn.style.cssText = 'font-size:10px;background:transparent;border:1px solid var(--border);border-radius:4px;padding:2px 6px;color:var(--text-dim);cursor:pointer;margin-top:4px;font-family:'Noto Serif JP',serif';
+        pubBtn.style.cssText = 'font-size:10px;background:transparent;border:1px solid var(--border);border-radius:4px;padding:2px 6px;color:var(--text-dim);cursor:pointer;margin-top:4px;font-family:serif';
         pubBtn.textContent = npc.public ? '非公開にする' : 'PLに公開';
         pubBtn.onclick = e => { e.stopPropagation(); update(ref(db, `sessions/${sessionCode}/npcs/${id}`), { public: !npc.public }); };
         card.appendChild(pubBtn);
         const statusBtn = document.createElement('button');
-        statusBtn.style.cssText = 'font-size:10px;background:transparent;border:1px solid var(--border);border-radius:4px;padding:2px 6px;color:var(--text-dim);cursor:pointer;margin-top:4px;margin-left:4px;font-family:'Noto Serif JP',serif';
+        statusBtn.style.cssText = 'font-size:10px;background:transparent;border:1px solid var(--border);border-radius:4px;padding:2px 6px;color:var(--text-dim);cursor:pointer;margin-top:4px;margin-left:4px;font-family:serif';
         statusBtn.textContent = '状態';
         statusBtn.onclick = e => openNpcStatusModal(id, npc.name, e);
         card.appendChild(statusBtn);
