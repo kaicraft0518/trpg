@@ -2221,23 +2221,46 @@ function switchChannel(id) {
 const channelMessages = {}; // channelId -> [msg, ...]
 
 function listenChannel(channelId) {
+  if (channelListeners[channelId]) return;
   if (!channelMessages[channelId]) channelMessages[channelId] = [];
   channelListeners[channelId] = true;
-  onChildAdded(ref(db, `sessions/${sessionCode}/channel_msgs/${channelId}`), snap => {
+
+  // 既存メッセージを一括取得してからリアルタイム監視
+  const msgRef = ref(db, `sessions/${sessionCode}/channel_msgs/${channelId}`);
+  get(msgRef).then(snap => {
+    if (snap.exists()) {
+      const msgs = Object.values(snap.val()).sort((a,b) => (a.ts||0)-(b.ts||0));
+      const existing = new Set(channelMessages[channelId].map(m => m.ts));
+      msgs.forEach(msg => {
+        if (!existing.has(msg.ts)) channelMessages[channelId].push(msg);
+      });
+    }
+    // 現在表示中なら再描画
+    if (currentChannelId === channelId) {
+      const chatEl = document.getElementById('panel-chat');
+      chatEl.innerHTML = '';
+      channelMessages[channelId].forEach(m => renderMsg(m, chatEl));
+      requestAnimationFrame(() => { chatEl.scrollTop = chatEl.scrollHeight; });
+    }
+  });
+
+  // 新着メッセージをリアルタイムで受け取る
+  onChildAdded(msgRef, snap => {
     const msg = snap.val();
+    const existing = new Set(channelMessages[channelId].map(m => m.ts));
+    if (existing.has(msg.ts)) return; // 重複スキップ
     channelMessages[channelId].push(msg);
     if (currentChannelId === channelId) {
       const chatEl = document.getElementById('panel-chat');
       renderMsg(msg, chatEl);
     }
-    // チャットパネルが表示されていないとき（スマホ）は未読バッジを増やす
-    // ログチャンネルとシステムメッセージは除外
-    if (channelId !== 'log' && msg.who !== 'システム' && msg.type !== 'system') {
+    // 未読バッジ
+    if (channelId !== 'log' && msg.type !== 'system') {
       const chatVisible = currentMobileView === 'chat' || window.innerWidth > 640;
       if (!chatVisible) {
         chatUnreadCount++;
         const badge = document.getElementById('chat-unread-badge');
-        if (badge) { badge.classList.add('show'); }
+        if (badge) badge.classList.add('show');
       }
     }
   });
