@@ -1421,14 +1421,52 @@ function buildKpCharSelect() {
   });
 }
 
-window.openCharSwitchModal = () => {
+window.openCharSwitchModal = async () => {
   const list = document.getElementById('char-switch-list');
   list.innerHTML = '';
 
-  const entries = myRole === 'KP'
-    ? Object.entries(allSessionChars)
-    : Object.entries(allSessionChars); // PLも全員閲覧可（編集は自分のみ）
+  // PL: 自分のキャラが複数あれば先頭に「自分のキャラ切り替え」セクション
+  if (myRole !== 'KP') {
+    const cSnap = await get(ref(db, `users/${currentUser.uid}/characters`));
+    if (cSnap.exists()) {
+      const chars = Object.entries(cSnap.val());
+      if (chars.length > 1) {
+        const label = document.createElement('div');
+        label.style.cssText = 'font-size:11px;color:var(--text-dim);margin-bottom:6px;padding:0 2px';
+        label.textContent = '── 自分のキャラクター切り替え ──';
+        list.appendChild(label);
+        chars.forEach(([charId, char]) => {
+          const isActive = charId === myCharId;
+          const btn = document.createElement('div');
+          btn.style.cssText = `display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--bg-card);border:1px solid ${isActive ? 'var(--gold-dim)' : 'var(--border)'};border-radius:10px;cursor:pointer;transition:all 0.15s;margin-bottom:4px`;
+          const avatarHtml = char?.iconUrl
+            ? `<img src="${char.iconUrl}" style="width:38px;height:38px;border-radius:50%;object-fit:cover;flex-shrink:0">`
+            : `<div style="width:38px;height:38px;border-radius:50%;background:var(--bg-mid);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">🧍</div>`;
+          btn.innerHTML = `${avatarHtml}
+            <div style="flex:1;min-width:0">
+              <div style="font-size:13px;color:${isActive ? 'var(--gold)' : 'var(--text-primary)'};font-weight:600">${char.name || '(名前なし)'}</div>
+              <div style="font-size:11px;color:var(--text-dim)">自分</div>
+            </div>
+            ${isActive ? '<div style="font-size:11px;color:var(--gold);flex-shrink:0">使用中</div>' : ''}`;
+          btn.onmouseenter = () => { btn.style.borderColor = 'var(--border-glow)'; btn.style.background = 'var(--bg-hover)'; };
+          btn.onmouseleave = () => { btn.style.borderColor = isActive ? 'var(--gold-dim)' : 'var(--border)'; btn.style.background = 'var(--bg-card)'; };
+          btn.onclick = () => {
+            switchMyChar(charId, char, btn);
+            document.getElementById('char-switch-modal').classList.remove('open');
+          };
+          list.appendChild(btn);
+        });
+        // 区切り
+        const sep = document.createElement('div');
+        sep.style.cssText = 'font-size:11px;color:var(--text-dim);margin:10px 0 6px;padding:0 2px';
+        sep.textContent = '── 他の探索者を閲覧 ──';
+        list.appendChild(sep);
+      }
+    }
+  }
 
+  // 全員のキャラ一覧（KPは編集可、PLは閲覧のみ）
+  const entries = Object.entries(allSessionChars);
   if (entries.length === 0) {
     list.innerHTML = '<div style="font-size:12px;color:var(--text-dim);padding:8px">参加者のキャラが見つかりません</div>';
     document.getElementById('char-switch-modal').classList.add('open');
@@ -1444,7 +1482,7 @@ window.openCharSwitchModal = () => {
     const isMe   = uid === currentUser.uid;
 
     const btn = document.createElement('div');
-    btn.style.cssText = `display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--bg-card);border:1px solid ${isActive ? 'var(--gold-dim)' : 'var(--border)'};border-radius:10px;cursor:pointer;transition:all 0.15s`;
+    btn.style.cssText = `display:flex;align-items:center;gap:12px;padding:10px 14px;background:var(--bg-card);border:1px solid ${isActive ? 'var(--gold-dim)' : 'var(--border)'};border-radius:10px;cursor:pointer;transition:all 0.15s;margin-bottom:4px`;
     const avatarHtml = char?.iconUrl
       ? `<img src="${char.iconUrl}" style="width:38px;height:38px;border-radius:50%;object-fit:cover;flex-shrink:0">`
       : `<div style="width:38px;height:38px;border-radius:50%;background:var(--bg-mid);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">🧍</div>`;
@@ -1452,7 +1490,7 @@ window.openCharSwitchModal = () => {
       ${avatarHtml}
       <div style="flex:1;min-width:0">
         <div style="font-size:13px;color:${isActive ? 'var(--gold)' : 'var(--text-primary)'};font-weight:600">${name}</div>
-        <div style="font-size:11px;color:var(--text-dim)">${meta}${isMe ? ' · 自分' : ''}</div>
+        <div style="font-size:11px;color:var(--text-dim)">${meta}${isMe ? ' · 自分' : ''}${myRole !== 'KP' && !isMe ? ' · 閲覧のみ' : ''}</div>
       </div>
       ${isActive ? '<div style="font-size:11px;color:var(--gold);flex-shrink:0">表示中</div>' : ''}`;
     btn.onmouseenter = () => { btn.style.borderColor = 'var(--border-glow)'; btn.style.background = 'var(--bg-hover)'; };
