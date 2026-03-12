@@ -520,6 +520,16 @@ header {
         </div>
         <div id="settings-pw-msg" style="font-size:11px;margin-top:4px;min-height:16px"></div>
       </div>
+      <!-- Google連携 -->
+      <div id="settings-google-section">
+        <div class="section-label" style="margin-bottom:8px">Googleアカウント連携</div>
+        <div id="settings-google-status" style="font-size:12px;color:var(--text-dim);margin-bottom:8px"></div>
+        <button id="settings-google-btn" class="sc-btn" onclick="toggleGoogleLink()" style="display:flex;align-items:center;gap:8px">
+          <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" style="width:16px;height:16px">
+          <span id="settings-google-btn-label">Googleと連携する</span>
+        </button>
+        <div id="settings-google-msg" style="font-size:11px;color:var(--gold);margin-top:4px;min-height:16px"></div>
+      </div>
       <!-- テーマ -->
       <div>
         <div class="section-label" style="margin-bottom:8px">テーマ</div>
@@ -647,7 +657,7 @@ header {
 
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-import { getAuth, signOut, onAuthStateChanged, updatePassword, reauthenticateWithCredential, EmailAuthProvider, deleteUser } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import { getAuth, signOut, onAuthStateChanged, updatePassword, reauthenticateWithCredential, EmailAuthProvider, deleteUser, GoogleAuthProvider, linkWithPopup, unlink } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import { getDatabase, ref, get, set, push, update, onValue } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
 import { getSkillCategory } from './skills-config.js';
 
@@ -795,6 +805,8 @@ window.openSettingsModal = () => {
   const isGoogle = currentUser?.providerData?.some(p => p.providerId === 'google.com');
   document.getElementById('settings-password-section').style.display = isGoogle ? 'none' : 'block';
   updateSettingsThemeBtn();
+  // Google連携状態を表示
+  updateGoogleLinkStatus();
   document.getElementById('settings-modal').classList.add('open');
 };
 window.closeSettingsModal = () => document.getElementById('settings-modal').classList.remove('open');
@@ -853,6 +865,62 @@ function updateHeaderAvatar() {
     el.textContent = (userData?.displayName || userData?.handle || '？')[0].toUpperCase();
   }
 }
+
+// ── Google連携 ──
+const googleProvider = new GoogleAuthProvider();
+
+function updateGoogleLinkStatus() {
+  const isLinked = currentUser?.providerData?.some(p => p.providerId === 'google.com');
+  const status = document.getElementById('settings-google-status');
+  const btnLabel = document.getElementById('settings-google-btn-label');
+  const msg = document.getElementById('settings-google-msg');
+  if (msg) msg.textContent = '';
+  if (isLinked) {
+    const googleData = currentUser.providerData.find(p => p.providerId === 'google.com');
+    if (status) status.innerHTML = `<span style="color:#4ade80">✓ 連携済み</span>　${googleData?.email || ''}`;
+    if (btnLabel) btnLabel.textContent = '連携を解除する';
+    if (document.getElementById('settings-google-btn')) {
+      document.getElementById('settings-google-btn').style.borderColor = 'rgba(255,100,100,0.4)';
+      document.getElementById('settings-google-btn').style.color = '#ff9999';
+    }
+  } else {
+    if (status) status.textContent = '未連携';
+    if (btnLabel) btnLabel.textContent = 'Googleと連携する';
+    if (document.getElementById('settings-google-btn')) {
+      document.getElementById('settings-google-btn').style.borderColor = '';
+      document.getElementById('settings-google-btn').style.color = '';
+    }
+  }
+}
+
+window.toggleGoogleLink = async () => {
+  const msg = document.getElementById('settings-google-msg');
+  const isLinked = currentUser?.providerData?.some(p => p.providerId === 'google.com');
+  try {
+    if (isLinked) {
+      // 解除（メール認証が残っている場合のみ可能）
+      const hasEmail = currentUser?.providerData?.some(p => p.providerId === 'password');
+      if (!hasEmail) { msg.style.color = '#ff9999'; msg.textContent = 'メール認証がないため解除できません'; return; }
+      await unlink(currentUser, 'google.com');
+      msg.style.color = 'var(--gold)'; msg.textContent = '✓ 連携を解除しました';
+    } else {
+      // 連携
+      await linkWithPopup(currentUser, googleProvider);
+      await update(ref(db, `users/${currentUser.uid}`), { linkedGoogle: true });
+      msg.style.color = 'var(--gold)'; msg.textContent = '✓ Googleと連携しました';
+    }
+    updateGoogleLinkStatus();
+  } catch(e) {
+    msg.style.color = '#ff9999';
+    if (e.code === 'auth/credential-already-in-use') {
+      msg.textContent = 'このGoogleアカウントは別のアカウントに連携済みです';
+    } else if (e.code === 'auth/popup-closed-by-user') {
+      msg.textContent = '';
+    } else {
+      msg.textContent = `エラー: ${e.message}`;
+    }
+  }
+};
 
 window.saveDisplayName = async () => {
   const name = document.getElementById('settings-displayname').value.trim();
