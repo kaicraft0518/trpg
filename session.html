@@ -1096,9 +1096,10 @@ onAuthStateChanged(auth, async user => {
 
   // Listen for session players
   listenSessionSettings();
-  onValue(ref(db, `sessions/${sessionCode}/players`), snap => {
+  onValue(ref(db, `sessions/${sessionCode}/players`), async snap => {
     const players = snap.val() || {};
-    loadAllPlayerChars(players);
+    await loadAllPlayerChars(players);
+    hideLoading();
   });
 
   // プレゼンスを書き込み（ここで sessionCode が確定している）
@@ -1150,7 +1151,6 @@ onAuthStateChanged(auth, async user => {
     const bulkWrap = document.getElementById('bulk-dmg-btn-wrap');
     if (bulkWrap) bulkWrap.style.display = 'block';
   }
-  hideLoading();
 });
 
 window.goHome = async () => {
@@ -1314,6 +1314,8 @@ async function loadAllPlayerChars(players) {
   list.innerHTML = '';
   allSessionChars = {};
 
+  try {
+
   for (const [uid, pInfo] of Object.entries(players)) {
     const uSnap = await get(ref(db, `users/${uid}`));
     if (!uSnap.exists()) continue;
@@ -1352,8 +1354,9 @@ async function loadAllPlayerChars(players) {
       if (viewingUid === uid && viewingChar) { Object.assign(viewingChar, vs.val()); refreshVitalsDisplay(); }
     });
   }
-
-
+  } catch(e) {
+    console.error('loadAllPlayerChars error:', e);
+  }
 }
 
 function buildPlayerCard(uid, uData, char, role) {
