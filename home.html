@@ -484,6 +484,23 @@ header {
       <button class="modal-close" onclick="closeSettingsModal()">✕</button>
     </div>
     <div class="modal-body" style="padding:20px;display:flex;flex-direction:column;gap:20px">
+      <!-- プロフィール画像 -->
+      <div>
+        <div class="section-label" style="margin-bottom:8px">プロフィール画像</div>
+        <div style="display:flex;align-items:center;gap:14px">
+          <div id="settings-avatar-preview" style="width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,var(--gold-dim),var(--red));display:flex;align-items:center;justify-content:center;font-size:24px;color:var(--bg-deep);font-weight:700;overflow:hidden;flex-shrink:0"></div>
+          <div style="display:flex;flex-direction:column;gap:6px;flex:1">
+            <label style="display:flex;align-items:center;gap:8px;background:var(--bg-mid);border:1px solid var(--border);border-radius:8px;padding:7px 12px;cursor:pointer;font-size:12px;color:var(--text-secondary)">
+              📁 ファイルを選択
+              <input type="file" accept="image/*" style="display:none" onchange="settingsAvatarFileChange(this)">
+            </label>
+            <input class="form-input" id="settings-avatar-url" type="text" placeholder="画像URL（任意）" style="font-size:12px">
+            <button class="sc-btn" onclick="saveProfileAvatar()" style="align-self:flex-start">保存</button>
+          </div>
+        </div>
+        <div id="settings-avatar-msg" style="font-size:11px;color:var(--gold);margin-top:4px;min-height:16px"></div>
+      </div>
+
       <!-- 表示名変更 -->
       <div>
         <div class="section-label" style="margin-bottom:8px">表示名</div>
@@ -704,7 +721,15 @@ onAuthStateChanged(auth, async user => {
       await new Promise(r => setTimeout(r, 800));
     }
     if (!snap || !snap.exists()) {
-      showFatalError('アカウントデータが見つかりません。再登録してください。');
+      // Googleユーザーで未セットアップの場合はsetup-handle.htmlへ
+      const isGoogle = user.providerData?.some(p => p.providerId === 'google.com');
+      if (isGoogle) {
+        sessionStorage.setItem('pendingGoogleUid', user.uid);
+        sessionStorage.setItem('pendingGoogleName', user.displayName || 'user');
+        window.location.href = 'setup-handle.html';
+      } else {
+        showFatalError('アカウントデータが見つかりません。再登録してください。');
+      }
       return;
     }
 
@@ -713,7 +738,11 @@ onAuthStateChanged(auth, async user => {
   document.getElementById('popover-name').textContent = userData.displayName || userData.handle;
   document.getElementById('popover-handle').textContent = '@' + (userData.handle || '');
     document.getElementById('header-handle').textContent = '@' + userData.handle;
-    document.getElementById('header-avatar').textContent = (userData.displayName || userData.handle)[0].toUpperCase();
+    if (userData.avatarUrl) {
+      document.getElementById('header-avatar').innerHTML = `<img src="${userData.avatarUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+    } else {
+      document.getElementById('header-avatar').textContent = (userData.displayName || userData.handle)[0].toUpperCase();
+    }
 
     showLoading('データを読み込み中…');
     loadCharacters();
@@ -748,6 +777,15 @@ window.updatePopoverThemeBtn = () => {
 window.openSettingsModal = () => {
   const dn = userData?.displayName || '';
   document.getElementById('settings-displayname').value = dn;
+  // アバタープレビュー初期化
+  const prev = document.getElementById('settings-avatar-preview');
+  if (userData?.avatarUrl) {
+    prev.innerHTML = `<img src="${userData.avatarUrl}" style="width:100%;height:100%;object-fit:cover">`;
+  } else {
+    prev.textContent = (dn || userData?.handle || '？')[0].toUpperCase();
+  }
+  document.getElementById('settings-avatar-url').value = '';
+  document.getElementById('settings-avatar-msg').textContent = '';
   document.getElementById('settings-displayname-msg').textContent = '';
   document.getElementById('settings-pw-msg').textContent = '';
   document.getElementById('settings-delete-msg').textContent = '';
@@ -766,6 +804,55 @@ window.updateSettingsThemeBtn = () => {
   const btn = document.getElementById('settings-theme-btn');
   if (btn) btn.textContent = isLight ? '🌙 ダークモードに切替' : '☀️ ライトモードに切替';
 };
+
+// ── Profile avatar ──
+let _pendingAvatarData = null;
+
+window.settingsAvatarFileChange = (input) => {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = new Image();
+    img.onload = () => {
+      const MAX = 200;
+      let w = img.width, h = img.height;
+      if (w > h) { if (w > MAX) { h = h * MAX / w; w = MAX; } }
+      else       { if (h > MAX) { w = w * MAX / h; h = MAX; } }
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+      _pendingAvatarData = dataUrl;
+      document.getElementById('settings-avatar-preview').innerHTML = `<img src="${dataUrl}" style="width:100%;height:100%;object-fit:cover">`;
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+};
+
+window.saveProfileAvatar = async () => {
+  const msg = document.getElementById('settings-avatar-msg');
+  const urlInput = document.getElementById('settings-avatar-url').value.trim();
+  const avatarUrl = _pendingAvatarData || urlInput || null;
+  if (!avatarUrl) { msg.style.color = '#ff9999'; msg.textContent = '画像を選択またはURLを入力してください'; return; }
+  await update(ref(db, `users/${currentUser.uid}`), { avatarUrl });
+  userData.avatarUrl = avatarUrl;
+  _pendingAvatarData = null;
+  updateHeaderAvatar();
+  msg.style.color = 'var(--gold)';
+  msg.textContent = '✓ 保存しました';
+};
+
+function updateHeaderAvatar() {
+  const el = document.getElementById('header-avatar');
+  if (!el) return;
+  if (userData?.avatarUrl) {
+    el.innerHTML = `<img src="${userData.avatarUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
+  } else {
+    el.textContent = (userData?.displayName || userData?.handle || '？')[0].toUpperCase();
+  }
+}
 
 window.saveDisplayName = async () => {
   const name = document.getElementById('settings-displayname').value.trim();

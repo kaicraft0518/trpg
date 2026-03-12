@@ -522,8 +522,20 @@ const db = getDatabase(app);
 const googleProvider = new GoogleAuthProvider();
 
 // ── Already logged in? → redirect to home ──
-onAuthStateChanged(auth, user => {
-  if (user) window.location.href = 'home.html';
+onAuthStateChanged(auth, async user => {
+  if (!user) return;
+  // setup-handle待ちのGoogleユーザーは home.html に飛ばさない
+  if (sessionStorage.getItem('pendingGoogleUid')) return;
+  // userデータが存在するか確認してから遷移
+  const snap = await get(ref(db, `users/${user.uid}`));
+  if (snap.exists()) {
+    window.location.href = 'home.html';
+  } else {
+    // データなし＝未セットアップ → setup-handle.htmlへ
+    sessionStorage.setItem('pendingGoogleUid', user.uid);
+    sessionStorage.setItem('pendingGoogleName', user.displayName || 'user');
+    window.location.href = 'setup-handle.html';
+  }
 });
 
 // ── Helpers ──
