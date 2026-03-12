@@ -3,6 +3,16 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/x-icon" href="favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+<link rel="manifest" href="site.webmanifest">
+<meta property="og:title" content="TRPG Table">
+<meta property="og:description" content="クトゥルフ神話TRPGオンラインセッション支援ツール">
+<meta property="og:image" content="ogp.png">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
 <title>TRPG Table - ログイン</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Noto+Serif+JP:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
@@ -498,8 +508,11 @@ body::before {
     パスワードを忘れた場合は、アカウント設定からメール連携を<br>
     事前に設定しておくことでリセットが可能です。
   </div>
+  <div style="text-align:center;margin-top:12px;font-size:11px;color:var(--text-dim);letter-spacing:0.05em;" id="version-display"></div>
+  <script>document.getElementById('version-display').textContent = typeof APP_VERSION !== 'undefined' ? APP_VERSION : '';</script>
 </div>
 
+<script src="version.js"></script>
 <!-- Firebase SDK -->
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';

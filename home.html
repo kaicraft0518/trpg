@@ -3,6 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/x-icon" href="favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+<link rel="manifest" href="site.webmanifest">
 <title>TRPG Table - ホーム</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Noto+Serif+JP:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
@@ -541,6 +546,8 @@ header {
         <button onclick="confirmDeleteAccount()" style="background:transparent;border:1px solid rgba(255,100,100,0.4);border-radius:8px;padding:8px 14px;color:#ff9999;cursor:pointer;font-family:'Noto Serif JP',serif;font-size:12px;transition:all 0.2s" onmouseenter="this.style.background='rgba(255,100,100,0.08)'" onmouseleave="this.style.background='transparent'">🗑 アカウントを削除する</button>
         <div id="settings-delete-msg" style="font-size:11px;color:#ff9999;margin-top:4px;min-height:16px"></div>
       </div>
+      <!-- バージョン -->
+      <div style="text-align:center;font-size:11px;color:var(--text-dim);letter-spacing:0.05em" id="settings-version"></div>
     </div>
   </div>
 </div>
@@ -655,6 +662,7 @@ header {
   </div>
 </div>
 
+<script src="version.js"></script>
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getAuth, signOut, onAuthStateChanged, updatePassword, reauthenticateWithCredential, EmailAuthProvider, deleteUser, GoogleAuthProvider, linkWithPopup, unlink } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
@@ -1831,5 +1839,13 @@ document.addEventListener('DOMContentLoaded', updateToggleBtn);
     </div>
   </div>
 </div>
+<div style="text-align:center;padding:16px 0;font-size:11px;color:var(--text-dim);letter-spacing:0.05em" id="home-version"></div>
+<script>
+  const v = typeof APP_VERSION !== 'undefined' ? APP_VERSION : '';
+  const hv = document.getElementById('home-version');
+  const sv = document.getElementById('settings-version');
+  if (hv) hv.textContent = v;
+  if (sv) sv.textContent = v;
+</script>
 </body>
 </html>
