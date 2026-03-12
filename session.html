@@ -3,6 +3,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/x-icon" href="favicon.ico">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png">
+<link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+<link rel="manifest" href="site.webmanifest">
 <title>TRPG Table - セッション</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=Noto+Serif+JP:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
@@ -742,6 +747,11 @@ header {
           <div class="r-label" id="r-label"></div>
         </div>
         <div class="section-label">ロール履歴</div>
+        <div id="pinned-rolls-wrap" style="display:none">
+          <div style="font-size:10px;color:var(--gold-dim);letter-spacing:2px;font-family:'Cinzel Decorative',serif;margin-bottom:5px">PINNED</div>
+          <div class="pinned-rolls" id="pinned-rolls"></div>
+          <div style="height:1px;background:var(--border);margin-bottom:8px"></div>
+        </div>
         <div class="roll-history" id="roll-history"></div>
       </div>
     </div>
@@ -758,7 +768,10 @@ header {
       </div>
 
       <div style="margin-bottom:14px">
-        <div class="section-label">タイムライン</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <div class="section-label" style="margin-bottom:0">タイムライン</div>
+          <button onclick="exportTimeline()" style="font-size:10px;background:transparent;border:1px solid var(--border);border-radius:5px;padding:2px 8px;color:var(--text-dim);cursor:pointer;font-family:'Noto Serif JP',serif;transition:all 0.2s" onmouseenter="this.style.color='var(--gold-dim)'" onmouseleave="this.style.color='var(--text-dim)'">エクスポート</button>
+        </div>
         <div class="timeline" id="timeline"></div>
         <div class="tl-input-row">
           <input class="tl-input" id="tl-input" type="text" placeholder="出来事を記録…" onkeydown="if(event.key==='Enter'&&!event.isComposing)addTimeline()">
@@ -817,6 +830,78 @@ header {
     </button>
   </div>
 </nav>
+
+
+<!-- NPC追加モーダル -->
+<div class="modal-overlay" id="npc-add-modal">
+  <div class="modal-box" style="max-width:400px;width:100%">
+    <div class="modal-header">
+      <span class="modal-title">NPCを追加</span>
+      <button class="modal-close" onclick="closeAddNpcModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:flex;gap:8px;margin-bottom:14px">
+        <button id="npc-tab-new" class="sc-btn" style="flex:1" onclick="switchNpcTab('new')">新規作成</button>
+        <button id="npc-tab-existing" class="sc-btn" style="flex:1;opacity:0.5" onclick="switchNpcTab('existing')">既存キャラから</button>
+      </div>
+      <div id="npc-new-panel">
+        <div style="margin-bottom:10px">
+          <label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:4px">NPC名 <span style="color:#ff9999">*</span></label>
+          <input id="npc-name-input" class="sc-input" type="text" placeholder="例：怪しい男" style="width:100%">
+        </div>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:var(--text-secondary);margin-bottom:8px">
+          <input type="checkbox" id="npc-public-check"> PLに公開する
+        </label>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:var(--text-secondary);margin-bottom:8px">
+          <input type="checkbox" id="npc-combat-check" onchange="toggleNpcCombatFields()"> 戦闘に参加する
+        </label>
+        <div id="npc-combat-fields" style="display:none;margin-bottom:10px;display:flex;gap:8px">
+          <div style="flex:1">
+            <label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:4px">DEX</label>
+            <input id="npc-dex-input" class="sc-input" type="number" value="0" style="width:100%">
+          </div>
+          <div style="flex:1">
+            <label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:4px">HP</label>
+            <input id="npc-hp-input" class="sc-input" type="number" placeholder="?" style="width:100%">
+          </div>
+        </div>
+        <button class="sc-btn" style="width:100%" onclick="confirmAddNewNpc()">追加する</button>
+      </div>
+      <div id="npc-existing-panel" style="display:none">
+        <div style="font-size:11px;color:var(--text-dim);margin-bottom:8px">未使用のキャラクターから選択</div>
+        <div id="npc-char-list" style="display:flex;flex-direction:column;gap:6px;max-height:240px;overflow-y:auto;margin-bottom:10px"></div>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:var(--text-secondary);margin-bottom:6px">
+          <input type="checkbox" id="npc-existing-public-check"> PLに公開する
+        </label>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:var(--text-secondary)">
+          <input type="checkbox" id="npc-existing-combat-check"> 戦闘に参加する
+        </label>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 特殊状態モーダル -->
+<div class="modal-overlay" id="status-modal">
+  <div class="modal-box" style="max-width:360px;width:100%">
+    <div class="modal-header">
+      <span class="modal-title">特殊状態を設定</span>
+      <button class="modal-close" onclick="closeStatusModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="font-size:12px;color:var(--text-dim);margin-bottom:10px" id="status-modal-target-name"></div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px" id="status-preset-btns"></div>
+      <div style="border-top:1px solid var(--border);padding-top:12px">
+        <div style="font-size:11px;color:var(--text-dim);margin-bottom:6px">カスタム状態（最大3個）</div>
+        <div id="status-custom-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px"></div>
+        <div style="display:flex;gap:6px" id="status-custom-add-wrap">
+          <input id="status-custom-input" class="sc-input" type="text" placeholder="状態名を入力" style="flex:1;font-size:12px" maxlength="10">
+          <button class="sc-btn" onclick="addCustomStatus()">追加</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- INVITE MODAL -->
 <div class="modal-overlay" id="invite-modal">
@@ -971,9 +1056,32 @@ header {
       </div>
 
       <!-- チャンネル管理 -->
-      <div>
+      <div style="margin-bottom:20px">
         <div class="invite-sec-title">チャンネル管理</div>
         <div id="kp-channel-list" style="display:flex;flex-direction:column;gap:6px;margin-top:8px"></div>
+      </div>
+
+      <!-- 特殊状態の付与権限 -->
+      <div style="margin-bottom:20px">
+        <div class="invite-sec-title">特殊状態バッジの付与・解除</div>
+        <div style="margin-top:10px">
+          <label style="display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer">
+            <div>
+              <div style="font-size:13px;color:var(--text-primary)">PLが自分で付与・解除できる</div>
+              <div style="font-size:11px;color:var(--text-dim);margin-top:2px">OFFの場合はKPのみ操作可能</div>
+            </div>
+            <div class="toggle-switch" id="toggle-allow-status-self" onclick="toggleSetting('allowStatusSelf')" style="flex-shrink:0">
+              <div class="toggle-knob"></div>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <!-- セッション終了 -->
+      <div style="border-top:1px solid var(--border);padding-top:16px">
+        <div class="invite-sec-title" style="color:#ff9999">セッション終了</div>
+        <div style="font-size:11px;color:var(--text-dim);margin:6px 0 10px">終了するとホーム画面で「終了済み」として表示されます。</div>
+        <button onclick="archiveSession()" style="background:transparent;border:1px solid rgba(255,100,100,0.4);border-radius:8px;padding:8px 14px;color:#ff9999;cursor:pointer;font-family:'Noto Serif JP',serif;font-size:12px;transition:all 0.2s" onmouseenter="this.style.background='rgba(255,100,100,0.08)'" onmouseleave="this.style.background='transparent'">セッションを終了する</button>
       </div>
 
     </div>
@@ -1140,7 +1248,7 @@ onAuthStateChanged(auth, async user => {
   listenRolls();
   listenChat();
   listenTimeline();
-  listenClues();
+  listenCluesV2();
   listenInitiative();
   const connectName = myRole === 'KP'
     ? `KP（${userData.handle}）`
@@ -1155,6 +1263,8 @@ onAuthStateChanged(auth, async user => {
     const bulkWrap = document.getElementById('bulk-dmg-btn-wrap');
     if (bulkWrap) bulkWrap.style.display = 'block';
   }
+  // v1.1.0 新機能初期化
+  document.dispatchEvent(new Event('trpg-session-ready'));
 });
 
 window.goHome = async () => {
@@ -2651,6 +2761,579 @@ window.toggleTheme = function() {
 };
 // Init button label after DOM ready
 document.addEventListener('DOMContentLoaded', updateToggleBtn);
+
+
+// ═══════════════════════════════════════════════
+// v1.1.0 新機能
+// ═══════════════════════════════════════════════
+
+// ── 特殊状態 ──
+const PRESET_STATUSES = ['気絶','束縛','恐怖','負傷','狂気一時','狂気不定','死亡'];
+let statusModalTargetUid = null;
+
+function listenStatuses() {
+  onValue(ref(db, `sessions/${sessionCode}/statuses`), snap => {
+    const all = snap.val() || {};
+    // 全プレイヤーカードのバッジを更新
+    document.querySelectorAll('.player-card').forEach(card => {
+      const uid = card.id.replace('pcard-','');
+      renderStatusBadges(uid, all[uid] || {});
+    });
+    // NPCカードも更新
+    document.querySelectorAll('.npc-card').forEach(card => {
+      const npcId = card.id.replace('ncard-','');
+      renderStatusBadgesEl(card.querySelector('.npc-status-badges'), all['npc_'+npcId] || {}, 'npc_'+npcId);
+    });
+  });
+}
+
+function renderStatusBadges(uid, statusData) {
+  const card = document.getElementById('pcard-'+uid);
+  if (!card) return;
+  let wrap = card.querySelector('.status-badges');
+  if (!wrap) {
+    wrap = document.createElement('div');
+    wrap.className = 'status-badges';
+    card.appendChild(wrap);
+  }
+  renderStatusBadgesEl(wrap, statusData, uid);
+}
+
+function renderStatusBadgesEl(wrap, statusData, targetKey) {
+  if (!wrap) return;
+  wrap.innerHTML = '';
+  const canEdit = myRole === 'KP' || (targetKey === currentUser.uid && sessionSettings.allowStatusSelf !== false);
+  const presets = statusData.presets || [];
+  const customs = statusData.customs || [];
+  presets.forEach(s => {
+    const b = document.createElement('span');
+    const cls = s.replace(/[（）]/g,'').replace('一時','一時').replace('不定','不定');
+    b.className = `status-badge s-${cls}${canEdit?' removable':''}`;
+    b.textContent = s;
+    if (canEdit) b.onclick = e => { e.stopPropagation(); removeStatus(targetKey, s, 'preset'); };
+    wrap.appendChild(b);
+  });
+  customs.forEach(s => {
+    const b = document.createElement('span');
+    b.className = `status-badge s-custom${canEdit?' removable':''}`;
+    b.textContent = s;
+    if (canEdit) b.onclick = e => { e.stopPropagation(); removeStatus(targetKey, s, 'custom'); };
+    wrap.appendChild(b);
+  });
+}
+
+window.openStatusModal = (uid, e) => {
+  if (e) e.stopPropagation();
+  const canEdit = myRole === 'KP' || (uid === currentUser.uid && sessionSettings.allowStatusSelf !== false);
+  if (!canEdit) return;
+  statusModalTargetUid = uid;
+  const info = allSessionChars[uid];
+  const name = info?.char?.name || userData?.handle || uid;
+  document.getElementById('status-modal-target-name').textContent = name + ' の特殊状態';
+  refreshStatusModal(uid);
+  document.getElementById('status-modal').classList.add('open');
+};
+
+window.openNpcStatusModal = (npcId, name, e) => {
+  if (e) e.stopPropagation();
+  if (myRole !== 'KP') return;
+  statusModalTargetUid = 'npc_'+npcId;
+  document.getElementById('status-modal-target-name').textContent = name + ' の特殊状態';
+  refreshStatusModal('npc_'+npcId);
+  document.getElementById('status-modal').classList.add('open');
+};
+
+function refreshStatusModal(targetKey) {
+  get(ref(db, `sessions/${sessionCode}/statuses/${targetKey}`)).then(snap => {
+    const data = snap.val() || {};
+    const presets = data.presets || [];
+    const customs = data.customs || [];
+    const total = presets.length + customs.length;
+    // プリセットボタン
+    const btnWrap = document.getElementById('status-preset-btns');
+    btnWrap.innerHTML = '';
+    PRESET_STATUSES.forEach(s => {
+      const active = presets.includes(s);
+      const btn = document.createElement('button');
+      btn.textContent = s;
+      btn.style.cssText = `padding:4px 10px;border-radius:4px;font-size:11px;font-family:'Noto Serif JP',serif;cursor:pointer;transition:all 0.2s;${active?'background:rgba(201,168,76,0.15);border:1px solid var(--gold-dim);color:var(--gold)':'background:var(--bg-mid);border:1px solid var(--border);color:var(--text-secondary)'}`;
+      btn.onclick = () => {
+        if (active) removeStatus(targetKey, s, 'preset');
+        else addPresetStatus(targetKey, s);
+      };
+      btnWrap.appendChild(btn);
+    });
+    // カスタムリスト
+    const customList = document.getElementById('status-custom-list');
+    customList.innerHTML = '';
+    customs.forEach(s => {
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;gap:6px';
+      row.innerHTML = `<span style="flex:1;font-size:12px;color:var(--text-secondary)">${s}</span><button onclick="removeStatus('${targetKey}','${s}','custom')" style="background:transparent;border:none;color:var(--text-dim);cursor:pointer;font-size:12px">✕</button>`;
+      customList.appendChild(row);
+    });
+    // カスタム追加欄の表示制御（最大3個 or 合計10個）
+    const addWrap = document.getElementById('status-custom-add-wrap');
+    addWrap.style.display = (customs.length >= 3 || total >= 10) ? 'none' : 'flex';
+  });
+}
+
+async function addPresetStatus(targetKey, status) {
+  const snap = await get(ref(db, `sessions/${sessionCode}/statuses/${targetKey}`));
+  const data = snap.val() || {};
+  const presets = data.presets || [];
+  const customs = data.customs || [];
+  if (presets.includes(status)) return;
+  if (presets.length + customs.length >= 10) return;
+  await set(ref(db, `sessions/${sessionCode}/statuses/${targetKey}`), { presets: [...presets, status], customs });
+  refreshStatusModal(targetKey);
+}
+
+window.addCustomStatus = async () => {
+  const input = document.getElementById('status-custom-input');
+  const s = input.value.trim();
+  if (!s || !statusModalTargetUid) return;
+  const snap = await get(ref(db, `sessions/${sessionCode}/statuses/${statusModalTargetUid}`));
+  const data = snap.val() || {};
+  const presets = data.presets || [];
+  const customs = data.customs || [];
+  if (customs.length >= 3 || presets.length + customs.length >= 10) return;
+  await set(ref(db, `sessions/${sessionCode}/statuses/${statusModalTargetUid}`), { presets, customs: [...customs, s] });
+  input.value = '';
+  refreshStatusModal(statusModalTargetUid);
+};
+
+async function removeStatus(targetKey, status, type) {
+  const snap = await get(ref(db, `sessions/${sessionCode}/statuses/${targetKey}`));
+  const data = snap.val() || {};
+  let presets = data.presets || [];
+  let customs = data.customs || [];
+  if (type === 'preset') presets = presets.filter(s => s !== status);
+  else customs = customs.filter(s => s !== status);
+  await set(ref(db, `sessions/${sessionCode}/statuses/${targetKey}`), { presets, customs });
+  if (statusModalTargetUid === targetKey) refreshStatusModal(targetKey);
+}
+
+window.closeStatusModal = () => { document.getElementById('status-modal').classList.remove('open'); statusModalTargetUid = null; };
+
+// buildPlayerCardにバッジ領域と状態ボタンを追加するパッチ
+const _origBuildPlayerCard = buildPlayerCard;
+// （buildPlayerCardはすでに定義済みなのでこちらで呼び出し時にバッジ領域を追加）
+
+// listenStatuses をセッション起動時に呼ぶ（後述のhook参照）
+
+// ── NPC ──
+let selectedNpcCharId = null;
+let selectedNpcCharData = null;
+
+function listenNpcs() {
+  onValue(ref(db, `sessions/${sessionCode}/npcs`), snap => {
+    const list = document.getElementById('npc-list');
+    list.innerHTML = '';
+    if (!snap.exists()) return;
+    Object.entries(snap.val()).forEach(([id, npc]) => {
+      if (myRole !== 'KP' && !npc.public) return;
+      const card = document.createElement('div');
+      card.className = 'npc-card';
+      card.id = 'ncard-'+id;
+      const pubTag = myRole === 'KP' ? (npc.public ? '<span class="npc-tag">公開</span>' : '<span class="npc-tag-hidden">非公開</span>') : '';
+      const combatTag = npc.inCombat ? '<span class="npc-tag">⚔</span>' : '';
+      const delBtn = myRole === 'KP' ? `<button class="npc-del" onclick="deleteNpc(event,'${id}')" title="削除">✕</button>` : '';
+      card.innerHTML = `
+        <div style="display:flex;align-items:center;gap:6px">
+          <span class="npc-name">${npc.name}</span>
+          ${pubTag}${combatTag}${delBtn}
+        </div>
+        <div class="npc-status-badges status-badges"></div>
+      `;
+      card.onclick = () => {
+        if (npc.charId) {
+          // キャラシートを表示
+          get(ref(db, `users/${npc.ownerUid||currentUser.uid}/characters/${npc.charId}`)).then(s => {
+            if (s.exists()) {
+              viewingChar = s.val(); viewingUid = null; viewingCharId = npc.charId;
+              renderCharSheet(s.val(), myRole === 'KP');
+              document.getElementById('no-char-msg').style.display = 'none';
+              document.getElementById('sheet-content').style.display = 'block';
+              if (window.innerWidth <= 640) mobileNav('chars');
+            }
+          });
+        } else if (myRole === 'KP') {
+          openNpcStatusModal(id, npc.name, null);
+        }
+      };
+      if (myRole === 'KP') {
+        const pubBtn = document.createElement('button');
+        pubBtn.style.cssText = 'font-size:10px;background:transparent;border:1px solid var(--border);border-radius:4px;padding:2px 6px;color:var(--text-dim);cursor:pointer;margin-top:4px;font-family:'Noto Serif JP',serif';
+        pubBtn.textContent = npc.public ? '非公開にする' : 'PLに公開';
+        pubBtn.onclick = e => { e.stopPropagation(); update(ref(db, `sessions/${sessionCode}/npcs/${id}`), { public: !npc.public }); };
+        card.appendChild(pubBtn);
+        const statusBtn = document.createElement('button');
+        statusBtn.style.cssText = 'font-size:10px;background:transparent;border:1px solid var(--border);border-radius:4px;padding:2px 6px;color:var(--text-dim);cursor:pointer;margin-top:4px;margin-left:4px;font-family:'Noto Serif JP',serif';
+        statusBtn.textContent = '状態';
+        statusBtn.onclick = e => openNpcStatusModal(id, npc.name, e);
+        card.appendChild(statusBtn);
+      }
+      list.appendChild(card);
+    });
+  });
+}
+
+window.openAddNpcModal = () => {
+  document.getElementById('npc-name-input').value = '';
+  document.getElementById('npc-public-check').checked = false;
+  document.getElementById('npc-combat-check').checked = false;
+  document.getElementById('npc-combat-fields').style.display = 'none';
+  selectedNpcCharId = null; selectedNpcCharData = null;
+  switchNpcTab('new');
+  document.getElementById('npc-add-modal').classList.add('open');
+};
+window.closeAddNpcModal = () => document.getElementById('npc-add-modal').classList.remove('open');
+
+window.switchNpcTab = (tab) => {
+  document.getElementById('npc-new-panel').style.display = tab === 'new' ? 'block' : 'none';
+  document.getElementById('npc-existing-panel').style.display = tab === 'existing' ? 'block' : 'none';
+  document.getElementById('npc-tab-new').style.opacity = tab === 'new' ? '1' : '0.5';
+  document.getElementById('npc-tab-existing').style.opacity = tab === 'existing' ? '1' : '0.5';
+  if (tab === 'existing') loadExistingCharsForNpc();
+};
+
+window.toggleNpcCombatFields = () => {
+  const checked = document.getElementById('npc-combat-check').checked;
+  document.getElementById('npc-combat-fields').style.display = checked ? 'flex' : 'none';
+};
+
+async function loadExistingCharsForNpc() {
+  const snap = await get(ref(db, `users/${currentUser.uid}/characters`));
+  const list = document.getElementById('npc-char-list');
+  list.innerHTML = '';
+  if (!snap.exists()) { list.innerHTML = '<div style="color:var(--text-dim);font-size:12px">キャラクターがありません</div>'; return; }
+  const usedCharIds = new Set();
+  const playersSnap = await get(ref(db, `sessions/${sessionCode}/players`));
+  if (playersSnap.exists()) Object.values(playersSnap.val()).forEach(p => { if (p.charId) usedCharIds.add(p.charId); });
+  Object.entries(snap.val()).forEach(([charId, char]) => {
+    if (usedCharIds.has(charId)) return;
+    const item = document.createElement('div');
+    item.style.cssText = 'padding:8px 10px;border:1px solid var(--border);border-radius:7px;cursor:pointer;transition:all 0.2s;font-size:12px;color:var(--text-secondary)';
+    item.textContent = char.name || charId;
+    item.onclick = () => {
+      list.querySelectorAll('div').forEach(d => d.style.borderColor = 'var(--border)');
+      item.style.borderColor = 'var(--gold-dim)';
+      selectedNpcCharId = charId; selectedNpcCharData = char;
+    };
+    list.appendChild(item);
+  });
+}
+
+window.confirmAddNewNpc = async () => {
+  const name = document.getElementById('npc-name-input').value.trim();
+  if (!name) return;
+  const isPublic = document.getElementById('npc-public-check').checked;
+  const inCombat = document.getElementById('npc-combat-check').checked;
+  const npcData = { name, public: isPublic, inCombat, createdAt: Date.now() };
+  const newRef = push(ref(db, `sessions/${sessionCode}/npcs`));
+  await set(newRef, npcData);
+  if (inCombat) {
+    const dex = parseInt(document.getElementById('npc-dex-input').value) || 0;
+    const hp = document.getElementById('npc-hp-input').value || '?';
+    await push(ref(db, `sessions/${sessionCode}/initiative`), { name, dex, hp, isNpc: true, npcId: newRef.key, active: false });
+  }
+  closeAddNpcModal();
+};
+
+window.confirmAddExistingNpc = async () => {
+  if (!selectedNpcCharId || !selectedNpcCharData) return;
+  const name = selectedNpcCharData.name || selectedNpcCharId;
+  const isPublic = document.getElementById('npc-existing-public-check').checked;
+  const inCombat = document.getElementById('npc-existing-combat-check').checked;
+  const npcData = { name, charId: selectedNpcCharId, ownerUid: currentUser.uid, public: isPublic, inCombat, createdAt: Date.now() };
+  const newRef = push(ref(db, `sessions/${sessionCode}/npcs`));
+  await set(newRef, npcData);
+  if (inCombat) {
+    const dex = selectedNpcCharData.dex || 0;
+    const hp = selectedNpcCharData.hp || '?';
+    await push(ref(db, `sessions/${sessionCode}/initiative`), { name, dex, hp, isNpc: true, npcId: newRef.key, active: false });
+  }
+  closeAddNpcModal();
+};
+
+window.deleteNpc = async (e, id) => {
+  e.stopPropagation();
+  if (!confirm('このNPCを削除しますか？')) return;
+  await set(ref(db, `sessions/${sessionCode}/npcs/${id}`), null);
+};
+
+// 既存キャラタブのボタンをモーダルに追加（DOM操作）
+document.getElementById('npc-existing-panel').addEventListener('click', () => {});
+// 既存タブに「追加する」ボタンをDOM生成後に追加
+(function addExistingNpcBtn() {
+  const panel = document.getElementById('npc-existing-panel');
+  if (!panel) return;
+  const btn = document.createElement('button');
+  btn.className = 'sc-btn';
+  btn.style.cssText = 'width:100%;margin-top:10px';
+  btn.textContent = '追加する';
+  btn.onclick = confirmAddExistingNpc;
+  panel.appendChild(btn);
+})();
+
+// ── シーン背景画像 ──
+function listenScene() {
+  onValue(ref(db, `sessions/${sessionCode}/scene`), snap => {
+    const data = snap.val() || {};
+    const descEl = document.getElementById('scene-desc-display');
+    const tagsEl = document.getElementById('scene-tags-display');
+    const bgEl   = document.getElementById('scene-bg');
+    if (descEl) descEl.textContent = data.desc || '（シーン未設定）';
+    if (tagsEl) {
+      tagsEl.innerHTML = '';
+      (data.tags || []).forEach(t => {
+        const span = document.createElement('span');
+        span.className = 'scene-tag';
+        span.textContent = t;
+        tagsEl.appendChild(span);
+      });
+    }
+    if (bgEl) {
+      if (data.bgImage) {
+        bgEl.style.backgroundImage = `url(${data.bgImage})`;
+        bgEl.style.display = 'block';
+      } else {
+        bgEl.style.display = 'none';
+      }
+    }
+    if (myRole === 'KP') {
+      const wrap = document.getElementById('scene-bg-input-wrap');
+      if (wrap) wrap.style.display = 'block';
+      const input = document.getElementById('scene-bg-url');
+      if (input) input.value = data.bgImage || '';
+    }
+  });
+}
+
+window.saveSceneBg = async () => {
+  const url = document.getElementById('scene-bg-url').value.trim();
+  await update(ref(db, `sessions/${sessionCode}/scene`), { bgImage: url || null });
+};
+
+// ── タイムラインエクスポート ──
+window.exportTimeline = () => {
+  const items = document.querySelectorAll('#timeline .tl-event');
+  if (!items.length) { alert('タイムラインに記録がありません'); return; }
+  let text = `=== ${sessionData?.name || sessionCode} タイムライン ===\n`;
+  items.forEach(item => {
+    const time = item.querySelector('.tl-time')?.textContent || '';
+    const txt  = item.querySelector('.tl-text')?.textContent || '';
+    text += `[${time}] ${txt}\n`;
+  });
+  // クリップボードコピー
+  navigator.clipboard.writeText(text).then(() => {
+    // ダウンロードも
+    const blob = new Blob([text], { type: 'text/plain' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `timeline_${sessionCode}.txt`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }).catch(() => {
+    const blob = new Blob([text], { type: 'text/plain' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `timeline_${sessionCode}.txt`;
+    a.click();
+  });
+};
+
+// ── 手がかりPL公開フラグ ──
+function listenCluesV2() {
+  onValue(ref(db, `sessions/${sessionCode}/clues`), snap => {
+    const grid = document.getElementById('clues-grid');
+    grid.innerHTML = '';
+    if (!snap.exists()) return;
+    Object.entries(snap.val()).forEach(([id, clue]) => {
+      if (myRole !== 'KP' && !clue.public) return;
+      const d = document.createElement('div');
+      d.className = 'clue-card';
+      const badge = myRole === 'KP'
+        ? (clue.public ? '<span class="clue-public-badge">公開</span>' : '<span class="clue-private-badge">非公開</span>')
+        : '';
+      const toggleBtn = myRole === 'KP'
+        ? `<br><button class="clue-toggle-btn" onclick="toggleCluePublic(event,'${id}',${!clue.public})">${clue.public ? '非公開にする' : 'PLに公開'}</button>`
+        : '';
+      d.innerHTML = `<h4>📜 ${clue.title} ${badge}</h4><p>${clue.desc}</p>${toggleBtn}`;
+      grid.appendChild(d);
+    });
+  });
+}
+
+window.toggleCluePublic = async (e, id, toPublic) => {
+  e.stopPropagation();
+  await update(ref(db, `sessions/${sessionCode}/clues/${id}`), { public: toPublic });
+  if (toPublic) {
+    const snap = await get(ref(db, `sessions/${sessionCode}/clues/${id}`));
+    const clue = snap.val();
+    postSystemMessage(`📜 手がかり「${clue.title}」が公開されました`);
+  }
+};
+
+// ── ダイス履歴ピン留め ──
+const pinnedRollIds = new Set();
+
+function listenPinnedRolls() {
+  onValue(ref(db, `sessions/${sessionCode}/pinned_rolls`), snap => {
+    const wrap = document.getElementById('pinned-rolls-wrap');
+    const container = document.getElementById('pinned-rolls');
+    container.innerHTML = '';
+    pinnedRollIds.clear();
+    if (!snap.exists()) { wrap.style.display = 'none'; return; }
+    wrap.style.display = 'block';
+    Object.entries(snap.val()).forEach(([id, roll]) => {
+      pinnedRollIds.add(id);
+      const item = document.createElement('div');
+      item.className = 'pinned-item';
+      item.innerHTML = `<span style="color:var(--gold-dim);font-size:11px">📌</span><span style="color:var(--text-secondary);flex:1">${roll.who} ${roll.what} → ${roll.num}</span><button class="pin-btn pinned" onclick="unpinRoll('${id}')" title="ピン解除">✕</button>`;
+      container.appendChild(item);
+    });
+    // ロール履歴のピンボタンも更新
+    document.querySelectorAll('.h-item').forEach(item => {
+      const btn = item.querySelector('.pin-btn');
+      if (btn) btn.classList.toggle('pinned', pinnedRollIds.has(btn.dataset.rollId));
+    });
+  });
+}
+
+window.pinRoll = async (rollId, rollData) => {
+  await set(ref(db, `sessions/${sessionCode}/pinned_rolls/${rollId}`), rollData);
+};
+window.unpinRoll = async (rollId) => {
+  await set(ref(db, `sessions/${sessionCode}/pinned_rolls/${rollId}`), null);
+};
+
+// listenRollsにピンボタンを注入するためオーバーライド
+const _origListenRolls = listenRolls;
+
+// ── セッション終了・アーカイブ ──
+window.archiveSession = async () => {
+  if (!confirm('セッションを終了しますか？ホーム画面で「終了済み」として表示されます。')) return;
+  await update(ref(db, `sessions/${sessionCode}`), { status: 'archived', archivedAt: Date.now() });
+  postSystemMessage('セッションが終了しました');
+  closeKpSettings();
+};
+
+// ── 戦闘順序ドラッグ&ドロップ ──
+let dragSrcId = null;
+
+function enableInitDragDrop(list) {
+  list.querySelectorAll('.init-item[data-id]').forEach(item => {
+    item.draggable = true;
+    item.addEventListener('dragstart', e => {
+      dragSrcId = item.dataset.id;
+      item.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    item.addEventListener('dragend', () => item.classList.remove('dragging'));
+    item.addEventListener('dragover', e => { e.preventDefault(); item.classList.add('drag-over'); });
+    item.addEventListener('dragleave', () => item.classList.remove('drag-over'));
+    item.addEventListener('drop', async e => {
+      e.preventDefault();
+      item.classList.remove('drag-over');
+      if (dragSrcId === item.dataset.id) return;
+      // 現在の順序を取得して並べ替え
+      const snap = await get(ref(db, `sessions/${sessionCode}/initiative`));
+      if (!snap.exists()) return;
+      const entries = Object.entries(snap.val()).sort((a,b) => b[1].dex - a[1].dex);
+      const srcIdx  = entries.findIndex(([id]) => id === dragSrcId);
+      const dstIdx  = entries.findIndex(([id]) => id === item.dataset.id);
+      if (srcIdx < 0 || dstIdx < 0) return;
+      // DEX値を入れ替えて順序を反映
+      const srcDex = entries[srcIdx][1].dex;
+      const dstDex = entries[dstIdx][1].dex;
+      // 隣接なら1差をつける、それ以外は値を入れ替える
+      const updates = {};
+      updates[`${entries[srcIdx][0]}/dex`] = dstDex;
+      updates[`${entries[dstIdx][0]}/dex`] = srcDex;
+      await update(ref(db, `sessions/${sessionCode}/initiative`), updates);
+    });
+  });
+}
+
+// ── listenSessionSettings拡張：allowStatusSelf対応 ──
+const _origListenSessionSettings = listenSessionSettings;
+listenSessionSettings = function() {
+  onValue(ref(db, `sessions/${sessionCode}/settings`), snap => {
+    sessionSettings = { allowCharSwitch: true, allowStatusSelf: false, ...(snap.val() || {}) };
+    const t1 = document.getElementById('toggle-allow-char-switch');
+    if (t1) t1.classList.toggle('on', sessionSettings.allowCharSwitch !== false);
+    const t2 = document.getElementById('toggle-allow-status-self');
+    if (t2) t2.classList.toggle('on', sessionSettings.allowStatusSelf === true);
+    if (myRole !== 'KP') {
+      const area = document.getElementById('pl-char-select-area');
+      if (area) area.style.display = sessionSettings.allowCharSwitch === false ? 'none' : '';
+    }
+  });
+};
+
+// ── listenInitiativeを拡張してdata-idとドラッグを追加 ──
+listenInitiative = function() {
+  onValue(ref(db, `sessions/${sessionCode}/initiative`), snap => {
+    const list = document.getElementById('init-list');
+    list.innerHTML = '';
+    if (!snap.exists()) return;
+    Object.entries(snap.val()).sort((a,b) => b[1].dex - a[1].dex).forEach(([id, item]) => {
+      const d = document.createElement('div');
+      d.className = 'init-item' + (item.active ? ' active-turn' : '');
+      d.dataset.id = id;
+      const npcTag = item.isNpc ? '<span class="init-npc">NPC</span>' : '';
+      const delBtn = myRole === 'KP' ? `<button class="init-del" onclick="deleteInitiative(event,'${id}')" title="削除">✕</button>` : '';
+      d.innerHTML = `
+        <span class="init-num">${item.dex}</span>
+        <span class="init-name">${item.name}</span>
+        ${npcTag}
+        <span class="init-hp">HP ${item.hp||'?'}</span>
+        ${delBtn}
+      `;
+      list.appendChild(d);
+    });
+    if (myRole === 'KP') enableInitDragDrop(list);
+  });
+};
+
+// ── listenClues を v2に差し替え ──
+listenClues = listenCluesV2;
+
+// ── listenRollsを拡張してピンボタンを追加 ──
+listenRolls = function() {
+  const hist = document.getElementById('roll-history');
+  onChildAdded(ref(db, `sessions/${sessionCode}/rolls`), snap => {
+    const { who, what, num, result, time, secret } = snap.val();
+    if (secret && myRole !== 'KP') return;
+    const rollId = snap.key;
+    const labelMap = { critical:'クリティカル', extreme:'超成功', hard:'困難成功', success:'成功', failure:'失敗', fumble:'ファンブル' };
+    const clsMap   = { critical:'critical', extreme:'critical', hard:'success', success:'success', failure:'failure', fumble:'fumble' };
+    const item = document.createElement('div');
+    item.className = 'h-item';
+    item.dataset.rollId = rollId;
+    const secretBadge = secret ? '<span class="h-tag" style="background:rgba(201,168,76,0.15);color:var(--gold-dim);border:1px solid var(--gold-dim)">🔒</span>' : '';
+    const pinBtn = `<button class="pin-btn${pinnedRollIds.has(rollId)?' pinned':''}" data-roll-id="${rollId}" onclick="pinRoll('${rollId}',{who:'${who}',what:'${what}',num:${num},time:'${time}'})" title="ピン留め">📌</button>`;
+    item.innerHTML = `${secretBadge}<span class="h-who">${who}</span><span class="h-what">${what}</span><span class="h-res">${num}</span>${result?`<span class="h-tag ${clsMap[result]||''}">${labelMap[result]||''}</span>`:''}<span class="h-time">${time}</span>${pinBtn}`;
+    hist.insertBefore(item, hist.firstChild);
+  });
+};
+
+// ── 初期化フック：v1.1.0の新機能をセッション起動時に呼ぶ ──
+// onAuthStateChanged後のinitに追記するためにカスタムイベントを使う
+document.addEventListener('trpg-session-ready', () => {
+  listenNpcs();
+  listenStatuses();
+  listenScene();
+  listenPinnedRolls();
+  // KPのみNPC追加ボタンを表示
+  if (myRole === 'KP') {
+    const btn = document.getElementById('npc-add-btn');
+    if (btn) btn.style.display = 'flex';
+  }
+});
+
 </script>
 <!-- 一括ダメージモーダル -->
 <div class="modal-overlay" id="bulk-dmg-modal" onclick="if(event.target===this)closeBulkDamage()">
