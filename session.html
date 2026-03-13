@@ -1321,7 +1321,14 @@ onAuthStateChanged(auth, async user => {
     if (bulkWrap) bulkWrap.style.display = 'block';
   }
   // v1.1.0 新機能初期化
-  document.dispatchEvent(new Event('trpg-session-ready'));
+  listenNpcs();
+  listenStatuses();
+  listenScene();
+  listenPinnedRolls();
+  if (myRole === 'KP') {
+    const npcAddBtn = document.getElementById('npc-add-btn');
+    if (npcAddBtn) npcAddBtn.style.display = 'flex';
+  }
 });
 
 window.goHome = async () => {
@@ -3429,17 +3436,7 @@ listenRolls = function() {
 
 // ── 初期化フック：v1.1.0の新機能をセッション起動時に呼ぶ ──
 // onAuthStateChanged後のinitに追記するためにカスタムイベントを使う
-document.addEventListener('trpg-session-ready', () => {
-  listenNpcs();
-  listenStatuses();
-  listenScene();
-  listenPinnedRolls();
-  // KPのみNPC追加ボタンを表示
-  if (myRole === 'KP') {
-    const btn = document.getElementById('npc-add-btn');
-    if (btn) btn.style.display = 'flex';
-  }
-});
+
 
 </script>
 <!-- 一括ダメージモーダル -->
