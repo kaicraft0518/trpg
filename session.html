@@ -823,9 +823,10 @@ header {
         <h3>🕯️ 現在のシーン</h3>
         <div id="scene-desc-display" style="color:var(--text-secondary);font-style:italic;font-size:13px;line-height:1.7;margin-bottom:10px">（シーン未設定）</div>
         <div class="scene-tags" id="scene-tags-display"></div>
-        <div id="scene-bg-input-wrap" style="display:none;margin-top:8px">
-          <input id="scene-bg-url" class="sc-input" type="text" placeholder="背景画像URL（空欄で削除）" style="width:100%;font-size:11px">
-          <button class="sc-btn" style="margin-top:5px;font-size:11px;width:100%" onclick="saveSceneBg()">背景を設定</button>
+        <div id="scene-edit-wrap" style="display:none;margin-top:8px;display:flex;flex-direction:column;gap:6px">
+          <textarea id="scene-desc-input" class="sc-input" placeholder="シーン描写テキスト…" style="width:100%;font-size:12px;resize:vertical;min-height:60px;line-height:1.6"></textarea>
+          <input id="scene-bg-url" class="sc-input" type="text" placeholder="背景画像URL（任意・空欄で削除）" style="width:100%;font-size:11px">
+          <button class="sc-btn" style="font-size:11px;width:100%" onclick="saveScene()">シーンを更新</button>
         </div>
       </div>
 
@@ -3315,18 +3316,8 @@ function listenScene() {
   onValue(ref(db, `sessions/${sessionCode}/scene`), snap => {
     const data = snap.val() || {};
     const descEl = document.getElementById('scene-desc-display');
-    const tagsEl = document.getElementById('scene-tags-display');
     const bgEl   = document.getElementById('scene-bg');
     if (descEl) descEl.textContent = data.desc || '（シーン未設定）';
-    if (tagsEl) {
-      tagsEl.innerHTML = '';
-      (data.tags || []).forEach(t => {
-        const span = document.createElement('span');
-        span.className = 'scene-tag';
-        span.textContent = t;
-        tagsEl.appendChild(span);
-      });
-    }
     if (bgEl) {
       if (data.bgImage) {
         bgEl.style.backgroundImage = `url(${data.bgImage})`;
@@ -3336,17 +3327,23 @@ function listenScene() {
       }
     }
     if (myRole === 'KP') {
-      const wrap = document.getElementById('scene-bg-input-wrap');
-      if (wrap) wrap.style.display = 'block';
-      const input = document.getElementById('scene-bg-url');
-      if (input) input.value = data.bgImage || '';
+      const wrap = document.getElementById('scene-edit-wrap');
+      if (wrap) wrap.style.display = 'flex';
+      const descInput = document.getElementById('scene-desc-input');
+      if (descInput && document.activeElement !== descInput) descInput.value = data.desc || '';
+      const bgInput = document.getElementById('scene-bg-url');
+      if (bgInput && document.activeElement !== bgInput) bgInput.value = data.bgImage || '';
     }
   });
 }
 
-window.saveSceneBg = async () => {
-  const url = document.getElementById('scene-bg-url').value.trim();
-  await update(ref(db, `sessions/${sessionCode}/scene`), { bgImage: url || null });
+window.saveScene = async () => {
+  const desc = document.getElementById('scene-desc-input').value.trim();
+  const bgImage = document.getElementById('scene-bg-url').value.trim();
+  await update(ref(db, `sessions/${sessionCode}/scene`), {
+    desc: desc || null,
+    bgImage: bgImage || null,
+  });
 };
 
 // ── タイムラインエクスポート ──
