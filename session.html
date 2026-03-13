@@ -818,16 +818,20 @@ header {
       <div id="kp-settings-btn-wrap" style="display:none;margin-bottom:14px">
         <button class="sc-btn" style="width:100%" onclick="openKpSettings()">⚙️ KP設定</button>
       </div>
+      <!-- 現在のシーン表示 -->
       <div class="scene-block" id="scene-block">
         <div class="scene-bg" id="scene-bg" style="display:none"></div>
-        <h3>🕯️ 現在のシーン</h3>
-        <div id="scene-desc-display" style="color:var(--text-secondary);font-style:italic;font-size:13px;line-height:1.7;margin-bottom:10px">（シーン未設定）</div>
-        <div class="scene-tags" id="scene-tags-display"></div>
-        <div id="scene-edit-wrap" style="display:none;flex-direction:column;gap:6px;margin-top:8px">
-          <textarea id="scene-desc-input" class="sc-input" placeholder="シーン描写テキスト…" style="width:100%;font-size:12px;resize:vertical;min-height:60px;line-height:1.6"></textarea>
-          <input id="scene-bg-url" class="sc-input" type="text" placeholder="背景画像URL（任意・空欄で削除）" style="width:100%;font-size:11px">
-          <button class="sc-btn" style="font-size:11px;width:100%" onclick="saveScene()">シーンを更新</button>
+        <h3>🕯️ 現在のシーン<span id="scene-active-title" style="font-size:11px;color:var(--text-dim);font-family:'Noto Serif JP',serif;font-weight:normal;margin-left:8px;letter-spacing:0"></span></h3>
+        <div id="scene-desc-display" style="color:var(--text-secondary);font-style:italic;font-size:13px;line-height:1.7">（シーン未設定）</div>
+      </div>
+
+      <!-- シーン管理（KPのみ） -->
+      <div id="scene-manage-wrap" style="display:none;margin-bottom:14px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <div class="section-label" style="margin-bottom:0">シーン一覧</div>
+          <button onclick="openSceneEditModal(null)" style="font-size:10px;background:transparent;border:1px solid var(--border);border-radius:5px;padding:2px 8px;color:var(--text-dim);cursor:pointer;font-family:'Noto Serif JP',serif;transition:all 0.2s" onmouseenter="this.style.color='var(--gold-dim)'" onmouseleave="this.style.color='var(--text-dim)'">＋ 新規作成</button>
         </div>
+        <div id="scene-list" style="display:flex;flex-direction:column;gap:6px"></div>
       </div>
 
       <div style="margin-bottom:14px">
@@ -995,6 +999,35 @@ header {
           </div>
           <button class="sc-btn" style="width:100%" onclick="addInitManual()">追加</button>
         </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- シーン編集モーダル -->
+<div class="modal-overlay" id="scene-edit-modal">
+  <div class="modal-box" style="max-width:440px;width:100%">
+    <div class="modal-header">
+      <span class="modal-title" id="scene-modal-title">シーンを作成</span>
+      <button class="modal-close" onclick="closeSceneEditModal()">✕</button>
+    </div>
+    <div class="modal-body" style="display:flex;flex-direction:column;gap:10px">
+      <div>
+        <label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:4px">シーン名 <span style="color:#ff9999">*</span></label>
+        <input id="scene-edit-title" class="sc-input" type="text" placeholder="例：廃病院の入口" style="width:100%">
+      </div>
+      <div>
+        <label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:4px">描写テキスト</label>
+        <textarea id="scene-edit-desc" class="sc-input" placeholder="PLに見せる描写を入力…" style="width:100%;resize:vertical;min-height:80px;font-size:12px;line-height:1.7"></textarea>
+      </div>
+      <div>
+        <label style="font-size:11px;color:var(--text-dim);display:block;margin-bottom:4px">背景画像URL（任意）</label>
+        <input id="scene-edit-bg" class="sc-input" type="text" placeholder="https://…" style="width:100%;font-size:11px">
+      </div>
+      <input type="hidden" id="scene-edit-id">
+      <div style="display:flex;gap:8px;margin-top:4px">
+        <button class="sc-btn" style="flex:1" onclick="saveSceneToList()">保存</button>
+        <button id="scene-edit-activate-btn" class="sc-btn" style="flex:1;background:rgba(201,168,76,0.1);border-color:var(--gold-dim);color:var(--gold)" onclick="saveSceneToList(true)">保存して表示</button>
       </div>
     </div>
   </div>
@@ -3313,38 +3346,113 @@ document.getElementById('npc-existing-panel').addEventListener('click', () => {}
 
 // ── シーン背景画像 ──
 function listenScene() {
+  // アクティブシーンの表示
   onValue(ref(db, `sessions/${sessionCode}/scene`), snap => {
     const data = snap.val() || {};
-    const descEl = document.getElementById('scene-desc-display');
-    const bgEl   = document.getElementById('scene-bg');
-    if (descEl) descEl.textContent = data.desc || '（シーン未設定）';
+    const descEl  = document.getElementById('scene-desc-display');
+    const titleEl = document.getElementById('scene-active-title');
+    const bgEl    = document.getElementById('scene-bg');
+    if (descEl)  descEl.textContent  = data.desc  || '（シーン未設定）';
+    if (titleEl) titleEl.textContent = data.title ? `— ${data.title}` : '';
     if (bgEl) {
-      if (data.bgImage) {
-        bgEl.style.backgroundImage = `url(${data.bgImage})`;
-        bgEl.style.display = 'block';
-      } else {
-        bgEl.style.display = 'none';
-      }
-    }
-    if (myRole === 'KP') {
-      const wrap = document.getElementById('scene-edit-wrap');
-      if (wrap) wrap.style.display = 'flex';
-      const descInput = document.getElementById('scene-desc-input');
-      if (descInput && document.activeElement !== descInput) descInput.value = data.desc || '';
-      const bgInput = document.getElementById('scene-bg-url');
-      if (bgInput && document.activeElement !== bgInput) bgInput.value = data.bgImage || '';
+      if (data.bgImage) { bgEl.style.backgroundImage = `url(${data.bgImage})`; bgEl.style.display = 'block'; }
+      else bgEl.style.display = 'none';
     }
   });
+
+  // シーン一覧（KPのみ）
+  if (myRole === 'KP') {
+    document.getElementById('scene-manage-wrap').style.display = 'block';
+    onValue(ref(db, `sessions/${sessionCode}/scenes`), async snap => {
+      const list = document.getElementById('scene-list');
+      list.innerHTML = '';
+      // アクティブIDを取得
+      const activeSnap = await get(ref(db, `sessions/${sessionCode}/scene/activeId`));
+      const activeId = activeSnap.val();
+      if (!snap.exists()) {
+        list.innerHTML = '<div style="font-size:11px;color:var(--text-dim);font-style:italic">シーンがありません</div>';
+        return;
+      }
+      Object.entries(snap.val()).sort((a,b) => (a[1].createdAt||0)-(b[1].createdAt||0)).forEach(([id, scene]) => {
+        const isActive = id === activeId;
+        const card = document.createElement('div');
+        card.style.cssText = `padding:8px 10px;border:1px solid ${isActive ? 'var(--gold-dim)' : 'var(--border)'};border-radius:8px;background:${isActive ? 'rgba(201,168,76,0.06)' : 'var(--bg-card)'};transition:all 0.2s`;
+        card.innerHTML = `
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+            ${isActive ? '<span style="font-size:9px;padding:1px 5px;border-radius:8px;background:rgba(201,168,76,0.15);border:1px solid var(--gold-dim);color:var(--gold)">表示中</span>' : ''}
+            <span style="font-size:12px;font-weight:600;color:var(--text-primary);flex:1">${scene.title || '無題'}</span>
+            <button onclick="openSceneEditModal('${id}')" style="font-size:10px;background:transparent;border:1px solid var(--border);border-radius:4px;padding:1px 6px;color:var(--text-dim);cursor:pointer">編集</button>
+            <button onclick="deleteScene('${id}')" style="font-size:10px;background:transparent;border:1px solid rgba(255,68,68,0.25);border-radius:4px;padding:1px 6px;color:#ff9999;cursor:pointer">削除</button>
+          </div>
+          ${scene.desc ? `<div style="font-size:11px;color:var(--text-dim);font-style:italic;line-height:1.5;margin-bottom:6px;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical">${scene.desc}</div>` : ''}
+          ${!isActive ? `<button onclick="activateScene('${id}')" style="width:100%;font-size:11px;background:rgba(201,168,76,0.06);border:1px solid var(--gold-dim);border-radius:5px;padding:4px 0;color:var(--gold);cursor:pointer;transition:all 0.2s;font-family:'Noto Serif JP',serif">このシーンを表示する</button>` : ''}
+        `;
+        list.appendChild(card);
+      });
+    });
+  }
 }
 
-window.saveScene = async () => {
-  const desc = document.getElementById('scene-desc-input').value.trim();
-  const bgImage = document.getElementById('scene-bg-url').value.trim();
+window.openSceneEditModal = async (id) => {
+  document.getElementById('scene-edit-id').value = id || '';
+  document.getElementById('scene-modal-title').textContent = id ? 'シーンを編集' : 'シーンを作成';
+  if (id) {
+    const snap = await get(ref(db, `sessions/${sessionCode}/scenes/${id}`));
+    const s = snap.val() || {};
+    document.getElementById('scene-edit-title').value = s.title || '';
+    document.getElementById('scene-edit-desc').value  = s.desc  || '';
+    document.getElementById('scene-edit-bg').value    = s.bgImage || '';
+  } else {
+    document.getElementById('scene-edit-title').value = '';
+    document.getElementById('scene-edit-desc').value  = '';
+    document.getElementById('scene-edit-bg').value    = '';
+  }
+  document.getElementById('scene-edit-modal').classList.add('open');
+};
+window.closeSceneEditModal = () => document.getElementById('scene-edit-modal').classList.remove('open');
+
+window.saveSceneToList = async (andActivate = false) => {
+  const title   = document.getElementById('scene-edit-title').value.trim();
+  const desc    = document.getElementById('scene-edit-desc').value.trim();
+  const bgImage = document.getElementById('scene-edit-bg').value.trim();
+  const id      = document.getElementById('scene-edit-id').value;
+  if (!title) { document.getElementById('scene-edit-title').focus(); return; }
+  const data = { title, desc: desc||null, bgImage: bgImage||null, createdAt: Date.now() };
+  let savedId = id;
+  if (id) {
+    await update(ref(db, `sessions/${sessionCode}/scenes/${id}`), data);
+  } else {
+    const newRef = push(ref(db, `sessions/${sessionCode}/scenes`));
+    await set(newRef, data);
+    savedId = newRef.key;
+  }
+  if (andActivate) await activateScene(savedId);
+  closeSceneEditModal();
+};
+
+window.activateScene = async (id) => {
+  const snap = await get(ref(db, `sessions/${sessionCode}/scenes/${id}`));
+  if (!snap.exists()) return;
+  const s = snap.val();
   await update(ref(db, `sessions/${sessionCode}/scene`), {
-    desc: desc || null,
-    bgImage: bgImage || null,
+    activeId: id,
+    title:   s.title   || null,
+    desc:    s.desc    || null,
+    bgImage: s.bgImage || null,
   });
 };
+
+window.deleteScene = async (id) => {
+  if (!confirm('このシーンを削除しますか？')) return;
+  await set(ref(db, `sessions/${sessionCode}/scenes/${id}`), null);
+  // アクティブだったらクリア
+  const activeSnap = await get(ref(db, `sessions/${sessionCode}/scene/activeId`));
+  if (activeSnap.val() === id) {
+    await update(ref(db, `sessions/${sessionCode}/scene`), { activeId: null, title: null, desc: null, bgImage: null });
+  }
+};
+
+window.saveScene = async () => {}; // 旧関数・無効化
 
 // ── タイムラインエクスポート ──
 window.exportTimeline = () => {
