@@ -3542,7 +3542,7 @@ window.openSceneViewModal = async (id) => {
 };
 window.closeSceneViewModal = () => { document.getElementById('scene-view-modal').classList.remove('open'); sceneViewCurrentId = null; };
 window.activateSceneFromView = async () => { if (sceneViewCurrentId) { await activateScene(sceneViewCurrentId); closeSceneViewModal(); } };
-window.editSceneFromView = () => { if (sceneViewCurrentId) { closeSceneViewModal(); openSceneEditModal(sceneViewCurrentId); } };
+window.editSceneFromView = () => { if (sceneViewCurrentId) { const id = sceneViewCurrentId; closeSceneViewModal(); openSceneEditModal(id); } };
 
 // ── タイムラインエクスポート ──
 window.exportTimeline = () => {
