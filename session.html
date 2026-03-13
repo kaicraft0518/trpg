@@ -3375,7 +3375,10 @@ function listenScene() {
     const descEl  = document.getElementById('scene-desc-display');
     const titleEl = document.getElementById('scene-active-title');
     const bgEl    = document.getElementById('scene-bg');
-    if (descEl)  descEl.textContent  = data.desc  || '（シーン未設定）';
+    if (descEl) {
+      const firstLine = (data.desc || '').split('\n')[0];
+      descEl.textContent = firstLine ? (firstLine.length > 40 ? firstLine.slice(0, 40) + '…' : firstLine) : '（シーン未設定）';
+    }
     if (titleEl) titleEl.textContent = data.title ? `— ${data.title}` : '';
     if (bgEl) {
       if (data.bgImage) { bgEl.style.backgroundImage = `url(${data.bgImage})`; bgEl.style.display = 'block'; }
