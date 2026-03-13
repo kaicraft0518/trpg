@@ -3363,18 +3363,21 @@ function listenScene() {
   // シーン一覧（KPのみ）
   if (myRole === 'KP') {
     document.getElementById('scene-manage-wrap').style.display = 'block';
-    onValue(ref(db, `sessions/${sessionCode}/scenes`), async snap => {
+
+    let currentActiveId = null;
+    let currentScenes = null;
+
+    const renderSceneList = () => {
+      if (currentScenes === null) return;
       const list = document.getElementById('scene-list');
       list.innerHTML = '';
-      // アクティブIDを取得
-      const activeSnap = await get(ref(db, `sessions/${sessionCode}/scene/activeId`));
-      const activeId = activeSnap.val();
-      if (!snap.exists()) {
+      const entries = Object.entries(currentScenes).sort((a,b) => (a[1].createdAt||0)-(b[1].createdAt||0));
+      if (!entries.length) {
         list.innerHTML = '<div style="font-size:11px;color:var(--text-dim);font-style:italic">シーンがありません</div>';
         return;
       }
-      Object.entries(snap.val()).sort((a,b) => (a[1].createdAt||0)-(b[1].createdAt||0)).forEach(([id, scene]) => {
-        const isActive = id === activeId;
+      entries.forEach(([id, scene]) => {
+        const isActive = id === currentActiveId;
         const card = document.createElement('div');
         card.style.cssText = `padding:8px 10px;border:1px solid ${isActive ? 'var(--gold-dim)' : 'var(--border)'};border-radius:8px;background:${isActive ? 'rgba(201,168,76,0.06)' : 'var(--bg-card)'};transition:all 0.2s`;
         card.innerHTML = `
@@ -3389,6 +3392,16 @@ function listenScene() {
         `;
         list.appendChild(card);
       });
+    };
+
+    onValue(ref(db, `sessions/${sessionCode}/scene/activeId`), snap => {
+      currentActiveId = snap.val();
+      renderSceneList();
+    });
+
+    onValue(ref(db, `sessions/${sessionCode}/scenes`), snap => {
+      currentScenes = snap.exists() ? snap.val() : {};
+      renderSceneList();
     });
   }
 }
