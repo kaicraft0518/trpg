@@ -3370,6 +3370,17 @@ window.deleteNpc = async (e, id) => {
   e.stopPropagation();
   if (!confirm('このNPCを削除しますか？')) return;
   await set(ref(db, `sessions/${sessionCode}/npcs/${id}`), null);
+  // 戦闘順序からも削除
+  const initSnap = await get(ref(db, `sessions/${sessionCode}/initiative`));
+  if (initSnap.exists()) {
+    const removes = [];
+    Object.entries(initSnap.val()).forEach(([key, entry]) => {
+      if (entry.npcId === id) removes.push(set(ref(db, `sessions/${sessionCode}/initiative/${key}`), null));
+    });
+    await Promise.all(removes);
+  }
+  // 状態バッジも削除
+  await set(ref(db, `sessions/${sessionCode}/statuses/npc_${id}`), null);
 };
 
 // 既存キャラタブのボタンをモーダルに追加（DOM操作）
