@@ -1514,13 +1514,17 @@ function buildPlayerCard(uid, uData, char, role) {
           <span style="color:var(--text-dim);font-size:9px">${role === 'KP' ? '🕯️KP' : '🧍PL'} @${uData.handle}</span>
         </div>
       </div>
-      <div class="status-dot ${isOnline ? 'online' : 'offline'}"></div>
+      <div style="display:flex;align-items:center;gap:5px">
+        <button class="status-edit-btn" title="特殊状態を設定" onclick="event.stopPropagation();openStatusModal('${uid}',event)" style="background:transparent;border:1px solid var(--border);border-radius:4px;padding:1px 5px;font-size:10px;color:var(--text-dim);cursor:pointer;transition:all 0.2s;line-height:1.4" onmouseenter="this.style.borderColor='var(--gold-dim)';this.style.color='var(--gold-dim)'" onmouseleave="this.style.borderColor='var(--border)';this.style.color='var(--text-dim)'">状態</button>
+        <div class="status-dot ${isOnline ? 'online' : 'offline'}"></div>
+      </div>
     </div>
     <div class="pc-bars" id="pcbars-${uid}">
       <div class="pc-bar-row"><span class="pc-bar-lbl">HP</span><div class="pc-bar-track"><div class="pc-bar-fill hp" style="width:${(hp/hpMax*100).toFixed(0)}%" id="pcbar-hp-${uid}"></div></div><span class="pc-bar-val" id="pcval-hp-${uid}">${hp}/${hpMax}</span></div>
       <div class="pc-bar-row"><span class="pc-bar-lbl">SAN</span><div class="pc-bar-track"><div class="pc-bar-fill san" style="width:${(san/sanMax*100).toFixed(0)}%" id="pcbar-san-${uid}"></div></div><span class="pc-bar-val" id="pcval-san-${uid}">${san}/${sanMax}</span></div>
       <div class="pc-bar-row"><span class="pc-bar-lbl">MP</span><div class="pc-bar-track"><div class="pc-bar-fill mp" style="width:${(mp/mpMax*100).toFixed(0)}%" id="pcbar-mp-${uid}"></div></div><span class="pc-bar-val" id="pcval-mp-${uid}">${mp}/${mpMax}</span></div>
     </div>
+    <div class="status-badges" id="sbadges-${uid}"></div>
   `;
   return div;
 }
@@ -2787,22 +2791,16 @@ function listenStatuses() {
       renderStatusBadges(uid, all[uid] || {});
     });
     // NPCカードも更新
-    document.querySelectorAll('.npc-card').forEach(card => {
-      const npcId = card.id.replace('ncard-','');
-      renderStatusBadgesEl(card.querySelector('.npc-status-badges'), all['npc_'+npcId] || {}, 'npc_'+npcId);
+    document.querySelectorAll('[id^="nbadges-"]').forEach(wrap => {
+      const npcId = wrap.id.replace('nbadges-','');
+      renderStatusBadgesEl(wrap, all['npc_'+npcId] || {}, 'npc_'+npcId);
     });
   });
 }
 
 function renderStatusBadges(uid, statusData) {
-  const card = document.getElementById('pcard-'+uid);
-  if (!card) return;
-  let wrap = card.querySelector('.status-badges');
-  if (!wrap) {
-    wrap = document.createElement('div');
-    wrap.className = 'status-badges';
-    card.appendChild(wrap);
-  }
+  const wrap = document.getElementById('sbadges-'+uid);
+  if (!wrap) return;
   renderStatusBadgesEl(wrap, statusData, uid);
 }
 
@@ -2937,26 +2935,33 @@ function listenNpcs() {
   onValue(ref(db, `sessions/${sessionCode}/npcs`), snap => {
     const list = document.getElementById('npc-list');
     list.innerHTML = '';
-    if (!snap.exists()) return;
+    if (!snap.exists()) { return; }
     Object.entries(snap.val()).forEach(([id, npc]) => {
       if (myRole !== 'KP' && !npc.public) return;
+
+      const pubTag     = myRole === 'KP' ? (npc.public ? '<span class="npc-tag">公開</span>' : '<span class="npc-tag-hidden">非公開</span>') : '';
+      const combatTag  = npc.inCombat ? '<span class="npc-tag">⚔</span>' : '';
+      const kpBtns     = myRole === 'KP' ? `
+        <div style="display:flex;gap:4px;margin-top:5px">
+          <button onclick="event.stopPropagation();toggleNpcPublic('${id}',${!npc.public})" style="flex:1;font-size:10px;background:transparent;border:1px solid var(--border);border-radius:4px;padding:2px 6px;color:var(--text-dim);cursor:pointer">${npc.public ? '非公開' : 'PLに公開'}</button>
+          <button onclick="event.stopPropagation();openNpcStatusModal('${id}','${npc.name.replace(/'/g,"\\'")}',event)" style="font-size:10px;background:transparent;border:1px solid var(--border);border-radius:4px;padding:2px 6px;color:var(--text-dim);cursor:pointer">状態</button>
+          <button onclick="event.stopPropagation();deleteNpc(event,'${id}')" style="font-size:10px;background:transparent;border:1px solid rgba(255,68,68,0.3);border-radius:4px;padding:2px 6px;color:#ff9999;cursor:pointer">削除</button>
+        </div>` : '';
+
       const card = document.createElement('div');
       card.className = 'npc-card';
-      card.id = 'ncard-'+id;
-      const pubTag = myRole === 'KP' ? (npc.public ? '<span class="npc-tag">公開</span>' : '<span class="npc-tag-hidden">非公開</span>') : '';
-      const combatTag = npc.inCombat ? '<span class="npc-tag">⚔</span>' : '';
-      const delBtn = myRole === 'KP' ? `<button class="npc-del" onclick="deleteNpc(event,'${id}')" title="削除">✕</button>` : '';
+      card.id = 'ncard-' + id;
       card.innerHTML = `
         <div style="display:flex;align-items:center;gap:6px">
           <span class="npc-name">${npc.name}</span>
-          ${pubTag}${combatTag}${delBtn}
+          ${pubTag}${combatTag}
         </div>
-        <div class="npc-status-badges status-badges"></div>
+        <div class="status-badges" id="nbadges-${id}"></div>
+        ${kpBtns}
       `;
       card.onclick = () => {
         if (npc.charId) {
-          // キャラシートを表示
-          get(ref(db, `users/${npc.ownerUid||currentUser.uid}/characters/${npc.charId}`)).then(s => {
+          get(ref(db, `users/${npc.ownerUid || currentUser.uid}/characters/${npc.charId}`)).then(s => {
             if (s.exists()) {
               viewingChar = s.val(); viewingUid = null; viewingCharId = npc.charId;
               renderCharSheet(s.val(), myRole === 'KP');
@@ -2965,26 +2970,16 @@ function listenNpcs() {
               if (window.innerWidth <= 640) mobileNav('chars');
             }
           });
-        } else if (myRole === 'KP') {
-          openNpcStatusModal(id, npc.name, null);
         }
       };
-      if (myRole === 'KP') {
-        const pubBtn = document.createElement('button');
-        pubBtn.style.cssText = 'font-size:10px;background:transparent;border:1px solid var(--border);border-radius:4px;padding:2px 6px;color:var(--text-dim);cursor:pointer;margin-top:4px;font-family:serif';
-        pubBtn.textContent = npc.public ? '非公開にする' : 'PLに公開';
-        pubBtn.onclick = e => { e.stopPropagation(); update(ref(db, `sessions/${sessionCode}/npcs/${id}`), { public: !npc.public }); };
-        card.appendChild(pubBtn);
-        const statusBtn = document.createElement('button');
-        statusBtn.style.cssText = 'font-size:10px;background:transparent;border:1px solid var(--border);border-radius:4px;padding:2px 6px;color:var(--text-dim);cursor:pointer;margin-top:4px;margin-left:4px;font-family:serif';
-        statusBtn.textContent = '状態';
-        statusBtn.onclick = e => openNpcStatusModal(id, npc.name, e);
-        card.appendChild(statusBtn);
-      }
       list.appendChild(card);
     });
   });
 }
+
+window.toggleNpcPublic = (id, toPublic) => {
+  update(ref(db, `sessions/${sessionCode}/npcs/${id}`), { public: toPublic });
+};
 
 window.openAddNpcModal = () => {
   document.getElementById('npc-name-input').value = '';
@@ -3268,11 +3263,11 @@ function enableInitDragDrop(list) {
 const _origListenSessionSettings = listenSessionSettings;
 listenSessionSettings = function() {
   onValue(ref(db, `sessions/${sessionCode}/settings`), snap => {
-    sessionSettings = { allowCharSwitch: true, allowStatusSelf: false, ...(snap.val() || {}) };
+    sessionSettings = { allowCharSwitch: true, allowStatusSelf: true, ...(snap.val() || {}) };
     const t1 = document.getElementById('toggle-allow-char-switch');
     if (t1) t1.classList.toggle('on', sessionSettings.allowCharSwitch !== false);
     const t2 = document.getElementById('toggle-allow-status-self');
-    if (t2) t2.classList.toggle('on', sessionSettings.allowStatusSelf === true);
+    if (t2) t2.classList.toggle('on', sessionSettings.allowStatusSelf !== false);
     if (myRole !== 'KP') {
       const area = document.getElementById('pl-char-select-area');
       if (area) area.style.display = sessionSettings.allowCharSwitch === false ? 'none' : '';
