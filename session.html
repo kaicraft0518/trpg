@@ -3401,7 +3401,8 @@ function listenScene() {
       }
       entries.forEach(([id, scene]) => {
         const isActive = id === currentActiveId;
-        const preview = scene.desc ? scene.desc.slice(0, 40) + (scene.desc.length > 40 ? '…' : '') : '（描写なし）';
+        const firstLine = (scene.desc || '').split('\n')[0];
+        const preview = firstLine.length > 40 ? firstLine.slice(0, 40) + '…' : (firstLine || '（描写なし）');
         const card = document.createElement('div');
         card.style.cssText = `border:1px solid ${isActive ? 'var(--gold-dim)' : 'var(--border)'};border-radius:8px;background:${isActive ? 'rgba(201,168,76,0.05)' : 'var(--bg-card)'};overflow:hidden;transition:all 0.2s;cursor:pointer`;
         card.innerHTML = `
