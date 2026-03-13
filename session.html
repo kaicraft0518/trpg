@@ -818,10 +818,15 @@ header {
       <div id="kp-settings-btn-wrap" style="display:none;margin-bottom:14px">
         <button class="sc-btn" style="width:100%" onclick="openKpSettings()">⚙️ KP設定</button>
       </div>
-      <div class="scene-block">
+      <div class="scene-block" id="scene-block">
+        <div class="scene-bg" id="scene-bg" style="display:none"></div>
         <h3>🕯️ 現在のシーン</h3>
         <div id="scene-desc-display" style="color:var(--text-secondary);font-style:italic;font-size:13px;line-height:1.7;margin-bottom:10px">（シーン未設定）</div>
         <div class="scene-tags" id="scene-tags-display"></div>
+        <div id="scene-bg-input-wrap" style="display:none;margin-top:8px">
+          <input id="scene-bg-url" class="sc-input" type="text" placeholder="背景画像URL（空欄で削除）" style="width:100%;font-size:11px">
+          <button class="sc-btn" style="margin-top:5px;font-size:11px;width:100%" onclick="saveSceneBg()">背景を設定</button>
+        </div>
       </div>
 
       <div style="margin-bottom:14px">
