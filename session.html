@@ -694,7 +694,7 @@ header {
       <div class="sec-title">戦闘順序 <span style="font-size:9px;color:var(--text-dim);letter-spacing:0;font-family:serif;font-weight:400">DEX順</span></div>
       <div class="init-list" id="init-list"></div>
       <div class="init-controls">
-        <button class="add-init-btn" onclick="addInitiative()">＋ 追加</button>
+        <button class="add-init-btn" onclick="openAddInitModal()">＋ 追加</button>
         <button class="clear-init-btn" onclick="clearInitiative()" title="全員削除">🗑</button>
       </div>
     </div>
@@ -954,6 +954,40 @@ header {
         <div style="display:flex;gap:6px" id="status-custom-add-wrap">
           <input id="status-custom-input" class="sc-input" type="text" placeholder="状態名を入力" style="flex:1;font-size:12px" maxlength="10">
           <button class="sc-btn" onclick="addCustomStatus()">追加</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 戦闘順序追加モーダル -->
+<div class="modal-overlay" id="init-add-modal">
+  <div class="modal-box" style="max-width:380px;width:100%">
+    <div class="modal-header">
+      <span class="modal-title">⚔️ 戦闘順序に追加</span>
+      <button class="modal-close" onclick="closeAddInitModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <!-- 探索者リスト -->
+      <div style="margin-bottom:14px">
+        <div class="invite-sec-title">探索者</div>
+        <div id="init-pc-list" style="display:flex;flex-direction:column;gap:5px;margin-top:6px"></div>
+      </div>
+      <!-- NPCリスト -->
+      <div id="init-npc-wrap" style="margin-bottom:14px">
+        <div class="invite-sec-title">NPC</div>
+        <div id="init-npc-list" style="display:flex;flex-direction:column;gap:5px;margin-top:6px"></div>
+      </div>
+      <!-- 手動入力 -->
+      <div>
+        <div class="invite-sec-title">手動入力</div>
+        <div style="display:flex;flex-direction:column;gap:6px;margin-top:6px">
+          <input id="init-manual-name" class="sc-input" type="text" placeholder="名前" style="width:100%">
+          <div style="display:flex;gap:6px">
+            <input id="init-manual-dex" class="sc-input" type="number" placeholder="DEX" style="flex:1">
+            <input id="init-manual-hp"  class="sc-input" type="number" placeholder="HP"  style="flex:1">
+          </div>
+          <button class="sc-btn" style="width:100%" onclick="addInitManual()">追加</button>
         </div>
       </div>
     </div>
@@ -2645,23 +2679,100 @@ function listenInitiative() {
   });
 }
 
-window.addInitiative = async () => {
-  const name = prompt('名前（キャラ名 or NPC名）：'); if (!name) return;
+window.openAddInitModal = async () => {
+  // 現在の戦闘順序に入っているエントリを取得（重複防止用）
+  const initSnap = await get(ref(db, `sessions/${sessionCode}/initiative`));
+  const existingNames = new Set();
+  if (initSnap.exists()) Object.values(initSnap.val()).forEach(e => existingNames.add(e.name));
 
-  // Auto-fill DEX and HP from known chars
-  const known = Object.values(allSessionChars).find(c => c.char?.name === name);
-  const defaultDex = known?.char?.dex ?? 0;
-  const defaultHp  = known?.char?.hp  ?? '';
-  const isNpc = !known;
+  // 探索者リスト
+  const pcList = document.getElementById('init-pc-list');
+  pcList.innerHTML = '';
+  Object.entries(allSessionChars).forEach(([uid, info]) => {
+    const char = info.char;
+    if (!char) return;
+    const already = existingNames.has(char.name);
+    const row = document.createElement('div');
+    row.style.cssText = `display:flex;align-items:center;justify-content:space-between;padding:6px 8px;border:1px solid var(--border);border-radius:7px;font-size:12px;${already ? 'opacity:0.4' : ''}`;
+    row.innerHTML = `<span style="color:var(--text-secondary)">${char.name}</span><span style="color:var(--text-dim);font-size:10px">DEX ${char.dex ?? '?'} / HP ${char.hp ?? '?'}</span>`;
+    if (!already) {
+      const btn = document.createElement('button');
+      btn.textContent = '追加';
+      btn.style.cssText = 'font-size:10px;background:transparent;border:1px solid var(--border);border-radius:4px;padding:2px 8px;color:var(--text-dim);cursor:pointer;margin-left:8px;transition:all 0.2s';
+      btn.onmouseenter = () => { btn.style.borderColor = 'var(--gold-dim)'; btn.style.color = 'var(--gold-dim)'; };
+      btn.onmouseleave = () => { btn.style.borderColor = 'var(--border)'; btn.style.color = 'var(--text-dim)'; };
+      btn.onclick = async () => {
+        await push(ref(db, `sessions/${sessionCode}/initiative`), {
+          name: char.name, dex: char.dex ?? 0, hp: char.hp ?? '?', isNpc: false, active: false
+        });
+        closeAddInitModal();
+      };
+      row.appendChild(btn);
+    } else {
+      row.innerHTML += '<span style="font-size:10px;color:var(--text-dim)">追加済み</span>';
+    }
+    pcList.appendChild(row);
+  });
+  if (!pcList.children.length) pcList.innerHTML = '<div style="font-size:11px;color:var(--text-dim)">探索者なし</div>';
 
-  const dexInput = prompt(`DEX値（${name}）：`, defaultDex);
-  if (dexInput === null) return;
-  const dex = parseInt(dexInput) || 0;
-  const hpInput = prompt(`HP（${name}）：`, defaultHp);
-  const hp = hpInput !== null ? hpInput : String(defaultHp);
+  // NPCリスト
+  const npcList = document.getElementById('init-npc-list');
+  npcList.innerHTML = '';
+  const npcSnap = await get(ref(db, `sessions/${sessionCode}/npcs`));
+  if (npcSnap.exists()) {
+    Object.entries(npcSnap.val()).forEach(([id, npc]) => {
+      const already = existingNames.has(npc.name);
+      const row = document.createElement('div');
+      row.style.cssText = `display:flex;align-items:center;justify-content:space-between;padding:6px 8px;border:1px solid var(--border);border-radius:7px;font-size:12px;${already ? 'opacity:0.4' : ''}`;
+      row.innerHTML = `<span style="color:var(--text-secondary)">${npc.name}</span><span style="font-size:9px;padding:1px 5px;border-radius:8px;background:rgba(255,68,68,0.1);border:1px solid rgba(255,68,68,0.3);color:#ff9999;margin-left:4px">NPC</span>`;
+      if (!already) {
+        const btn = document.createElement('button');
+        btn.textContent = '追加';
+        btn.style.cssText = 'font-size:10px;background:transparent;border:1px solid var(--border);border-radius:4px;padding:2px 8px;color:var(--text-dim);cursor:pointer;margin-left:auto;margin-left:8px;transition:all 0.2s';
+        btn.onmouseenter = () => { btn.style.borderColor = 'var(--gold-dim)'; btn.style.color = 'var(--gold-dim)'; };
+        btn.onmouseleave = () => { btn.style.borderColor = 'var(--border)'; btn.style.color = 'var(--text-dim)'; };
+        btn.onclick = async () => {
+          // NPCのキャラデータからDEX/HPを取得
+          let dex = 0, hp = '?';
+          if (npc.charId && npc.ownerUid) {
+            const cs = await get(ref(db, `users/${npc.ownerUid}/characters/${npc.charId}`));
+            if (cs.exists()) { dex = cs.val().dex ?? 0; hp = cs.val().hp ?? '?'; }
+          }
+          await push(ref(db, `sessions/${sessionCode}/initiative`), {
+            name: npc.name, dex, hp, isNpc: true, npcId: id, active: false
+          });
+          closeAddInitModal();
+        };
+        row.appendChild(btn);
+      } else {
+        row.innerHTML += '<span style="font-size:10px;color:var(--text-dim);margin-left:auto">追加済み</span>';
+      }
+      npcList.appendChild(row);
+    });
+  }
+  if (!npcList.children.length) npcList.innerHTML = '<div style="font-size:11px;color:var(--text-dim)">NPCなし</div>';
 
-  await push(ref(db, `sessions/${sessionCode}/initiative`), { name, dex, hp, isNpc, active: false });
+  // 手動入力欄リセット
+  document.getElementById('init-manual-name').value = '';
+  document.getElementById('init-manual-dex').value = '';
+  document.getElementById('init-manual-hp').value = '';
+
+  document.getElementById('init-add-modal').classList.add('open');
 };
+
+window.closeAddInitModal = () => document.getElementById('init-add-modal').classList.remove('open');
+
+window.addInitManual = async () => {
+  const name = document.getElementById('init-manual-name').value.trim();
+  if (!name) return;
+  const dex = parseInt(document.getElementById('init-manual-dex').value) || 0;
+  const hp  = document.getElementById('init-manual-hp').value || '?';
+  const known = Object.values(allSessionChars).find(c => c.char?.name === name);
+  await push(ref(db, `sessions/${sessionCode}/initiative`), { name, dex, hp, isNpc: !known, active: false });
+  closeAddInitModal();
+};
+
+window.addInitiative = window.openAddInitModal; // 後方互換
 
 window.deleteInitiative = async (e, id) => {
   e.stopPropagation();
