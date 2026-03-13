@@ -2935,44 +2935,90 @@ function listenNpcs() {
   onValue(ref(db, `sessions/${sessionCode}/npcs`), snap => {
     const list = document.getElementById('npc-list');
     list.innerHTML = '';
-    if (!snap.exists()) { return; }
+    if (!snap.exists()) return;
     Object.entries(snap.val()).forEach(([id, npc]) => {
       if (myRole !== 'KP' && !npc.public) return;
 
-      const pubTag     = myRole === 'KP' ? (npc.public ? '<span class="npc-tag">公開</span>' : '<span class="npc-tag-hidden">非公開</span>') : '';
-      const combatTag  = npc.inCombat ? '<span class="npc-tag">⚔</span>' : '';
-      const kpBtns     = myRole === 'KP' ? `
-        <div style="display:flex;gap:4px;margin-top:5px">
-          <button onclick="event.stopPropagation();toggleNpcPublic('${id}',${!npc.public})" style="flex:1;font-size:10px;background:transparent;border:1px solid var(--border);border-radius:4px;padding:2px 6px;color:var(--text-dim);cursor:pointer">${npc.public ? '非公開' : 'PLに公開'}</button>
-          <button onclick="event.stopPropagation();openNpcStatusModal('${id}','${npc.name.replace(/'/g,"\\'")}',event)" style="font-size:10px;background:transparent;border:1px solid var(--border);border-radius:4px;padding:2px 6px;color:var(--text-dim);cursor:pointer">状態</button>
-          <button onclick="event.stopPropagation();deleteNpc(event,'${id}')" style="font-size:10px;background:transparent;border:1px solid rgba(255,68,68,0.3);border-radius:4px;padding:2px 6px;color:#ff9999;cursor:pointer">削除</button>
-        </div>` : '';
+      // キャラデータ取得してカードを構築
+      const buildCard = (char) => {
+        const card = document.createElement('div');
+        card.className = 'player-card';
+        card.id = 'ncard-' + id;
 
-      const card = document.createElement('div');
-      card.className = 'npc-card';
-      card.id = 'ncard-' + id;
-      card.innerHTML = `
-        <div style="display:flex;align-items:center;gap:6px">
-          <span class="npc-name">${npc.name}</span>
-          ${pubTag}${combatTag}
-        </div>
-        <div class="status-badges" id="nbadges-${id}"></div>
-        ${kpBtns}
-      `;
-      card.onclick = () => {
-        if (npc.charId) {
-          get(ref(db, `users/${npc.ownerUid || currentUser.uid}/characters/${npc.charId}`)).then(s => {
-            if (s.exists()) {
-              viewingChar = s.val(); viewingUid = null; viewingCharId = npc.charId;
-              renderCharSheet(s.val(), myRole === 'KP');
-              document.getElementById('no-char-msg').style.display = 'none';
-              document.getElementById('sheet-content').style.display = 'block';
-              if (window.innerWidth <= 640) mobileNav('chars');
-            }
-          });
-        }
+        const avatarHtml = char?.iconUrl
+          ? `<img src="${char.iconUrl}" alt="" onerror="this.parentElement.textContent='👤'">`
+          : '👤';
+        const hp = char?.hp ?? '?', hpMax = char?.hpMax ?? 1;
+        const san = char?.san ?? '?', sanMax = char?.sanMax ?? 1;
+        const mp  = char?.mp  ?? '?', mpMax  = char?.mpMax  ?? 1;
+        const hpPct  = char?.hpMax  ? (char.hp  / char.hpMax  * 100).toFixed(0) : 0;
+        const sanPct = char?.sanMax ? (char.san / char.sanMax * 100).toFixed(0) : 0;
+        const mpPct  = char?.mpMax  ? (char.mp  / char.mpMax  * 100).toFixed(0) : 0;
+
+        const pubBadge = myRole === 'KP'
+          ? (npc.public
+              ? '<span class="npc-tag" style="font-size:9px;padding:1px 5px;border-radius:8px;background:rgba(255,68,68,0.1);border:1px solid rgba(255,68,68,0.3);color:#ff9999">NPC</span>'
+              : '<span style="font-size:9px;padding:1px 5px;border-radius:8px;background:rgba(100,116,139,0.1);border:1px solid rgba(100,116,139,0.25);color:#94a3b8">NPC・非公開</span>')
+          : '<span style="font-size:9px;padding:1px 5px;border-radius:8px;background:rgba(255,68,68,0.1);border:1px solid rgba(255,68,68,0.3);color:#ff9999">NPC</span>';
+        const combatBadge = npc.inCombat
+          ? '<span style="font-size:9px;padding:1px 5px;border-radius:8px;background:rgba(255,107,107,0.08);border:1px solid rgba(255,107,107,0.25);color:#ff9999">⚔</span>'
+          : '';
+
+        const kpBtns = myRole === 'KP' ? `
+          <div style="display:flex;gap:4px;margin-top:6px">
+            <button onclick="event.stopPropagation();toggleNpcPublic('${id}',${!npc.public})" style="flex:1;font-size:10px;background:transparent;border:1px solid var(--border);border-radius:4px;padding:2px 0;color:var(--text-dim);cursor:pointer;transition:all 0.2s" onmouseenter="this.style.borderColor='var(--border-glow)'" onmouseleave="this.style.borderColor='var(--border)'">${npc.public ? '非公開にする' : 'PLに公開'}</button>
+            <button onclick="event.stopPropagation();openNpcStatusModal('${id}','${npc.name.replace(/'/g, "\\'")}',event)" style="font-size:10px;background:transparent;border:1px solid var(--border);border-radius:4px;padding:2px 6px;color:var(--text-dim);cursor:pointer;transition:all 0.2s" onmouseenter="this.style.borderColor='var(--gold-dim)';this.style.color='var(--gold-dim)'" onmouseleave="this.style.borderColor='var(--border)';this.style.color='var(--text-dim)'">状態</button>
+            <button onclick="event.stopPropagation();deleteNpc(event,'${id}')" style="font-size:10px;background:transparent;border:1px solid rgba(255,68,68,0.25);border-radius:4px;padding:2px 6px;color:#ff9999;cursor:pointer;transition:all 0.2s">削除</button>
+          </div>` : '';
+
+        const barsHtml = char
+          ? `<div class="pc-bars" style="margin-top:6px">
+              <div class="pc-bar-row"><span class="pc-bar-lbl">HP</span><div class="pc-bar-track"><div class="pc-bar-fill hp" style="width:${hpPct}%"></div></div><span class="pc-bar-val">${hp}/${hpMax}</span></div>
+              <div class="pc-bar-row"><span class="pc-bar-lbl">SAN</span><div class="pc-bar-track"><div class="pc-bar-fill san" style="width:${sanPct}%"></div></div><span class="pc-bar-val">${san}/${sanMax}</span></div>
+              <div class="pc-bar-row"><span class="pc-bar-lbl">MP</span><div class="pc-bar-track"><div class="pc-bar-fill mp" style="width:${mpPct}%"></div></div><span class="pc-bar-val">${mp}/${mpMax}</span></div>
+            </div>`
+          : '';
+
+        card.innerHTML = `
+          <div class="pc-header">
+            <div class="pc-avatar">${avatarHtml}</div>
+            <div style="flex:1;min-width:0">
+              <div class="pc-name">${npc.name}</div>
+              <div class="pc-occ" style="display:flex;gap:4px;align-items:center;flex-wrap:wrap">
+                ${pubBadge}${combatBadge}
+                ${char?.occupation ? `<span style="color:var(--text-dim);font-size:9px">${char.occupation}</span>` : ''}
+              </div>
+            </div>
+          </div>
+          ${barsHtml}
+          <div class="status-badges" id="nbadges-${id}"></div>
+          ${kpBtns}
+        `;
+
+        card.onclick = () => {
+          if (npc.charId) {
+            get(ref(db, `users/${npc.ownerUid || currentUser.uid}/characters/${npc.charId}`)).then(s => {
+              if (s.exists()) {
+                viewingChar = s.val(); viewingUid = null; viewingCharId = npc.charId;
+                renderCharSheet(s.val(), myRole === 'KP');
+                document.getElementById('no-char-msg').style.display = 'none';
+                document.getElementById('sheet-content').style.display = 'block';
+                if (window.innerWidth <= 640) mobileNav('chars');
+              }
+            });
+          }
+        };
+
+        list.appendChild(card);
       };
-      list.appendChild(card);
+
+      if (npc.charId && npc.ownerUid) {
+        get(ref(db, `users/${npc.ownerUid}/characters/${npc.charId}`)).then(s => {
+          buildCard(s.exists() ? s.val() : null);
+        });
+      } else {
+        buildCard(null);
+      }
     });
   });
 }
