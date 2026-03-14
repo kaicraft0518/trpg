@@ -136,7 +136,7 @@ header {
 
 /* Initiative */
 .init-list { display: flex; flex-direction: column; gap: 5px; }
-.init-item { display: flex; align-items: center; gap: 6px; padding: 6px 8px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 7px; font-size: 12px; transition: all 0.2s; }
+.init-item { display: flex; align-items: center; gap: 6px; padding: 6px 8px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 7px; font-size: 12px; transition: all 0.2s; user-select: none; -webkit-user-select: none; touch-action: none; }
 .init-item.active-turn { border-color: var(--gold-dim); background: rgba(201,168,76,0.04); }
 .init-num { font-family: 'Cinzel Decorative', serif; font-size: 13px; color: var(--gold); width: 26px; flex-shrink: 0; text-align: center; }
 .init-name { flex: 1; color: var(--text-secondary); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -3712,14 +3712,17 @@ function enableInitDragDrop(list) {
     // ── タッチ D&D ──
     let touchSrcId = null, touchClone = null, touchTarget = null;
     item.addEventListener('touchstart', e => {
+      e.preventDefault(); // テキスト選択・スクロール競合を防ぐ
       touchSrcId = item.dataset.id;
       item.classList.add('dragging');
+      document.body.style.userSelect = 'none';
+      document.body.style.webkitUserSelect = 'none';
       // 幽霊クローン作成
       touchClone = item.cloneNode(true);
       const rect = item.getBoundingClientRect();
       touchClone.style.cssText = `position:fixed;left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;opacity:0.7;pointer-events:none;z-index:9999;margin:0;transition:none`;
       document.body.appendChild(touchClone);
-    }, { passive: true });
+    }, { passive: false });
 
     item.addEventListener('touchmove', e => {
       e.preventDefault();
@@ -3744,6 +3747,8 @@ function enableInitDragDrop(list) {
 
     item.addEventListener('touchend', async () => {
       item.classList.remove('dragging');
+      document.body.style.userSelect = '';
+      document.body.style.webkitUserSelect = '';
       if (touchClone) { touchClone.remove(); touchClone = null; }
       if (touchTarget) {
         touchTarget.classList.remove('drag-over');
