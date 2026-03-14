@@ -3694,7 +3694,7 @@ function enableInitDragDrop(list) {
   list.querySelectorAll('.init-item[data-id]').forEach(item => {
     item.draggable = true;
 
-    // ── マウス D&D ──
+    // ── マウス D&D（PC） ──
     item.addEventListener('dragstart', e => {
       dragSrcId = item.dataset.id;
       item.classList.add('dragging');
@@ -3707,75 +3707,6 @@ function enableInitDragDrop(list) {
       e.preventDefault();
       item.classList.remove('drag-over');
       await swapInitiative(dragSrcId, item.dataset.id);
-    });
-
-    // ── タッチ D&D ──
-    let touchSrcId = null, touchClone = null, touchTarget = null, touchDragging = false;
-    let touchStartX = 0, touchStartY = 0;
-
-    item.addEventListener('touchstart', e => {
-      touchSrcId = item.dataset.id;
-      touchDragging = false;
-      const t = e.touches[0];
-      touchStartX = t.clientX;
-      touchStartY = t.clientY;
-    }, { passive: true });
-
-    item.addEventListener('touchmove', e => {
-      const t = e.touches[0];
-      const dx = t.clientX - touchStartX;
-      const dy = t.clientY - touchStartY;
-      // 5px以上動いたらD&D開始
-      if (!touchDragging && (Math.abs(dx) > 5 || Math.abs(dy) > 5)) {
-        touchDragging = true;
-        item.classList.add('dragging');
-        document.body.style.userSelect = 'none';
-        document.body.style.webkitUserSelect = 'none';
-        // クローン作成
-        const rect = item.getBoundingClientRect();
-        touchClone = item.cloneNode(true);
-        touchClone.style.cssText = `position:fixed;left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;opacity:0.75;pointer-events:none;z-index:9999;margin:0;transition:none;box-shadow:0 8px 24px rgba(0,0,0,0.6)`;
-        document.body.appendChild(touchClone);
-      }
-      if (!touchDragging) return;
-      e.preventDefault();
-      touchClone.style.left = (t.clientX - touchClone.offsetWidth / 2) + 'px';
-      touchClone.style.top  = (t.clientY - 24) + 'px';
-      // ターゲット判定
-      touchClone.style.display = 'none';
-      const el = document.elementFromPoint(t.clientX, t.clientY);
-      touchClone.style.display = '';
-      const targetItem = el?.closest('.init-item[data-id]');
-      if (touchTarget && touchTarget !== targetItem) touchTarget.classList.remove('drag-over');
-      if (targetItem && targetItem !== item) {
-        targetItem.classList.add('drag-over');
-        touchTarget = targetItem;
-      } else {
-        touchTarget = null;
-      }
-    }, { passive: false });
-
-    item.addEventListener('touchend', async () => {
-      item.classList.remove('dragging');
-      document.body.style.userSelect = '';
-      document.body.style.webkitUserSelect = '';
-      if (touchClone) { touchClone.remove(); touchClone = null; }
-      if (touchDragging && touchTarget) {
-        touchTarget.classList.remove('drag-over');
-        await swapInitiative(touchSrcId, touchTarget.dataset.id);
-        touchTarget = null;
-      }
-      touchSrcId = null;
-      touchDragging = false;
-    });
-
-    item.addEventListener('touchcancel', () => {
-      item.classList.remove('dragging');
-      document.body.style.userSelect = '';
-      document.body.style.webkitUserSelect = '';
-      if (touchClone) { touchClone.remove(); touchClone = null; }
-      if (touchTarget) { touchTarget.classList.remove('drag-over'); touchTarget = null; }
-      touchSrcId = null; touchDragging = false;
     });
   });
 }
@@ -3793,6 +3724,24 @@ async function swapInitiative(srcId, dstId) {
   updates[`${entries[dstIdx][0]}/dex`] = entries[srcIdx][1].dex;
   await update(ref(db, `sessions/${sessionCode}/initiative`), updates);
 }
+
+window.moveInitUp = async (id) => {
+  const snap = await get(ref(db, `sessions/${sessionCode}/initiative`));
+  if (!snap.exists()) return;
+  const entries = Object.entries(snap.val()).sort((a,b) => b[1].dex - a[1].dex);
+  const idx = entries.findIndex(([k]) => k === id);
+  if (idx <= 0) return;
+  await swapInitiative(id, entries[idx - 1][0]);
+};
+
+window.moveInitDown = async (id) => {
+  const snap = await get(ref(db, `sessions/${sessionCode}/initiative`));
+  if (!snap.exists()) return;
+  const entries = Object.entries(snap.val()).sort((a,b) => b[1].dex - a[1].dex);
+  const idx = entries.findIndex(([k]) => k === id);
+  if (idx < 0 || idx >= entries.length - 1) return;
+  await swapInitiative(id, entries[idx + 1][0]);
+};
 
 // ── listenSessionSettings拡張：allowStatusSelf対応 ──
 const _origListenSessionSettings = listenSessionSettings;
@@ -3816,18 +3765,23 @@ listenInitiative = function() {
     const list = document.getElementById('init-list');
     list.innerHTML = '';
     if (!snap.exists()) return;
-    Object.entries(snap.val()).sort((a,b) => b[1].dex - a[1].dex).forEach(([id, item]) => {
+    const entries = Object.entries(snap.val()).sort((a,b) => b[1].dex - a[1].dex);
+    entries.forEach(([id, item], idx) => {
       const d = document.createElement('div');
       d.className = 'init-item' + (item.active ? ' active-turn' : '');
       d.dataset.id = id;
       const npcTag = item.isNpc ? '<span class="init-npc">NPC</span>' : '';
-      const delBtn = myRole === 'KP' ? `<button class="init-del" onclick="deleteInitiative(event,'${id}')" title="削除">✕</button>` : '';
+      const kpBtns = myRole === 'KP' ? `
+        <button onclick="moveInitUp('${id}')" style="background:transparent;border:none;color:var(--text-dim);cursor:pointer;font-size:13px;padding:0 2px;line-height:1" ${idx === 0 ? 'disabled style="opacity:0.2"' : ''}>▲</button>
+        <button onclick="moveInitDown('${id}')" style="background:transparent;border:none;color:var(--text-dim);cursor:pointer;font-size:13px;padding:0 2px;line-height:1" ${idx === entries.length - 1 ? 'disabled style="opacity:0.2"' : ''}>▼</button>
+        <button class="init-del" onclick="deleteInitiative(event,'${id}')" title="削除">✕</button>
+      ` : '';
       d.innerHTML = `
         <span class="init-num">${item.dex}</span>
         <span class="init-name">${item.name}</span>
         ${npcTag}
         <span class="init-hp">HP ${item.hp||'?'}</span>
-        ${delBtn}
+        ${kpBtns}
       `;
       list.appendChild(d);
     });
