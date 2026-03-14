@@ -136,7 +136,7 @@ header {
 
 /* Initiative */
 .init-list { display: flex; flex-direction: column; gap: 5px; }
-.init-item { display: flex; align-items: center; gap: 6px; padding: 6px 8px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 7px; font-size: 12px; transition: all 0.2s; user-select: none; -webkit-user-select: none; touch-action: none; }
+.init-item { display: flex; align-items: center; gap: 6px; padding: 6px 8px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 7px; font-size: 12px; transition: all 0.2s; user-select: none; -webkit-user-select: none; }
 .init-item.active-turn { border-color: var(--gold-dim); background: rgba(201,168,76,0.04); }
 .init-num { font-family: 'Cinzel Decorative', serif; font-size: 13px; color: var(--gold); width: 26px; flex-shrink: 0; text-align: center; }
 .init-name { flex: 1; color: var(--text-secondary); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -3710,31 +3710,41 @@ function enableInitDragDrop(list) {
     });
 
     // ── タッチ D&D ──
-    let touchSrcId = null, touchClone = null, touchTarget = null;
+    let touchSrcId = null, touchClone = null, touchTarget = null, touchDragging = false;
+    let touchStartX = 0, touchStartY = 0;
+
     item.addEventListener('touchstart', e => {
-      e.preventDefault(); // テキスト選択・スクロール競合を防ぐ
       touchSrcId = item.dataset.id;
-      item.classList.add('dragging');
-      document.body.style.userSelect = 'none';
-      document.body.style.webkitUserSelect = 'none';
-      // 幽霊クローン作成
-      touchClone = item.cloneNode(true);
-      const rect = item.getBoundingClientRect();
-      touchClone.style.cssText = `position:fixed;left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;opacity:0.7;pointer-events:none;z-index:9999;margin:0;transition:none`;
-      document.body.appendChild(touchClone);
-    }, { passive: false });
+      touchDragging = false;
+      const t = e.touches[0];
+      touchStartX = t.clientX;
+      touchStartY = t.clientY;
+    }, { passive: true });
 
     item.addEventListener('touchmove', e => {
-      e.preventDefault();
-      const touch = e.touches[0];
-      if (touchClone) {
-        touchClone.style.left = (touch.clientX - touchClone.offsetWidth / 2) + 'px';
-        touchClone.style.top  = (touch.clientY - 24) + 'px';
+      const t = e.touches[0];
+      const dx = t.clientX - touchStartX;
+      const dy = t.clientY - touchStartY;
+      // 5px以上動いたらD&D開始
+      if (!touchDragging && (Math.abs(dx) > 5 || Math.abs(dy) > 5)) {
+        touchDragging = true;
+        item.classList.add('dragging');
+        document.body.style.userSelect = 'none';
+        document.body.style.webkitUserSelect = 'none';
+        // クローン作成
+        const rect = item.getBoundingClientRect();
+        touchClone = item.cloneNode(true);
+        touchClone.style.cssText = `position:fixed;left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;opacity:0.75;pointer-events:none;z-index:9999;margin:0;transition:none;box-shadow:0 8px 24px rgba(0,0,0,0.6)`;
+        document.body.appendChild(touchClone);
       }
+      if (!touchDragging) return;
+      e.preventDefault();
+      touchClone.style.left = (t.clientX - touchClone.offsetWidth / 2) + 'px';
+      touchClone.style.top  = (t.clientY - 24) + 'px';
       // ターゲット判定
-      touchClone && (touchClone.style.display = 'none');
-      const el = document.elementFromPoint(touch.clientX, touch.clientY);
-      touchClone && (touchClone.style.display = '');
+      touchClone.style.display = 'none';
+      const el = document.elementFromPoint(t.clientX, t.clientY);
+      touchClone.style.display = '';
       const targetItem = el?.closest('.init-item[data-id]');
       if (touchTarget && touchTarget !== targetItem) touchTarget.classList.remove('drag-over');
       if (targetItem && targetItem !== item) {
@@ -3750,12 +3760,22 @@ function enableInitDragDrop(list) {
       document.body.style.userSelect = '';
       document.body.style.webkitUserSelect = '';
       if (touchClone) { touchClone.remove(); touchClone = null; }
-      if (touchTarget) {
+      if (touchDragging && touchTarget) {
         touchTarget.classList.remove('drag-over');
         await swapInitiative(touchSrcId, touchTarget.dataset.id);
         touchTarget = null;
       }
       touchSrcId = null;
+      touchDragging = false;
+    });
+
+    item.addEventListener('touchcancel', () => {
+      item.classList.remove('dragging');
+      document.body.style.userSelect = '';
+      document.body.style.webkitUserSelect = '';
+      if (touchClone) { touchClone.remove(); touchClone = null; }
+      if (touchTarget) { touchTarget.classList.remove('drag-over'); touchTarget = null; }
+      touchSrcId = null; touchDragging = false;
     });
   });
 }
