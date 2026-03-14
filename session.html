@@ -2724,21 +2724,56 @@ window.addClue = async () => {
 // ── Initiative (DEX order) ──
 function listenInitiative() {
   onValue(ref(db, `sessions/${sessionCode}/initiative`), snap => {
-    const list = document.getElementById('init-list'); list.innerHTML = '';
+    const list = document.getElementById('init-list');
+    list.innerHTML = '';
     if (!snap.exists()) return;
-    Object.entries(snap.val()).sort((a,b) => b[1].dex - a[1].dex).forEach(([id, item]) => {
+    const entries = Object.entries(snap.val()).sort((a,b) => b[1].dex - a[1].dex);
+    entries.forEach(([id, item], idx) => {
       const d = document.createElement('div');
       d.className = 'init-item' + (item.active ? ' active-turn' : '');
-      const npcTag = item.isNpc ? '<span class="init-npc">NPC</span>' : '';
-      d.innerHTML = `
-        <span class="init-num">${item.dex}</span>
-        <span class="init-name">${item.name}</span>
-        ${npcTag}
-        <span class="init-hp">HP ${item.hp||'?'}</span>
-        <button class="init-del" onclick="deleteInitiative(event,'${id}')" title="削除">✕</button>
-      `;
+      d.dataset.id = id;
+
+      const numEl = document.createElement('span');
+      numEl.className = 'init-num'; numEl.textContent = item.dex;
+      const nameEl = document.createElement('span');
+      nameEl.className = 'init-name'; nameEl.textContent = item.name;
+      d.appendChild(numEl);
+      d.appendChild(nameEl);
+
+      if (item.isNpc) {
+        const tag = document.createElement('span');
+        tag.className = 'init-npc'; tag.textContent = 'NPC';
+        d.appendChild(tag);
+      }
+
+      const hpEl = document.createElement('span');
+      hpEl.className = 'init-hp'; hpEl.textContent = `HP ${item.hp || '?'}`;
+      d.appendChild(hpEl);
+
+      if (myRole === 'KP') {
+        const btnStyle = 'background:transparent;border:none;cursor:pointer;font-size:14px;padding:0 3px;color:var(--text-dim)';
+
+        const upBtn = document.createElement('button');
+        upBtn.textContent = '▲'; upBtn.setAttribute('style', btnStyle);
+        if (idx === 0) { upBtn.disabled = true; upBtn.style.opacity = '0.2'; }
+        else upBtn.addEventListener('click', e => { e.stopPropagation(); swapInitiative(id, entries[idx - 1][0]); });
+        d.appendChild(upBtn);
+
+        const downBtn = document.createElement('button');
+        downBtn.textContent = '▼'; downBtn.setAttribute('style', btnStyle);
+        if (idx === entries.length - 1) { downBtn.disabled = true; downBtn.style.opacity = '0.2'; }
+        else downBtn.addEventListener('click', e => { e.stopPropagation(); swapInitiative(id, entries[idx + 1][0]); });
+        d.appendChild(downBtn);
+
+        const delBtn = document.createElement('button');
+        delBtn.className = 'init-del'; delBtn.textContent = '✕'; delBtn.title = '削除';
+        delBtn.addEventListener('click', e => deleteInitiative(e, id));
+        d.appendChild(delBtn);
+      }
+
       list.appendChild(d);
     });
+    if (myRole === 'KP') enableInitDragDrop(list);
   });
 }
 
@@ -3756,62 +3791,6 @@ listenSessionSettings = function() {
       const area = document.getElementById('pl-char-select-area');
       if (area) area.style.display = sessionSettings.allowCharSwitch === false ? 'none' : '';
     }
-  });
-};
-
-// ── listenInitiativeを拡張してdata-idとドラッグを追加 ──
-listenInitiative = function() {
-  onValue(ref(db, `sessions/${sessionCode}/initiative`), snap => {
-    const list = document.getElementById('init-list');
-    list.innerHTML = '';
-    if (!snap.exists()) return;
-    const entries = Object.entries(snap.val()).sort((a,b) => b[1].dex - a[1].dex);
-    entries.forEach(([id, item], idx) => {
-      const d = document.createElement('div');
-      d.className = 'init-item' + (item.active ? ' active-turn' : '');
-      d.dataset.id = id;
-
-      // 数値・名前・タグ・HP
-      const numEl = document.createElement('span');
-      numEl.className = 'init-num'; numEl.textContent = item.dex;
-      const nameEl = document.createElement('span');
-      nameEl.className = 'init-name'; nameEl.textContent = item.name;
-      d.appendChild(numEl);
-      d.appendChild(nameEl);
-      if (item.isNpc) {
-        const tag = document.createElement('span');
-        tag.className = 'init-npc'; tag.textContent = 'NPC';
-        d.appendChild(tag);
-      }
-      const hpEl = document.createElement('span');
-      hpEl.className = 'init-hp'; hpEl.textContent = `HP ${item.hp || '?'}`;
-      d.appendChild(hpEl);
-
-      // KPのみ操作ボタン
-      if (myRole === 'KP') {
-        const btnStyle = 'background:transparent;border:none;cursor:pointer;font-size:14px;padding:0 3px;color:var(--text-dim)';
-
-        const upBtn = document.createElement('button');
-        upBtn.textContent = '▲'; upBtn.setAttribute('style', btnStyle);
-        if (idx === 0) { upBtn.disabled = true; upBtn.style.opacity = '0.2'; }
-        else upBtn.addEventListener('click', e => { e.stopPropagation(); moveInitUp(id); });
-        d.appendChild(upBtn);
-
-        const downBtn = document.createElement('button');
-        downBtn.textContent = '▼'; downBtn.setAttribute('style', btnStyle);
-        if (idx === entries.length - 1) { downBtn.disabled = true; downBtn.style.opacity = '0.2'; }
-        else downBtn.addEventListener('click', e => { e.stopPropagation(); moveInitDown(id); });
-        d.appendChild(downBtn);
-
-        const delBtn = document.createElement('button');
-        delBtn.className = 'init-del'; delBtn.textContent = '✕'; delBtn.title = '削除';
-        delBtn.addEventListener('click', e => deleteInitiative(e, id));
-        d.appendChild(delBtn);
-      }
-
-      list.appendChild(d);
-    });
-    if (myRole === 'KP') enableInitDragDrop(list);
   });
 };
 
