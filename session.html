@@ -3771,11 +3771,11 @@ listenInitiative = function() {
       d.className = 'init-item' + (item.active ? ' active-turn' : '');
       d.dataset.id = id;
       const npcTag = item.isNpc ? '<span class="init-npc">NPC</span>' : '';
-      const kpBtns = myRole === 'KP' ? `
-        <button onclick="moveInitUp('${id}')" style="background:transparent;border:none;color:var(--text-dim);cursor:pointer;font-size:13px;padding:0 2px;line-height:1" ${idx === 0 ? 'disabled style="opacity:0.2"' : ''}>▲</button>
-        <button onclick="moveInitDown('${id}')" style="background:transparent;border:none;color:var(--text-dim);cursor:pointer;font-size:13px;padding:0 2px;line-height:1" ${idx === entries.length - 1 ? 'disabled style="opacity:0.2"' : ''}>▼</button>
-        <button class="init-del" onclick="deleteInitiative(event,'${id}')" title="削除">✕</button>
-      ` : '';
+      const upBtn  = idx === 0              ? `<button style="background:transparent;border:none;color:var(--text-dim);cursor:default;font-size:13px;padding:0 2px;opacity:0.2" disabled>▲</button>`
+                                             : `<button onclick="moveInitUp('${id}')" style="background:transparent;border:none;color:var(--text-dim);cursor:pointer;font-size:13px;padding:0 2px">▲</button>`;
+      const downBtn = idx === entries.length - 1 ? `<button style="background:transparent;border:none;color:var(--text-dim);cursor:default;font-size:13px;padding:0 2px;opacity:0.2" disabled>▼</button>`
+                                                 : `<button onclick="moveInitDown('${id}')" style="background:transparent;border:none;color:var(--text-dim);cursor:pointer;font-size:13px;padding:0 2px">▼</button>`;
+      const kpBtns = myRole === 'KP' ? `${upBtn}${downBtn}<button class="init-del" onclick="deleteInitiative(event,'${id}')" title="削除">✕</button>` : '';
       d.innerHTML = `
         <span class="init-num">${item.dex}</span>
         <span class="init-name">${item.name}</span>
