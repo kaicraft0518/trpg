@@ -692,7 +692,7 @@ header {
       <div id="npc-list"></div>
     </div>
     <div class="sidebar-section">
-      <div class="sec-title">戦闘順序 <span style="font-size:9px;color:var(--text-dim);letter-spacing:0;font-family:serif;font-weight:400">デフォルト:DEX順</span></div>
+      <div class="sec-title">戦闘順序 <span style="font-size:9px;color:var(--text-dim);letter-spacing:0;font-family:serif;font-weight:400">DEX順</span></div>
       <div class="init-list" id="init-list"></div>
       <div class="init-controls">
         <button class="add-init-btn" onclick="openAddInitModal()">＋ 追加</button>
@@ -731,10 +731,13 @@ header {
             <h2 id="char-name-display" style="display:flex;align-items:center;gap:8px">— <span id="char-name-arrow" style="font-size:12px;color:var(--gold-dim);font-family:'Noto Serif JP',serif;font-weight:normal;background:rgba(201,168,76,0.1);border:1px solid var(--gold-dim);border-radius:4px;padding:1px 6px;letter-spacing:0">▼</span></h2>
             <div class="sheet-meta" id="char-meta-display">—</div>
           </div>
-          <div class="san-display" id="san-display-btn" onclick="openSanCheck()" title="SANチェック" style="cursor:pointer;transition:all 0.2s" onmouseenter="this.style.borderColor='rgba(74,158,255,0.5)'" onmouseleave="this.style.borderColor='rgba(74,158,255,0.2)'">
-            <div class="sd-label">正気度 🌀</div>
-            <div class="sd-val" id="san-big">—</div>
-            <div class="sd-max" id="san-big-max">/ —</div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px">
+            <button id="char-edit-link" onclick="goEditChar()" style="display:none;font-size:10px;background:transparent;border:1px solid var(--border);border-radius:5px;padding:3px 8px;color:var(--text-dim);cursor:pointer;font-family:'Noto Serif JP',serif;transition:all 0.2s;white-space:nowrap" onmouseenter="this.style.borderColor='var(--gold-dim)';this.style.color='var(--gold-dim)'" onmouseleave="this.style.borderColor='var(--border)';this.style.color='var(--text-dim)'">✏️ 編集</button>
+            <div class="san-display" id="san-display-btn" onclick="openSanCheck()" title="SANチェック" style="cursor:pointer;transition:all 0.2s" onmouseenter="this.style.borderColor='rgba(74,158,255,0.5)'" onmouseleave="this.style.borderColor='rgba(74,158,255,0.2)'">
+              <div class="sd-label">正気度 🌀</div>
+              <div class="sd-val" id="san-big">—</div>
+              <div class="sd-max" id="san-big-max">/ —</div>
+            </div>
           </div>
         </div>
         <div class="vitals-row">
@@ -2494,6 +2497,7 @@ function listenChannel(channelId) {
   if (channelListeners[channelId]) return;
   if (!channelMessages[channelId]) channelMessages[channelId] = [];
   channelListeners[channelId] = true;
+  const listenStartTs = Date.now(); // 監視開始時刻
 
   // 既存メッセージを一括取得してからリアルタイム監視
   const msgRef = ref(db, `sessions/${sessionCode}/channel_msgs/${channelId}`);
@@ -2524,8 +2528,9 @@ function listenChannel(channelId) {
       const chatEl = document.getElementById('panel-chat');
       renderMsg(msg, chatEl);
     }
-    // 未読バッジ
-    if (channelId !== 'log' && msg.type !== 'system') {
+    // 未読バッジ：監視開始後の新着のみ、logチャンネルとsystemは除外
+    const isNew = (msg.ts || 0) >= listenStartTs;
+    if (isNew && channelId !== 'log' && msg.type !== 'system') {
       const chatVisible = currentMobileView === 'chat' || window.innerWidth > 640;
       if (!chatVisible) {
         chatUnreadCount++;
@@ -3688,6 +3693,8 @@ let dragSrcId = null;
 function enableInitDragDrop(list) {
   list.querySelectorAll('.init-item[data-id]').forEach(item => {
     item.draggable = true;
+
+    // ── マウス D&D ──
     item.addEventListener('dragstart', e => {
       dragSrcId = item.dataset.id;
       item.classList.add('dragging');
@@ -3699,24 +3706,67 @@ function enableInitDragDrop(list) {
     item.addEventListener('drop', async e => {
       e.preventDefault();
       item.classList.remove('drag-over');
-      if (dragSrcId === item.dataset.id) return;
-      // 現在の順序を取得して並べ替え
-      const snap = await get(ref(db, `sessions/${sessionCode}/initiative`));
-      if (!snap.exists()) return;
-      const entries = Object.entries(snap.val()).sort((a,b) => b[1].dex - a[1].dex);
-      const srcIdx  = entries.findIndex(([id]) => id === dragSrcId);
-      const dstIdx  = entries.findIndex(([id]) => id === item.dataset.id);
-      if (srcIdx < 0 || dstIdx < 0) return;
-      // DEX値を入れ替えて順序を反映
-      const srcDex = entries[srcIdx][1].dex;
-      const dstDex = entries[dstIdx][1].dex;
-      // 隣接なら1差をつける、それ以外は値を入れ替える
-      const updates = {};
-      updates[`${entries[srcIdx][0]}/dex`] = dstDex;
-      updates[`${entries[dstIdx][0]}/dex`] = srcDex;
-      await update(ref(db, `sessions/${sessionCode}/initiative`), updates);
+      await swapInitiative(dragSrcId, item.dataset.id);
+    });
+
+    // ── タッチ D&D ──
+    let touchSrcId = null, touchClone = null, touchTarget = null;
+    item.addEventListener('touchstart', e => {
+      touchSrcId = item.dataset.id;
+      item.classList.add('dragging');
+      // 幽霊クローン作成
+      touchClone = item.cloneNode(true);
+      const rect = item.getBoundingClientRect();
+      touchClone.style.cssText = `position:fixed;left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;opacity:0.7;pointer-events:none;z-index:9999;margin:0;transition:none`;
+      document.body.appendChild(touchClone);
+    }, { passive: true });
+
+    item.addEventListener('touchmove', e => {
+      e.preventDefault();
+      const touch = e.touches[0];
+      if (touchClone) {
+        touchClone.style.left = (touch.clientX - touchClone.offsetWidth / 2) + 'px';
+        touchClone.style.top  = (touch.clientY - 24) + 'px';
+      }
+      // ターゲット判定
+      touchClone && (touchClone.style.display = 'none');
+      const el = document.elementFromPoint(touch.clientX, touch.clientY);
+      touchClone && (touchClone.style.display = '');
+      const targetItem = el?.closest('.init-item[data-id]');
+      if (touchTarget && touchTarget !== targetItem) touchTarget.classList.remove('drag-over');
+      if (targetItem && targetItem !== item) {
+        targetItem.classList.add('drag-over');
+        touchTarget = targetItem;
+      } else {
+        touchTarget = null;
+      }
+    }, { passive: false });
+
+    item.addEventListener('touchend', async () => {
+      item.classList.remove('dragging');
+      if (touchClone) { touchClone.remove(); touchClone = null; }
+      if (touchTarget) {
+        touchTarget.classList.remove('drag-over');
+        await swapInitiative(touchSrcId, touchTarget.dataset.id);
+        touchTarget = null;
+      }
+      touchSrcId = null;
     });
   });
+}
+
+async function swapInitiative(srcId, dstId) {
+  if (!srcId || !dstId || srcId === dstId) return;
+  const snap = await get(ref(db, `sessions/${sessionCode}/initiative`));
+  if (!snap.exists()) return;
+  const entries = Object.entries(snap.val()).sort((a,b) => b[1].dex - a[1].dex);
+  const srcIdx = entries.findIndex(([id]) => id === srcId);
+  const dstIdx = entries.findIndex(([id]) => id === dstId);
+  if (srcIdx < 0 || dstIdx < 0) return;
+  const updates = {};
+  updates[`${entries[srcIdx][0]}/dex`] = entries[dstIdx][1].dex;
+  updates[`${entries[dstIdx][0]}/dex`] = entries[srcIdx][1].dex;
+  await update(ref(db, `sessions/${sessionCode}/initiative`), updates);
 }
 
 // ── listenSessionSettings拡張：allowStatusSelf対応 ──
