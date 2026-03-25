@@ -2742,13 +2742,14 @@ function listenInitiative() {
       const nameEl = document.createElement('span');
       nameEl.className = 'init-name'; nameEl.textContent = item.name;
       d.appendChild(numEl);
-      d.appendChild(nameEl);
 
       if (item.isNpc) {
         const tag = document.createElement('span');
         tag.className = 'init-npc'; tag.textContent = 'NPC';
         d.appendChild(tag);
       }
+
+      d.appendChild(nameEl);
 
       const hpEl = document.createElement('span');
       hpEl.className = 'init-hp'; hpEl.textContent = `HP ${item.hp || '?'}`;
