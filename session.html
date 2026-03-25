@@ -1265,7 +1265,7 @@ header {
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import { getDatabase, ref, get, set, push, update, onValue, onChildAdded, onDisconnect } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js';
-import { CAT_ORDER, CAT_ICON } from './skills-config.js';
+import { CAT_ORDER, CAT_ICON, CAT_ORDER_6, CAT_ICON_6, CAT_ORDER_7, CAT_ICON_7 } from './skills-config.js';
 
 const firebaseConfig = {
   apiKey: "AIzaSyB_JYoE53JPCyTTaAdHUj6EPX2K5P6HjYs",
@@ -1282,6 +1282,7 @@ const auth = getAuth(app);
 const db = getDatabase(app);
 
 let currentUser = null, userData = null, sessionCode = '', sessionData = null;
+let edition = '6'; // セッションの版（'6' or '7'）
 let myRole = 'PL', myCharId = null, myChar = null;
 let viewingCharId = null, viewingChar = null, viewingUid = null;
 let chatUnreadCount = 0;
@@ -1325,6 +1326,7 @@ onAuthStateChanged(auth, async user => {
   const sSnap = await get(ref(db, `sessions/${sessionCode}`));
   if (!sSnap.exists()) { alert('セッションが見つかりません'); window.location.href = 'home.html'; return; }
   sessionData = sSnap.val();
+  edition = sessionData.edition || '6';
 
   // Check if user is in session (auto-join as PL if not)
   if (!sessionData.players || !sessionData.players[user.uid]) {
@@ -1888,34 +1890,55 @@ function renderCharSheet(char, canEdit) {
 
   // Stats
   const sg = document.getElementById('stats-grid'); sg.innerHTML = '';
-  [['STR',char.str],['CON',char.con],['POW',char.pow],['DEX',char.dex],['APP',char.app],['SIZ',char.siz],['INT',char.int],['EDU',char.edu],['幸運',char.luck],['DB',char.db]].forEach(([n,v]) => {
+  // 能力値リスト（7版は×5表示、6版は生値）
+  const statList6 = [
+    ['STR',char.str],['CON',char.con],['POW',char.pow],['DEX',char.dex],
+    ['APP',char.app],['SIZ',char.siz],['INT',char.int],['EDU',char.edu],
+    ['幸運',char.luck],['アイデア', char.int ? char.int*5 : (char.idea||0)],
+    ['知識', char.edu ? char.edu*5 : (char.knowledge||0)],['DB',char.db]
+  ];
+  const statList7 = [
+    ['STR', char.str ? char.str*5 : 0],['CON', char.con ? char.con*5 : 0],
+    ['POW', char.pow ? char.pow*5 : 0],['DEX', char.dex ? char.dex*5 : 0],
+    ['APP', char.app ? char.app*5 : 0],['SIZ', char.siz ? char.siz*5 : 0],
+    ['INT', char.int ? char.int*5 : 0],['EDU', char.edu ? char.edu*5 : 0],
+    ['幸運', char.luck||0],['DB', char.db],['BLD', char.bld??0],['MOV', char.mov??0]
+  ];
+  const statList = edition === '7' ? statList7 : statList6;
+  statList.forEach(([n,v]) => {
     const d = document.createElement('div'); d.className = 'stat-box';
-    const half = typeof v === 'number' ? Math.floor(v/2) : '—';
-    const fifth = typeof v === 'number' ? Math.floor(v/5) : '—';
-    d.innerHTML = `<div class="s-name">${n}</div><div class="s-val">${v ?? '—'}</div><div class="s-sub">${typeof v==='number'?`${half}/${fifth}`:''}</div>`;
-    d.title = `半値: ${half} / 1/5: ${fifth}`;
-    if (typeof v === 'number') d.onclick = () => rollStat(n, v);
+    const isNum = typeof v === 'number';
+    const half = isNum ? Math.floor(v/2) : '—';
+    const fifth = isNum ? Math.floor(v/5) : '—';
+    // DB・BLD・MOVは半値/1/5不要
+    const noSub = ['DB','BLD','MOV'].includes(n);
+    d.innerHTML = `<div class="s-name">${n}</div><div class="s-val">${v ?? '—'}</div><div class="s-sub">${isNum && !noSub ? `${half}/${fifth}` : ''}</div>`;
+    d.title = noSub ? n : `半値: ${half} / 1/5: ${fifth}`;
+    if (isNum && !noSub) d.onclick = () => rollStat(n, v);
     sg.appendChild(d);
   });
 
   // Skills (カテゴリ別リスト)
   const skgrid = document.getElementById('skills-grid'); skgrid.innerHTML = '';
   if (char.skills) {
-    // カテゴリ定義はskills-config.jsで管理
     const grouped = {};
     Object.entries(char.skills).forEach(([name, v]) => {
       const cat = v.category || 'その他';
       if (!grouped[cat]) grouped[cat] = [];
       grouped[cat].push([name, v]);
     });
-    CAT_ORDER.forEach(cat => {
+    const catOrder = edition === '7' ? CAT_ORDER_7 : CAT_ORDER_6;
+    const catIcon  = edition === '7' ? CAT_ICON_7  : CAT_ICON_6;
+    // grouped内にあるカテゴリも漏れなく表示
+    const allCats = [...catOrder, ...Object.keys(grouped).filter(c => !catOrder.includes(c))];
+    allCats.forEach(cat => {
       if (!grouped[cat] || grouped[cat].length === 0) return;
       const items = grouped[cat].sort((a,b) => b[1].total - a[1].total);
       const block = document.createElement('div');
       block.className = 'skill-category';
       const header = document.createElement('div');
       header.className = 'skill-cat-header';
-      header.innerHTML = `<span class="skill-cat-label">${CAT_ICON[cat] || '📦'} ${cat}<span class="skill-cat-arrow">▼</span></span>`;
+      header.innerHTML = `<span class="skill-cat-label">${catIcon[cat] || '📦'} ${cat}<span class="skill-cat-arrow">▼</span></span>`;
       header.onclick = () => {
         block.classList.toggle('collapsed');
         updateSkillToggleBtn();
@@ -2007,8 +2030,12 @@ window.doSanJudge = () => {
   lblEl.className = 'san-judge-label ' + sanCheckState.judged;
   detEl.textContent = `${roll} vs SAN${san} → ${success ? '✓ 成功' : '✗ 失敗'}`;
 
-  // 推奨ダイス式をセット
-  document.getElementById('san-reduce-input').value = success ? '0' : '1D6';
+  // 推奨ダイス式をセット（版で異なる）
+  if (edition === '7') {
+    document.getElementById('san-reduce-input').value = success ? '1' : '1D6';
+  } else {
+    document.getElementById('san-reduce-input').value = success ? '0' : '1D6';
+  }
 
   document.getElementById('san-step1').classList.remove('active');
   document.getElementById('san-step2').classList.add('active');
@@ -2151,10 +2178,17 @@ const resultLabels = { critical:{text:'★ クリティカル！',cls:'critical'
 function getCheckResult(roll, val) {
   if (roll === 1) return 'critical';
   if (roll >= 96) return 'fumble';
-  if (roll <= Math.floor(val/5)) return 'extreme';
-  if (roll <= Math.floor(val/2)) return 'hard';
-  if (roll <= val) return 'success';
-  return 'failure';
+  if (edition === '7') {
+    // 7版：超成功（1/5以下）・困難成功（1/2以下）・成功・失敗
+    if (roll <= Math.floor(val/5)) return 'extreme';
+    if (roll <= Math.floor(val/2)) return 'hard';
+    if (roll <= val) return 'success';
+    return 'failure';
+  } else {
+    // 6版：成功・失敗のみ
+    if (roll <= val) return 'success';
+    return 'failure';
+  }
 }
 
 function nowTime() { const d = new Date(); return d.getHours() + ':' + String(d.getMinutes()).padStart(2,'0'); }

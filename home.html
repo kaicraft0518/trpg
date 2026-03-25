@@ -363,7 +363,10 @@ header {
         <div class="char-grid" id="char-grid">
           <div class="empty-state">キャラクターがまだいません</div>
         </div>
-        <button class="import-btn" onclick="openImportModal()">＋ いあきゃらからインポート</button>
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button class="import-btn" style="flex:1" onclick="location.href='character-make.html'">＋ 新規作成</button>
+          <button class="import-btn" style="flex:1" onclick="openImportModal()">📥 いあきゃらからインポート</button>
+        </div>
       </div>
       <div>
         <div class="section-title">インポートについて</div>
@@ -407,6 +410,13 @@ header {
           <div class="role-select">
             <button class="role-btn kp active" id="create-role-kp" onclick="setCreateRole('KP')">🕯️ KP</button>
             <button class="role-btn pl" id="create-role-pl" onclick="setCreateRole('PL')">🧍 PL</button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">使用ルールブック</label>
+          <div class="role-select">
+            <button class="role-btn kp active" id="create-edition-6" onclick="setCreateEdition('6')">📖 6版</button>
+            <button class="role-btn pl" id="create-edition-7" onclick="setCreateEdition('7')">📖 7版</button>
           </div>
         </div>
         <button class="submit-btn" onclick="createSession()">セッションを作成</button>
@@ -684,7 +694,7 @@ const auth = getAuth(app);
 const db = getDatabase(app);
 
 let currentUser = null, userData = null, parsedChar = null;
-let createRole = 'KP', joinRole = 'PL', invRole = 'PL';
+let createRole = 'KP', joinRole = 'PL', invRole = 'PL', createEdition = '6';
 let currentInviteCode = '', foundUserData = null;
 
 // ── Auth ──
@@ -1043,7 +1053,7 @@ function buildCharCard(charId, char) {
       </div>
     </div>
     <div style="display:flex;flex-direction:column;gap:5px;flex-shrink:0;align-self:flex-start">
-      <button class="char-edit-btn"  onclick="openCharEdit(event,'${charId}')">編集</button>
+      <button class="char-edit-btn"  onclick="event.stopPropagation();location.href='character-make.html?id=${charId}'">編集</button>
       <button class="char-share-btn" onclick="shareChar(event,'${charId}')">共有</button>
       <button class="char-del-btn"   onclick="deleteChar(event,'${charId}')">削除</button>
     </div>`;
@@ -1058,6 +1068,7 @@ window.deleteChar = async (e, charId) => {
 
 // ── Session ──
 window.setCreateRole = r => { createRole = r; document.getElementById('create-role-kp').classList.toggle('active', r==='KP'); document.getElementById('create-role-pl').classList.toggle('active', r==='PL'); };
+window.setCreateEdition = e => { createEdition = e; document.getElementById('create-edition-6').classList.toggle('active', e==='6'); document.getElementById('create-edition-7').classList.toggle('active', e==='7'); };
 window.setJoinRole   = r => { joinRole = r;   document.getElementById('join-role-pl').classList.toggle('active', r==='PL'); document.getElementById('join-role-kp').classList.toggle('active', r==='KP'); };
 window.generateCode = () => { const c='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; document.getElementById('create-code').value = Array.from({length:8},()=>c[Math.floor(Math.random()*c.length)]).join(''); };
 // ページ読み込み時に自動生成
@@ -1079,7 +1090,7 @@ window.createSession = async () => {
     errEl.classList.add('show');
     return;
   }
-  await set(ref(db, `sessions/${code}`), { name, createdBy: currentUser.uid, createdAt: Date.now(), players: { [currentUser.uid]: { role: createRole, joinedAt: Date.now() } } });
+  await set(ref(db, `sessions/${code}`), { name, edition: createEdition, createdBy: currentUser.uid, createdAt: Date.now(), players: { [currentUser.uid]: { role: createRole, joinedAt: Date.now() } } });
   await set(ref(db, `users/${currentUser.uid}/sessions/${code}`), { name, role: createRole, joinedAt: Date.now() });
   sucEl.innerHTML = `作成完了！ <a href="session.html?session=${code}" style="color:var(--gold)">入室する →</a><br><span style="font-size:11px;color:var(--text-dim)">コード: ${code}</span>`;
   sucEl.style.display = 'block';
@@ -1393,7 +1404,7 @@ window.parseTxt = () => {
   const errEl = document.getElementById('parse-error');
   errEl.classList.remove('show');
   if (!txt) { errEl.textContent = 'テキストを貼り付けてください'; errEl.classList.add('show'); return; }
-  if (!txt.includes('いあきゃらテキスト')) { errEl.textContent = 'いあきゃらのテキスト出力（6版）を貼り付けてください'; errEl.classList.add('show'); return; }
+  if (!txt.includes('いあきゃらテキスト')) { errEl.textContent = 'いあきゃらのテキスト出力（6版 or 7版）を貼り付けてください'; errEl.classList.add('show'); return; }
   try { parsedChar = parseIaCharaTxt(txt); }
   catch(e) { errEl.textContent = '解析エラー: ' + e.message; errEl.classList.add('show'); return; }
   renderPreview(parsedChar);
@@ -1403,7 +1414,15 @@ window.parseTxt = () => {
 
 function parseIaCharaTxt(txt) {
   const lines = txt.split('\n').map(l => l.trim());
-  const char = { name:'', kana:'', occupation:'', age:'', gender:'', height:'', weight:'', origin:'', hairColor:'', eyeColor:'', birthday:'', iconUrl:'', str:0, con:0, pow:0, dex:0, app:0, siz:0, int:0, edu:0, hp:0, hpMax:0, mp:0, mpMax:0, san:0, sanMax:0, luck:0, knowledge:0, db:'+0', skills:{}, items:[], money:0, importedAt: Date.now() };
+  // 版判定
+  const edition = txt.includes('7版') ? '7' : '6';
+  const char = { name:'', kana:'', occupation:'', age:'', gender:'', height:'', weight:'', origin:'', hairColor:'', eyeColor:'', birthday:'', iconUrl:'', edition,
+    str:0, con:0, pow:0, dex:0, app:0, siz:0, int:0, edu:0,
+    hp:0, hpMax:0, mp:0, mpMax:0, san:0, sanMax:0,
+    luck:0, knowledge:0, idea:0, db:'+0', bld:0, mov:0,
+    skills:{}, items:[], money:0, importedAt: Date.now() };
+
+  // 基本情報
   const nameLine = lines.find(l => l.startsWith('名前:'))?.replace('名前:','').trim() || '';
   const nm = nameLine.match(/^(.+?)\s*[\(（]([ぁ-んァ-ン\s]+)[\)）]/);
   if (nm) { char.name = nm[1].trim(); char.kana = nm[2].trim(); } else char.name = nameLine.replace(/[\(（].*[\)）]/,'').trim() || nameLine;
@@ -1415,32 +1434,69 @@ function parseIaCharaTxt(txt) {
   if (wl) { const wm=wl.match(/体重:\s*(\d+)/); if(wm) char.weight=wm[1]; const om=wl.match(/出身:\s*(\S+)/); if(om) char.origin=om[1]; }
   const hl = lines.find(l => l.includes('髪の色:')) || '';
   if (hl) { const hm=hl.match(/髪の色:\s*(\S*)/); if(hm) char.hairColor=hm[1]; const em=hl.match(/瞳の色:\s*(\S*)/); if(em) char.eyeColor=em[1]; }
+
   // アイコンURL
   const iconIdx = lines.findIndex(l => l === '【アイコン】');
   if (iconIdx !== -1) { for (let i=iconIdx+1; i<Math.min(iconIdx+4,lines.length); i++) { const um=lines[i].match(/https?:\/\/\S+/); if(um){char.iconUrl=um[0];break;} } }
+
   // 能力値
   const si = lines.findIndex(l => l === '【能力値】');
   if (si !== -1) {
     for (let i=si+1; i<lines.length; i++) {
       const l = lines[i]; if (l.startsWith('【')) break;
       const sm = {STR:'str',CON:'con',POW:'pow',DEX:'dex',APP:'app',SIZ:'siz',INT:'int',EDU:'edu'};
-      for (const [k,p] of Object.entries(sm)) { const m=l.match(new RegExp(`^${k}\\s+(\\d+)`)); if(m) char[p]=parseInt(m[1]); }
-      const hpm=l.match(/^HP\s+(\d+)/); if(hpm){char.hp=char.hpMax=parseInt(hpm[1]);}
-      const mpm=l.match(/^MP\s+(\d+)/); if(mpm){char.mp=char.mpMax=parseInt(mpm[1]);}
-      const snm=l.match(/^SAN\s+(\d+)/); if(snm){char.san=char.sanMax=parseInt(snm[1]);}
+      for (const [k,p] of Object.entries(sm)) {
+        const m = l.match(new RegExp(`^${k}\\s+(\\d+)`));
+        if (m) {
+          const raw = parseInt(m[1]);
+          // 7版は×5済み値で記録されているので÷5して生値に変換
+          char[p] = edition === '7' ? Math.round(raw / 5) : raw;
+        }
+      }
+      const hpm=l.match(/^HP\s+(\d+)/);   if(hpm){char.hp=char.hpMax=parseInt(hpm[1]);}
+      const mpm=l.match(/^MP\s+(\d+)/);   if(mpm){char.mp=char.mpMax=parseInt(mpm[1]);}
+      const snm=l.match(/^SAN\s+(\d+)/);  if(snm){char.san=char.sanMax=parseInt(snm[1]);}
       const lkm=l.match(/^幸運\s+(\d+)/); if(lkm) char.luck=parseInt(lkm[1]);
       const knm=l.match(/^知識\s+(\d+)/); if(knm) char.knowledge=parseInt(knm[1]);
+      const idm=l.match(/^IDE\s+(\d+)/);  if(idm) char.idea=parseInt(idm[1]);
     }
   }
-  const cs=lines.find(l=>l.startsWith('現在SAN値')); if(cs){const m=cs.match(/現在SAN値\s+(\d+)\s*\/\s*(\d+)/);if(m){char.san=parseInt(m[1]);char.sanMax=parseInt(m[2]);}}
-  const dl=lines.find(l=>l.startsWith('DB')); if(dl){const m=dl.match(/DB\s+([\+\-\d]+d?\d*)/i);if(m)char.db=m[1];}
-  // 技能カテゴリ辞書はskills-config.jsで管理
-  // 技能
+
+  // 現在SAN・DB・7版追加項目
+  const cs=lines.find(l=>l.startsWith('現在SAN値'));
+  if(cs){const m=cs.match(/現在SAN値\s+(\d+)\s*\/\s*(\d+)/);if(m){char.san=parseInt(m[1]);char.sanMax=parseInt(m[2]);}}
+  const dl=lines.find(l=>l.startsWith('DB'));
+  if(dl){const m=dl.match(/DB\s+([\+\-]?\d*[dD]?\d+)/);if(m)char.db=m[1];}
+  if(edition==='7'){
+    const bldl=lines.find(l=>l.startsWith('BLD'));
+    if(bldl){const m=bldl.match(/BLD\s+([\+\-]?\d+)/);if(m)char.bld=parseInt(m[1]);}
+    const movl=lines.find(l=>l.startsWith('MOV'));
+    if(movl){const m=movl.match(/MOV\s+(\d+)/);if(m)char.mov=parseInt(m[1]);}
+  }
+
+  // 技能（テキスト内の『カテゴリ名』をそのまま使う）
   const ski=lines.findIndex(l=>l==='【技能値】');
-  if(ski!==-1){for(let i=ski+1;i<lines.length;i++){const l=lines[i];if(l==='【戦闘・武器・防具】'||l==='【所持品】')break;if(!l||l.startsWith('技能名')||l.startsWith('職業')||l.startsWith('興味')||l.startsWith('『')||l.startsWith('』'))continue;const m=l.match(/^(.+?)\s{2,}(\d+)\s+(\d+)/);if(m){const nm=m[1].trim();char.skills[nm]={total:parseInt(m[2]),base:parseInt(m[3]),category:getSkillCategory(nm)};}}}
+  if(ski!==-1){
+    let currentCat = 'その他';
+    for(let i=ski+1;i<lines.length;i++){
+      const l=lines[i];
+      if(l==='【戦闘・武器・防具】'||l==='【所持品】') break;
+      // カテゴリ行
+      const catM = l.match(/^『(.+?)』$/);
+      if(catM){ currentCat = catM[1].replace('技能','').trim(); continue; }
+      if(!l||l.startsWith('技能名')||l.startsWith('職業')||l.startsWith('興味')) continue;
+      const m=l.match(/^(.+?)\s{2,}(\d+)\s+(\d+)/);
+      if(m){
+        const nm=m[1].trim();
+        char.skills[nm]={total:parseInt(m[2]),base:parseInt(m[3]),category:currentCat};
+      }
+    }
+  }
+
   // 所持品
   const ii=lines.findIndex(l=>l==='【所持品】');
   if(ii!==-1){for(let i=ii+1;i<lines.length;i++){const l=lines[i];if(l.startsWith('【'))break;if(!l||l.startsWith('名称'))continue;if(l.startsWith('現在の所持金:')){const m=l.match(/(\d+)/);if(m)char.money=parseInt(m[1]);continue;}if(l.startsWith('借金:'))continue;const im=l.match(/^(\S.+?)\s{2,}/);if(im)char.items.push(im[1].trim());}}
+
   return char;
 }
 
