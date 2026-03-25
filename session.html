@@ -2727,7 +2727,11 @@ function listenInitiative() {
     const list = document.getElementById('init-list');
     list.innerHTML = '';
     if (!snap.exists()) return;
-    const entries = Object.entries(snap.val()).sort((a,b) => b[1].dex - a[1].dex);
+    const entries = Object.entries(snap.val()).sort((a,b) => {
+      const ao = a[1].order ?? (a[1].dex * -1);
+      const bo = b[1].order ?? (b[1].dex * -1);
+      return ao - bo;
+    });
     entries.forEach(([id, item], idx) => {
       const d = document.createElement('div');
       d.className = 'init-item' + (item.active ? ' active-turn' : '');
@@ -3750,20 +3754,25 @@ async function swapInitiative(srcId, dstId) {
   if (!srcId || !dstId || srcId === dstId) return;
   const snap = await get(ref(db, `sessions/${sessionCode}/initiative`));
   if (!snap.exists()) return;
-  const entries = Object.entries(snap.val()).sort((a,b) => b[1].dex - a[1].dex);
+  const entries = Object.entries(snap.val()).sort((a,b) => (a[1].order ?? a[1].dex*-1) - (b[1].order ?? b[1].dex*-1));
   const srcIdx = entries.findIndex(([id]) => id === srcId);
   const dstIdx = entries.findIndex(([id]) => id === dstId);
   if (srcIdx < 0 || dstIdx < 0) return;
+  // orderフィールドで順序を管理（なければインデックスで初期化）
   const updates = {};
-  updates[`${entries[srcIdx][0]}/dex`] = entries[dstIdx][1].dex;
-  updates[`${entries[dstIdx][0]}/dex`] = entries[srcIdx][1].dex;
+  entries.forEach(([id], i) => { updates[`${id}/order`] = i * 10; });
+  // src と dst を入れ替え
+  const srcOrder = srcIdx * 10;
+  const dstOrder = dstIdx * 10;
+  updates[`${entries[srcIdx][0]}/order`] = dstOrder;
+  updates[`${entries[dstIdx][0]}/order`] = srcOrder;
   await update(ref(db, `sessions/${sessionCode}/initiative`), updates);
 }
 
 window.moveInitUp = async (id) => {
   const snap = await get(ref(db, `sessions/${sessionCode}/initiative`));
   if (!snap.exists()) return;
-  const entries = Object.entries(snap.val()).sort((a,b) => b[1].dex - a[1].dex);
+  const entries = Object.entries(snap.val()).sort((a,b) => (a[1].order ?? a[1].dex*-1) - (b[1].order ?? b[1].dex*-1));
   const idx = entries.findIndex(([k]) => k === id);
   if (idx <= 0) return;
   await swapInitiative(id, entries[idx - 1][0]);
@@ -3772,7 +3781,7 @@ window.moveInitUp = async (id) => {
 window.moveInitDown = async (id) => {
   const snap = await get(ref(db, `sessions/${sessionCode}/initiative`));
   if (!snap.exists()) return;
-  const entries = Object.entries(snap.val()).sort((a,b) => b[1].dex - a[1].dex);
+  const entries = Object.entries(snap.val()).sort((a,b) => (a[1].order ?? a[1].dex*-1) - (b[1].order ?? b[1].dex*-1));
   const idx = entries.findIndex(([k]) => k === id);
   if (idx < 0 || idx >= entries.length - 1) return;
   await swapInitiative(id, entries[idx + 1][0]);
