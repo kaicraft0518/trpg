@@ -89,7 +89,7 @@ header {
 .header-btn.gold:hover { background: rgba(201,168,76,0.14); }
 
 /* ── LAYOUT ── */
-.app-body { position: fixed; top: 52px; left: 0; right: 0; bottom: 0; display: grid; grid-template-columns: 240px 1fr var(--right-panel-w, 280px); z-index: 1; overflow: hidden; }
+.app-body { position: fixed; top: 52px; left: 0; right: 0; bottom: 0; display: grid; grid-template-columns: 270px 1fr var(--right-panel-w, 280px); z-index: 1; overflow: hidden; }
 
 /* ── MOBILE NAV ── */
 .mobile-nav { display: none; position: fixed; bottom: 0; left: 0; right: 0; z-index: 110; background: rgba(11,9,7,0.97); border-top: 1px solid var(--border); }
@@ -139,8 +139,8 @@ header {
 .init-item { display: flex; align-items: center; gap: 6px; padding: 6px 8px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 7px; font-size: 12px; transition: all 0.2s; user-select: none; -webkit-user-select: none; }
 .init-item.active-turn { border-color: var(--gold-dim); background: rgba(201,168,76,0.04); }
 .init-num { font-family: 'Cinzel Decorative', serif; font-size: 13px; color: var(--gold); width: 26px; flex-shrink: 0; text-align: center; }
-.init-name { flex: 1; color: var(--text-secondary); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.init-hp { font-size: 10px; color: var(--hp-color); flex-shrink: 0; }
+.init-name { flex: 1; min-width: 0; color: var(--text-secondary); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.init-hp { font-size: 10px; color: var(--hp-color); flex-shrink: 0; display: none; }
 .init-npc { font-size: 9px; padding: 1px 5px; border-radius: 8px; background: rgba(255,68,68,0.1); border: 1px solid rgba(255,68,68,0.3); color: #ff9999; flex-shrink: 0; }
 .init-del { width: 18px; height: 18px; background: transparent; border: none; color: var(--text-dim); cursor: pointer; font-size: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; opacity: 0; transition: opacity 0.2s; }
 .init-item:hover .init-del { opacity: 1; }
@@ -512,7 +512,7 @@ header {
 
 /* ── TABLET (601px ~ 900px) ── */
 @media (max-width: 900px) {
-  .app-body { grid-template-columns: 1fr 240px; }
+  .app-body { grid-template-columns: 1fr 270px; }
   .sidebar { display: none; }
   .tablet-only { display: flex; }
   /* ヘッダーを少し詰める */
@@ -2742,14 +2742,13 @@ function listenInitiative() {
       const nameEl = document.createElement('span');
       nameEl.className = 'init-name'; nameEl.textContent = item.name;
       d.appendChild(numEl);
+      d.appendChild(nameEl);
 
       if (item.isNpc) {
         const tag = document.createElement('span');
         tag.className = 'init-npc'; tag.textContent = 'NPC';
         d.appendChild(tag);
       }
-
-      d.appendChild(nameEl);
 
       const hpEl = document.createElement('span');
       hpEl.className = 'init-hp'; hpEl.textContent = `HP ${item.hp || '?'}`;
