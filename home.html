@@ -1150,14 +1150,16 @@ function loadSessionHistory() {
       });
       return item;
     };
-    // セッションのstatus確認
+    // セッションのstatus確認（存在しないセッションは除外）
     const promises = entries.map(([code, info]) =>
-      get(ref(db, `sessions/${code}/status`)).then(s => ({ code, info, status: s.val() }))
+      get(ref(db, `sessions/${code}`)).then(s => ({ code, info, exists: s.exists(), status: s.exists() ? s.val().status : null }))
     );
     Promise.all(promises).then(results => {
       container.innerHTML = '';
-      const activeItems = results.filter(r => r.status !== 'archived');
-      const archivedItems = results.filter(r => r.status === 'archived');
+      const validResults = results.filter(r => r.exists);
+      if (!validResults.length) { container.innerHTML = '<div style="font-size:12px;color:var(--text-dim);font-style:italic;padding:8px 0">参加履歴はありません</div>'; return; }
+      const activeItems = validResults.filter(r => r.status !== 'archived');
+      const archivedItems = validResults.filter(r => r.status === 'archived');
       activeItems.forEach(({ code, info }) => container.appendChild(renderItem(code, info, false)));
       if (archivedItems.length > 0) {
         const sep = document.createElement('div');
