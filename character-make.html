@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" type="image/x-icon" href="favicon.ico">
+<title>TRPG Table - キャラクター作成</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Noto+Serif+JP:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg-deep:#0a0807;--bg-dark:#110e0b;--bg-mid:#1a1410;
+  --bg-card:#1f1915;--bg-hover:#261e18;
+  --border:#3a2e22;--border-glow:#6b4c2a;
+  --gold:#c9a84c;--gold-light:#e8c97a;--gold-dim:#7a6030;
+  --red:#8b1a1a;--red-glow:#ff4444;
+  --text-primary:#e8dcc8;--text-secondary:#a08060;--text-dim:#6a5040;
+  --hp-color:#ff6b6b;--san-color:#4a9eff;--mp-color:#a78bfa;
+}
+:root.light {
+  --bg-deep:#f5f0e8;--bg-dark:#ede6d8;--bg-mid:#e4dbc8;
+  --bg-card:#ede6d8;--bg-hover:#e0d6c0;
+  --border:#c8b898;--border-glow:#a08850;
+  --gold:#8b6914;--gold-light:#a07820;--gold-dim:#9a7828;
+  --red:#8b2020;--red-glow:#cc3333;
+  --text-primary:#2a1f10;--text-secondary:#5a4020;--text-dim:#8a7050;
+  --hp-color:#cc3333;--san-color:#1a6bb5;--mp-color:#6b3fa8;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg-deep);color:var(--text-primary);font-family:'Noto Serif JP',serif;min-height:100vh}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse 60% 40% at 10% 50%,rgba(120,80,20,0.08) 0%,transparent 70%),radial-gradient(ellipse 40% 60% at 90% 30%,rgba(100,60,20,0.06) 0%,transparent 70%);z-index:0}
+
+/* Header */
+header{position:sticky;top:0;z-index:100;background:rgba(17,14,11,0.97);backdrop-filter:blur(10px);border-bottom:1px solid var(--border);padding:0 16px;height:52px;display:flex;align-items:center;gap:12px}
+:root.light header{background:rgba(237,230,216,0.97)!important}
+.header-logo{font-family:'Cinzel Decorative',serif;font-size:14px;color:var(--gold);text-decoration:none;flex-shrink:0}
+.header-title{font-size:12px;color:var(--text-dim);flex:1}
+.header-btn{padding:5px 12px;background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--text-dim);cursor:pointer;font-size:11px;font-family:'Noto Serif JP',serif;transition:all 0.2s;white-space:nowrap}
+.header-btn:hover{border-color:var(--border-glow);color:var(--text-secondary)}
+.theme-toggle{background:var(--bg-mid);border:1px solid var(--border);border-radius:20px;padding:4px 10px;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:4px;color:var(--text-dim);transition:all 0.2s;font-family:'Noto Serif JP',serif;white-space:nowrap}
+.theme-toggle:hover{border-color:var(--border-glow);color:var(--text-secondary)}
+
+/* Layout */
+main{position:relative;z-index:1;max-width:800px;margin:0 auto;padding:20px 16px 80px}
+
+/* Section */
+.section{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:16px}
+.section-title{font-family:'Cinzel Decorative',serif;font-size:12px;color:var(--gold);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.section-title span{font-size:16px}
+
+/* Edition selector */
+.edition-selector{display:flex;gap:8px;margin-bottom:16px}
+.edition-btn{flex:1;padding:10px;background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--text-dim);cursor:pointer;font-size:12px;font-family:'Noto Serif JP',serif;transition:all 0.2s;text-align:center}
+.edition-btn:hover{border-color:var(--border-glow);color:var(--text-secondary)}
+.edition-btn.active{border-color:var(--gold-dim);background:rgba(201,168,76,0.08);color:var(--gold)}
+.edition-note{font-size:10px;color:var(--text-dim);margin-top:4px;display:block}
+
+/* Form */
+.form-row{display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+.form-group{display:flex;flex-direction:column;gap:4px;flex:1;min-width:120px}
+.form-group.w-full{flex:none;width:100%}
+label{font-size:11px;color:var(--text-dim)}
+input[type=text],input[type=number],select,textarea{background:var(--bg-mid);border:1px solid var(--border);border-radius:6px;padding:7px 10px;color:var(--text-primary);font-size:13px;font-family:'Noto Serif JP',serif;width:100%;transition:border-color 0.2s;outline:none}
+input:focus,select:focus,textarea:focus{border-color:var(--border-glow)}
+textarea{resize:vertical;min-height:70px;line-height:1.7}
+select option{background:var(--bg-mid)}
+:root.light input,:root.light select,:root.light textarea{background:var(--bg-mid)}
+
+/* Stats grid */
+.stats-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+@media(max-width:500px){.stats-grid{grid-template-columns:repeat(3,1fr)}}
+.stat-cell{background:var(--bg-mid);border:1px solid var(--border);border-radius:8px;padding:8px 6px;text-align:center}
+.stat-name{font-size:10px;color:var(--text-dim);margin-bottom:4px;letter-spacing:0.05em}
+.stat-input-wrap{display:flex;align-items:center;gap:3px;justify-content:center}
+.stat-input{width:48px;text-align:center;padding:4px 2px;font-size:15px;font-weight:600;background:transparent;border:none;border-bottom:1px solid var(--border);border-radius:0;color:var(--text-primary)}
+.stat-input:focus{border-bottom-color:var(--gold-dim);outline:none}
+.dice-btn{width:20px;height:20px;background:transparent;border:1px solid var(--border);border-radius:4px;color:var(--text-dim);cursor:pointer;font-size:10px;display:flex;align-items:center;justify-content:center;transition:all 0.2s;flex-shrink:0;padding:0}
+.dice-btn:hover{border-color:var(--gold-dim);color:var(--gold)}
+.stat-derived{font-size:9px;color:var(--text-dim);margin-top:3px}
+.roll-all-btn{width:100%;margin-top:10px;padding:7px;background:transparent;border:1px dashed var(--border);border-radius:7px;color:var(--text-dim);cursor:pointer;font-size:11px;font-family:'Noto Serif JP',serif;transition:all 0.2s}
+.roll-all-btn:hover{border-color:var(--gold-dim);color:var(--gold-light)}
+
+/* Derived stats */
+.derived-row{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.derived-box{flex:1;min-width:70px;background:var(--bg-mid);border:1px solid var(--border);border-radius:8px;padding:8px;text-align:center}
+.derived-label{font-size:10px;color:var(--text-dim);margin-bottom:4px}
+.derived-val{font-size:18px;font-weight:700;color:var(--text-primary)}
+.derived-sub{font-size:9px;color:var(--text-dim);margin-top:2px}
+
+/* 6版専用派生値 */
+.derived-6only{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+
+/* Skills */
+.skill-section{margin-bottom:12px}
+.skill-cat-header{display:flex;align-items:center;justify-content:space-between;padding:6px 8px;background:var(--bg-mid);border:1px solid var(--border);border-radius:6px;cursor:pointer;margin-bottom:6px;user-select:none}
+.skill-cat-label{font-size:11px;color:var(--text-secondary);font-weight:600}
+.skill-cat-arrow{font-size:10px;color:var(--text-dim);transition:transform 0.2s;margin-left:6px}
+.skill-section.collapsed .skill-cat-body{display:none}
+.skill-section.collapsed .skill-cat-arrow{transform:rotate(-90deg)}
+.skill-cat-body{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:6px;padding:2px 2px 8px}
+.skill-row{display:flex;align-items:center;gap:6px;padding:4px 6px;border:1px solid var(--border);border-radius:6px;background:var(--bg-deep)}
+.skill-check{width:15px;height:15px;accent-color:var(--gold);cursor:pointer;flex-shrink:0}
+.skill-name{flex:1;font-size:11px;color:var(--text-secondary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.skill-base{font-size:10px;color:var(--text-dim);flex-shrink:0;width:22px;text-align:right}
+.skill-plus{font-size:10px;color:var(--text-dim);flex-shrink:0}
+.skill-val{width:42px;text-align:center;padding:2px 2px;font-size:12px;background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--text-primary);font-family:'Noto Serif JP',serif}
+.skill-val:focus{border-bottom-color:var(--gold-dim);outline:none}
+.skill-total{font-size:12px;font-weight:600;color:var(--gold-light);flex-shrink:0;width:28px;text-align:right}
+.add-skill-btn{width:100%;padding:6px;background:transparent;border:1px dashed var(--border);border-radius:6px;color:var(--text-dim);cursor:pointer;font-size:11px;font-family:'Noto Serif JP',serif;transition:all 0.2s;margin-top:4px}
+.add-skill-btn:hover{border-color:var(--border-glow);color:var(--text-secondary)}
+
+/* Save bar */
+.save-bar{position:fixed;bottom:0;left:0;right:0;z-index:100;background:rgba(17,14,11,0.97);backdrop-filter:blur(10px);border-top:1px solid var(--border);padding:10px 16px;display:flex;gap:10px;align-items:center;justify-content:flex-end}
+:root.light .save-bar{background:rgba(237,230,216,0.97)!important}
+.save-bar .hint{flex:1;font-size:11px;color:var(--text-dim)}
+.btn-save{padding:8px 24px;background:rgba(201,168,76,0.1);border:1px solid var(--gold-dim);border-radius:8px;color:var(--gold);cursor:pointer;font-size:13px;font-family:'Noto Serif JP',serif;transition:all 0.2s;white-space:nowrap}
+.btn-save:hover{background:rgba(201,168,76,0.2)}
+.btn-cancel{padding:8px 16px;background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--text-dim);cursor:pointer;font-size:13px;font-family:'Noto Serif JP',serif;transition:all 0.2s}
+.btn-cancel:hover{border-color:var(--border-glow);color:var(--text-secondary)}
+
+/* Toast */
+.toast{position:fixed;bottom:70px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:8px 18px;font-size:12px;color:var(--text-secondary);opacity:0;transition:all 0.3s;z-index:200;white-space:nowrap;pointer-events:none}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.gold{border-color:var(--gold-dim);color:var(--gold)}
+
+/* Loading */
+#loading{position:fixed;inset:0;background:var(--bg-deep);display:flex;align-items:center;justify-content:center;z-index:999;flex-direction:column;gap:12px}
+.loading-logo{font-family:'Cinzel Decorative',serif;font-size:18px;color:var(--gold);animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:0.6}50%{opacity:1}}
+</style>
+</head>
+<body>
+
+<div id="loading">
+  <div class="loading-logo">TRPG Table</div>
+  <div style="font-size:11px;color:var(--text-dim)">読み込み中…</div>
+</div>
+
+<header>
+  <a href="home.html" class="header-logo">⚗ TRPG</a>
+  <span class="header-title" id="page-title">キャラクター作成</span>
+  <button class="theme-toggle" onclick="toggleTheme()" id="theme-btn">🌙</button>
+</header>
+
+<main>
+
+  <!-- 版選択 -->
+  <div class="section">
+    <div class="section-title"><span>📖</span> ルールブック版</div>
+    <div class="edition-selector">
+      <button class="edition-btn active" id="edition-btn-6" onclick="setEdition('6')">
+        クトゥルフ神話TRPG<br><strong>6版</strong>
+        <span class="edition-note">STR 3〜18 / アイデア・知識あり</span>
+      </button>
+      <button class="edition-btn" id="edition-btn-7" onclick="setEdition('7')">
+        新クトゥルフ神話TRPG<br><strong>7版</strong>
+        <span class="edition-note">STR 15〜90 / 超成功・困難成功あり</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- 基本情報 -->
+  <div class="section">
+    <div class="section-title"><span>📜</span> 基本情報</div>
+    <div class="form-row">
+      <div class="form-group" style="flex:2;min-width:160px">
+        <label>キャラクター名 *</label>
+        <input type="text" id="f-name" placeholder="例：田中 一郎">
+      </div>
+      <div class="form-group">
+        <label>ふりがな</label>
+        <input type="text" id="f-kana" placeholder="たなか いちろう">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>年齢</label>
+        <input type="number" id="f-age" placeholder="28" min="1" max="99">
+      </div>
+      <div class="form-group">
+        <label>性別</label>
+        <input type="text" id="f-gender" placeholder="男性">
+      </div>
+      <div class="form-group">
+        <label>身長</label>
+        <input type="text" id="f-height" placeholder="170">
+      </div>
+      <div class="form-group">
+        <label>体重</label>
+        <input type="text" id="f-weight" placeholder="65">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group" style="flex:2">
+        <label>職業</label>
+        <input type="text" id="f-occupation" placeholder="例：医師、探偵、学生…">
+      </div>
+      <div class="form-group" style="flex:2">
+        <label>出身</label>
+        <input type="text" id="f-origin" placeholder="例：東京都、岩手県…">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group w-full">
+        <label>外見・メモ</label>
+        <textarea id="f-appearance" placeholder="外見の特徴、服装など…"></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- 能力値 -->
+  <div class="section">
+    <div class="section-title">
+      <span>🎲</span> 能力値
+      <span style="font-size:10px;color:var(--text-dim);font-family:'Noto Serif JP',serif;font-weight:normal;margin-left:4px">🎲でダイスロール</span>
+    </div>
+    <div class="stats-grid" id="stats-grid"></div>
+    <button class="roll-all-btn" onclick="rollAllStats()">🎲 全能力値を一括ロール</button>
+
+    <!-- 派生値（共通） -->
+    <div class="derived-row" style="margin-top:14px">
+      <div class="derived-box">
+        <div class="derived-label">❤️ HP最大</div>
+        <div class="derived-val" id="d-hp">—</div>
+        <div class="derived-sub" id="d-hp-formula">—</div>
+      </div>
+      <div class="derived-box">
+        <div class="derived-label">🔵 SAN最大</div>
+        <div class="derived-val" id="d-san">—</div>
+        <div class="derived-sub">POW×5</div>
+      </div>
+      <div class="derived-box">
+        <div class="derived-label">🟣 MP最大</div>
+        <div class="derived-val" id="d-mp">—</div>
+        <div class="derived-sub">POW÷5</div>
+      </div>
+      <div class="derived-box">
+        <div class="derived-label">💥 DB</div>
+        <div class="derived-val" id="d-db">—</div>
+        <div class="derived-sub">STR+SIZ</div>
+      </div>
+    </div>
+
+    <!-- 6版のみ表示 -->
+    <div class="derived-6only" id="derived-6only">
+      <div class="derived-box">
+        <div class="derived-label">💡 アイデア</div>
+        <div class="derived-val" id="d-idea">—</div>
+        <div class="derived-sub">INT×5</div>
+      </div>
+      <div class="derived-box">
+        <div class="derived-label">📚 知識</div>
+        <div class="derived-val" id="d-knowledge">—</div>
+        <div class="derived-sub">EDU×5</div>
+      </div>
+      <div class="derived-box">
+        <div class="derived-label">🍀 幸運</div>
+        <div class="derived-val" id="d-luck-derived">—</div>
+        <div class="derived-sub">POW×5</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 技能 -->
+  <div class="section">
+    <div class="section-title"><span>📚</span> 技能</div>
+    <div style="font-size:11px;color:var(--text-dim);margin-bottom:12px">チェックした技能にポイントを振り分けてください。合計値が自動計算されます。</div>
+    <div id="skills-container"></div>
+    <div style="margin-top:8px">
+      <div style="font-size:11px;color:var(--text-secondary);margin-bottom:6px;font-weight:600">カスタム技能</div>
+      <div id="custom-skills-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:6px"></div>
+      <button class="add-skill-btn" onclick="addCustomSkill()">＋ カスタム技能を追加</button>
+    </div>
+  </div>
+
+  <!-- 背景 -->
+  <div class="section">
+    <div class="section-title"><span>📖</span> 背景・信念</div>
+    <div class="form-row">
+      <div class="form-group w-full">
+        <label>信念・イデオロギー</label>
+        <textarea id="f-ideology" placeholder="このキャラクターが信じるものは…"></textarea>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>重要な人物</label>
+        <textarea id="f-important-person" placeholder="家族、友人、恩師…"></textarea>
+      </div>
+      <div class="form-group">
+        <label>大切な場所</label>
+        <textarea id="f-meaningful-location" placeholder="故郷、思い出の場所…"></textarea>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>宝物</label>
+        <textarea id="f-treasured-possession" placeholder="形見、武器、道具…"></textarea>
+      </div>
+      <div class="form-group">
+        <label>傷跡・恐怖症・躁病</label>
+        <textarea id="f-wounds" placeholder="過去のトラウマや特殊な状態…"></textarea>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group w-full">
+        <label>メモ・その他</label>
+        <textarea id="f-notes" style="min-height:100px" placeholder="装備品、所持金、その他メモ…"></textarea>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<div class="save-bar">
+  <span class="hint" id="save-hint"></span>
+  <button class="btn-cancel" onclick="goBack()">キャンセル</button>
+  <button class="btn-save" onclick="saveCharacter()">💾 保存</button>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+import { getDatabase, ref, get, set, push, update } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+import { SKILL_CATEGORIES_6, SKILL_CATEGORIES_7, CAT_ORDER_6, CAT_ORDER_7, CAT_ICON_6, CAT_ICON_7 } from './skills-config.js';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyB_JYoE53JPCyTTaAdHUj6EPX2K5P6HjYs",
+  authDomain: "cthulhu-trpg.firebaseapp.com",
+  databaseURL: "https://cthulhu-trpg-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "cthulhu-trpg",
+  storageBucket: "cthulhu-trpg.firebasestorage.app",
+  messagingSenderId: "595458056355",
+  appId: "1:595458056355:web:9156ec7efedf8f64895f16"
+};
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db   = getDatabase(app);
+
+// ── 版ごとの定数 ──────────────────────────────────
+const STATS_DEF = {
+  '6': [
+    { key:'str', label:'STR', dice:'3d6x5' },
+    { key:'con', label:'CON', dice:'3d6x5' },
+    { key:'siz', label:'SIZ', dice:'2d6p6x5' },
+    { key:'dex', label:'DEX', dice:'3d6x5' },
+    { key:'app', label:'APP', dice:'3d6x5' },
+    { key:'int', label:'INT', dice:'2d6p6x5' },
+    { key:'pow', label:'POW', dice:'3d6x5' },
+    { key:'edu', label:'EDU', dice:'3d6p3x5' },
+    { key:'luck', label:'幸運', dice:'3d6x5' },
+  ],
+  '7': [
+    { key:'str', label:'STR', dice:'3d6x5' },
+    { key:'con', label:'CON', dice:'3d6x5' },
+    { key:'siz', label:'SIZ', dice:'2d6p6x5' },
+    { key:'dex', label:'DEX', dice:'3d6x5' },
+    { key:'app', label:'APP', dice:'3d6x5' },
+    { key:'int', label:'INT', dice:'2d6p6x5' },
+    { key:'pow', label:'POW', dice:'3d6x5' },
+    { key:'edu', label:'EDU', dice:'2d6p6x5' },
+    { key:'luck', label:'幸運', dice:'3d6x5' },
+  ],
+};
+
+// 6版 技能初期値
+const SKILL_DEFAULTS_6 = {
+  '目星':25,'聞き耳':20,'図書館':20,'追跡':10,'ナビゲート':10,'写真術':5,'隠す':10,'隠れる':20,
+  '説得':10,'言いくるめ':5,'信用':15,'値切り':5,'心理学':10,'母国語':70,'威圧':15,'魅惑':15,'尋問':0,
+  '回避': dex => Math.floor((dex||0)/2),
+  'こぶし':50,'キック':25,'頭突き':10,'組み付き':25,'投擲':20,
+  '拳銃':20,'ライフル':25,'ショットガン':25,'サブマシンガン':15,'マシンガン':10,
+  '刀剣':20,'斧':15,'鞭':5,'チェーンソー':10,'ドリル':10,'手榴弾':0,'弓':15,'杖':20,
+  '歴史':5,'クトゥルフ神話':0,'医学':1,'法律':5,'オカルト':5,'人類学':1,'考古学':1,
+  '天文学':1,'生物学':1,'地質学':1,'物理学':1,'化学':1,'薬学':1,'電子工学':1,'コンピューター':5,'経済学':5,'博物学':10,
+  '跳躍':20,'水泳':20,'登攀':20,'忍び歩き':10,'走る':20,'乗馬':5,'潜水':1,
+  '機械修理':10,'電気修理':10,'操縦':1,'鍵開け':1,'爆発物':1,'応急手当':30,'製作':5,'変装':5,
+  '芸術':5,'他言語':1,'催眠':1,'精神分析':1,'運転':20,
+};
+
+// 7版 技能初期値
+const SKILL_DEFAULTS_7 = {
+  '回避': dex => Math.floor((dex||0)/2),
+  '近接戦闘':25,'投擲':20,'射撃':0,
+  '応急手当':30,'鍵開け':1,'手さばき':10,'聞き耳':20,'隠密':20,
+  '精神分析':1,'追跡':10,'登攀':20,'図書館':20,'目星':25,'鑑定':5,
+  '運転':20,'機械修理':10,'重機械操作':1,'乗馬':5,'水泳':20,'製作':5,'操縦':1,
+  '跳躍':20,'電気修理':10,'ナビゲート':10,'変装':5,
+  '言いくるめ':5,'信用':0,'説得':10,'母国語':80,'威圧':15,'魅惑':15,'言語':1,
+  '医学':1,'オカルト':5,'クトゥルフ神話':0,'芸術':5,'経理':5,'考古学':1,'コンピューター':5,
+  '科学':1,'心理学':10,'人類学':1,'電子工学':1,'自然':10,'法律':5,'歴史':5,'サバイバル':10,
+};
+
+// ── state ──
+let currentUser = null;
+let editingCharId = null;
+let currentEdition = '6';
+let customSkillCount = 0;
+
+const urlParams = new URLSearchParams(location.search);
+editingCharId = urlParams.get('id') || null;
+
+// テーマ
+const savedTheme = localStorage.getItem('theme');
+if (savedTheme === 'light') document.documentElement.classList.add('light');
+document.getElementById('theme-btn').textContent = savedTheme === 'light' ? '☀️' : '🌙';
+window.toggleTheme = () => {
+  const isLight = document.documentElement.classList.toggle('light');
+  localStorage.setItem('theme', isLight ? 'light' : 'dark');
+  document.getElementById('theme-btn').textContent = isLight ? '☀️' : '🌙';
+};
+
+// ── 版切り替え ──
+window.setEdition = (ed) => {
+  currentEdition = ed;
+  document.getElementById('edition-btn-6').classList.toggle('active', ed==='6');
+  document.getElementById('edition-btn-7').classList.toggle('active', ed==='7');
+  // 6版のみの派生値表示切り替え
+  document.getElementById('derived-6only').style.display = ed==='6' ? 'flex' : 'none';
+  // HP計算式表示
+  document.getElementById('d-hp-formula').textContent = ed==='7' ? '(CON+SIZ+1)÷2' : '(CON+SIZ)÷10×2';
+  // 能力値グリッドと技能リストを再構築
+  buildStatsGrid();
+  buildSkills();
+  onStatChange();
+};
+
+// ── ダイスロール ──
+function rollDice(expr) {
+  // 3d6x5 / 2d6p6x5 (p=plus)
+  const m = expr.match(/^(\d+)d(\d+)(?:p(\d+))?x(\d+)$/);
+  if (m) {
+    let sum = 0;
+    for (let i=0;i<+m[1];i++) sum += Math.floor(Math.random()*+m[2])+1;
+    sum += m[3] ? +m[3] : 0;
+    return sum * +m[4];
+  }
+  return 0;
+}
+
+// ── 能力値グリッド構築 ──
+function buildStatsGrid() {
+  const grid = document.getElementById('stats-grid');
+  grid.innerHTML = '';
+  const stats = STATS_DEF[currentEdition];
+  stats.forEach(s => {
+    const existing = parseInt(document.getElementById(`stat-${s.key}`)?.value) || 0;
+    const cell = document.createElement('div');
+    cell.className = 'stat-cell';
+    cell.innerHTML = `
+      <div class="stat-name">${s.label}</div>
+      <div class="stat-input-wrap">
+        <button class="dice-btn" onclick="rollStat('${s.key}')" title="${s.dice}">🎲</button>
+        <input class="stat-input" id="stat-${s.key}" type="number" min="1" max="999" placeholder="—" value="${existing||''}" oninput="onStatChange()">
+      </div>
+      <div class="stat-derived" id="derived-${s.key}"></div>
+    `;
+    grid.appendChild(cell);
+  });
+}
+
+window.rollStat = (key) => {
+  const stats = STATS_DEF[currentEdition];
+  const s = stats.find(x => x.key === key);
+  if (!s) return;
+  const val = rollDice(s.dice);
+  const input = document.getElementById(`stat-${key}`);
+  if (!input) return;
+  input.value = val;
+  input.style.color = 'var(--gold)';
+  setTimeout(() => input.style.color = '', 600);
+  onStatChange();
+};
+
+window.rollAllStats = () => {
+  STATS_DEF[currentEdition].forEach(s => rollStat(s.key));
+};
+
+// ── 派生値計算 ──
+function onStatChange() {
+  const v = k => parseInt(document.getElementById(`stat-${k}`)?.value) || 0;
+  const con=v('con'), siz=v('siz'), pow=v('pow'), str=v('str'), int=v('int'), edu=v('edu'), dex=v('dex');
+
+  // HP（版で計算式が違う）
+  let hp = null;
+  if (con && siz) {
+    hp = currentEdition === '7'
+      ? Math.floor((con + siz + 1) / 2)
+      : Math.floor((con + siz) / 10) * 2;
+  }
+  const san = pow ? pow * 5 : null;
+  const mp  = pow ? Math.floor(pow / 5) : null;
+
+  // ダメージボーナス
+  const strSiz = str + siz;
+  let db = '0';
+  if (strSiz) {
+    if      (strSiz <= 12) db = '-2';
+    else if (strSiz <= 16) db = '-1';
+    else if (strSiz <= 24) db = '0';
+    else if (strSiz <= 32) db = '+1d4';
+    else if (strSiz <= 40) db = '+1d6';
+    else                   db = '+2d6';
+  }
+
+  document.getElementById('d-hp').textContent  = hp  ?? '—';
+  document.getElementById('d-san').textContent = san ?? '—';
+  document.getElementById('d-mp').textContent  = mp  ?? '—';
+  document.getElementById('d-db').textContent  = strSiz ? db : '—';
+
+  // 6版のみ
+  if (currentEdition === '6') {
+    document.getElementById('d-idea').textContent     = int  ? int * 5  : '—';
+    document.getElementById('d-knowledge').textContent = edu  ? edu * 5  : '—';
+    document.getElementById('d-luck-derived').textContent = pow ? pow * 5  : '—';
+  }
+
+  // 半値/1/5表示
+  STATS_DEF[currentEdition].forEach(s => {
+    const val = v(s.key);
+    const el  = document.getElementById(`derived-${s.key}`);
+    if (el) el.textContent = val ? `${Math.floor(val/2)} / ${Math.floor(val/5)}` : '';
+  });
+
+  // 回避初期値を再計算
+  updateSkillBase('回避', Math.floor(dex/2));
+}
+
+window.onStatChange = onStatChange;
+
+function updateSkillBase(skillName, base) {
+  const row = document.querySelector(`[data-skill="${skillName}"]`);
+  if (!row) return;
+  row.dataset.base = base;
+  const baseEl = row.querySelector('.skill-base');
+  if (baseEl) baseEl.textContent = base;
+  const addInput = row.querySelector('.skill-val');
+  const totalEl  = row.querySelector('.skill-total');
+  if (addInput && totalEl) {
+    const total = base + (parseInt(addInput.value)||0);
+    totalEl.textContent = total;
+    totalEl.style.color = (parseInt(addInput.value)||0) > 0 ? 'var(--gold-light)' : 'var(--text-dim)';
+  }
+}
+
+// ── 技能リスト構築 ──
+function buildSkills() {
+  const container = document.getElementById('skills-container');
+  container.innerHTML = '';
+  const cats   = currentEdition === '7' ? SKILL_CATEGORIES_7 : SKILL_CATEGORIES_6;
+  const order  = currentEdition === '7' ? CAT_ORDER_7 : CAT_ORDER_6;
+  const icons  = currentEdition === '7' ? CAT_ICON_7 : CAT_ICON_6;
+  const defs   = currentEdition === '7' ? SKILL_DEFAULTS_7 : SKILL_DEFAULTS_6;
+  const dex    = parseInt(document.getElementById('stat-dex')?.value) || 0;
+
+  order.forEach(cat => {
+    const skills = cats[cat];
+    if (!skills || !skills.length) return;
+    const section = document.createElement('div');
+    section.className = 'skill-section';
+    section.dataset.cat = cat;
+    const header = document.createElement('div');
+    header.className = 'skill-cat-header';
+    header.innerHTML = `<span class="skill-cat-label">${icons[cat]||'📦'} ${cat}</span><span class="skill-cat-arrow">▼</span>`;
+    header.onclick = () => section.classList.toggle('collapsed');
+    const body = document.createElement('div');
+    body.className = 'skill-cat-body';
+    skills.forEach(skillName => {
+      const defVal = defs[skillName];
+      const base = typeof defVal === 'function' ? defVal(dex) : (defVal ?? 1);
+      const row = createSkillRow(skillName, cat, base, 0);
+      body.appendChild(row);
+    });
+    section.appendChild(header);
+    section.appendChild(body);
+    container.appendChild(section);
+  });
+}
+
+function createSkillRow(name, cat, base, add, checked=false) {
+  const row = document.createElement('div');
+  row.className = 'skill-row';
+  row.dataset.skill = name;
+  row.dataset.cat = cat;
+  row.dataset.base = base;
+  const total = base + (add||0);
+  row.innerHTML = `
+    <input type="checkbox" class="skill-check" ${checked?'checked':''} onchange="onSkillCheck(this)">
+    <span class="skill-name" title="${name}">${name}</span>
+    <span class="skill-base">${base}</span>
+    <span class="skill-plus" style="color:var(--text-dim)">+</span>
+    <input type="number" class="skill-val" value="${add||''}" min="0" max="999" placeholder="0" oninput="onSkillInput(this)">
+    <span class="skill-total" style="color:${total>base?'var(--gold-light)':'var(--text-dim)'}">${total}</span>
+  `;
+  if (checked) row.style.background = 'rgba(201,168,76,0.05)';
+  return row;
+}
+
+window.onSkillCheck = (cb) => {
+  const row = cb.closest('.skill-row');
+  row.style.background = cb.checked ? 'rgba(201,168,76,0.05)' : '';
+  row.style.borderColor = cb.checked ? 'var(--gold-dim)' : '';
+};
+
+window.onSkillInput = (input) => {
+  const row = input.closest('.skill-row');
+  const base  = parseInt(row.dataset.base) || 0;
+  const add   = parseInt(input.value) || 0;
+  const total = base + add;
+  const totalEl = row.querySelector('.skill-total');
+  totalEl.textContent = total;
+  totalEl.style.color = add > 0 ? 'var(--gold-light)' : 'var(--text-dim)';
+};
+
+window.addCustomSkill = (name='', base=1, add=0, checked=false) => {
+  customSkillCount++;
+  const list = document.getElementById('custom-skills-list');
+  const wrap = document.createElement('div');
+  wrap.className = 'skill-row';
+  wrap.dataset.custom = customSkillCount;
+  wrap.innerHTML = `
+    <input type="checkbox" class="skill-check" ${checked?'checked':''} onchange="onSkillCheck(this)">
+    <input type="text" style="flex:1;font-size:11px;background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--text-secondary);padding:2px;font-family:'Noto Serif JP',serif" placeholder="技能名" value="${name}">
+    <input type="number" class="skill-base-input" style="width:34px;text-align:center;font-size:11px;background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--text-dim);padding:2px;font-family:'Noto Serif JP',serif" placeholder="初期" value="${base||''}" min="0" oninput="onCustomSkillInput(this)">
+    <span class="skill-plus" style="color:var(--text-dim)">+</span>
+    <input type="number" class="skill-val" style="width:42px;text-align:center;font-size:12px;background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--text-primary);padding:2px;font-family:'Noto Serif JP',serif" placeholder="0" value="${add||''}" min="0" oninput="onCustomSkillInput(this)">
+    <span class="skill-total" style="font-size:12px;font-weight:600;color:var(--text-dim);width:28px;text-align:right">${(base||0)+(add||0)||''}</span>
+    <button onclick="this.closest('[data-custom]').remove()" style="font-size:10px;background:transparent;border:none;color:var(--text-dim);cursor:pointer;padding:0 4px;flex-shrink:0">✕</button>
+  `;
+  list.appendChild(wrap);
+  if (checked) onSkillCheck(wrap.querySelector('.skill-check'));
+};
+
+window.onCustomSkillInput = (input) => {
+  const row = input.closest('[data-custom]');
+  const base = parseInt(row.querySelector('.skill-base-input').value)||0;
+  const add  = parseInt(row.querySelector('.skill-val').value)||0;
+  const totalEl = row.querySelector('.skill-total');
+  totalEl.textContent = base+add || '';
+  totalEl.style.color = add>0 ? 'var(--gold-light)' : 'var(--text-dim)';
+};
+
+// ── 保存 ──
+window.saveCharacter = async () => {
+  const name = document.getElementById('f-name').value.trim();
+  if (!name) { showToast('キャラクター名を入力してください', false); document.getElementById('f-name').focus(); return; }
+  if (!currentUser) { showToast('ログインが必要です', false); return; }
+
+  const v = k => parseInt(document.getElementById(`stat-${k}`)?.value) || 0;
+  const con=v('con'), siz=v('siz'), pow=v('pow'), str=v('str');
+  const hpMax  = (con&&siz) ? (currentEdition==='7' ? Math.floor((con+siz+1)/2) : Math.floor((con+siz)/10)*2) : 0;
+  const sanMax = pow ? pow*5 : 0;
+  const mpMax  = pow ? Math.floor(pow/5) : 0;
+  const strSiz = str+siz;
+  let db='0';
+  if(strSiz){if(strSiz<=12)db='-2';else if(strSiz<=16)db='-1';else if(strSiz<=24)db='0';else if(strSiz<=32)db='+1d4';else if(strSiz<=40)db='+1d6';else db='+2d6';}
+
+  // 技能収集
+  const skills = {};
+  document.querySelectorAll('#skills-container .skill-row').forEach(row => {
+    const skillName = row.dataset.skill;
+    if (!skillName) return;
+    const add  = parseInt(row.querySelector('.skill-val')?.value)||0;
+    const base = parseInt(row.dataset.base)||0;
+    const cat  = row.dataset.cat || 'その他';
+    if (add > 0 || row.querySelector('.skill-check')?.checked) {
+      skills[skillName] = { base, add, total: base+add, category: cat };
+    }
+  });
+  document.querySelectorAll('#custom-skills-list [data-custom]').forEach(row => {
+    const nameEl = row.querySelector('input[type=text]');
+    const sName  = nameEl?.value.trim();
+    if (!sName) return;
+    const base = parseInt(row.querySelector('.skill-base-input')?.value)||0;
+    const add  = parseInt(row.querySelector('.skill-val')?.value)||0;
+    skills[sName] = { base, add, total: base+add, category: 'その他' };
+  });
+
+  const charData = {
+    edition: currentEdition,
+    name,
+    kana:        document.getElementById('f-kana').value||'',
+    age:         document.getElementById('f-age').value||'',
+    gender:      document.getElementById('f-gender').value||'',
+    height:      document.getElementById('f-height').value||'',
+    weight:      document.getElementById('f-weight').value||'',
+    occupation:  document.getElementById('f-occupation').value||'',
+    origin:      document.getElementById('f-origin').value||'',
+    appearance:  document.getElementById('f-appearance').value||'',
+    str: v('str')||null, con: v('con')||null, siz: v('siz')||null,
+    dex: v('dex')||null, app: v('app')||null, int: v('int')||null,
+    pow: v('pow')||null, edu: v('edu')||null, luck: v('luck')||null,
+    db,
+    hp: hpMax, hpMax,
+    san: sanMax, sanMax,
+    mp: mpMax, mpMax,
+    skills,
+    ideology:            document.getElementById('f-ideology').value||'',
+    importantPerson:     document.getElementById('f-important-person').value||'',
+    meaningfulLocation:  document.getElementById('f-meaningful-location').value||'',
+    treasuredPossession: document.getElementById('f-treasured-possession').value||'',
+    wounds:              document.getElementById('f-wounds').value||'',
+    notes:               document.getElementById('f-notes').value||'',
+    updatedAt: Date.now(),
+  };
+
+  const basePath = `users/${currentUser.uid}/characters`;
+  if (editingCharId) {
+    await update(ref(db, `${basePath}/${editingCharId}`), charData);
+  } else {
+    charData.createdAt = Date.now();
+    const newRef = push(ref(db, basePath));
+    editingCharId = newRef.key;
+    await set(newRef, charData);
+  }
+  showToast('✓ 保存しました', true);
+  document.getElementById('page-title').textContent = 'キャラクター編集';
+  document.getElementById('save-hint').textContent = `最終保存: ${new Date().toLocaleTimeString('ja-JP')}`;
+  history.replaceState(null,'',`?id=${editingCharId}`);
+};
+
+// ── 読み込み ──
+async function loadCharacter(id) {
+  const snap = await get(ref(db, `users/${currentUser.uid}/characters/${id}`));
+  if (!snap.exists()) return;
+  const c = snap.val();
+  document.getElementById('page-title').textContent = 'キャラクター編集';
+
+  // 版を先に設定
+  if (c.edition) {
+    currentEdition = c.edition;
+    setEdition(c.edition);
+  }
+
+  const sv = (id, val) => { const el=document.getElementById(id); if(el&&val!=null) el.value=val; };
+  sv('f-name', c.name); sv('f-kana', c.kana); sv('f-age', c.age);
+  sv('f-gender', c.gender); sv('f-height', c.height); sv('f-weight', c.weight);
+  sv('f-occupation', c.occupation); sv('f-origin', c.origin||c.birthplace);
+  sv('f-appearance', c.appearance);
+  sv('f-ideology', c.ideology); sv('f-important-person', c.importantPerson);
+  sv('f-meaningful-location', c.meaningfulLocation);
+  sv('f-treasured-possession', c.treasuredPossession);
+  sv('f-wounds', c.wounds); sv('f-notes', c.notes);
+
+  ['str','con','siz','dex','app','int','pow','edu','luck'].forEach(k => {
+    if (c[k] != null) { const el=document.getElementById(`stat-${k}`); if(el) el.value=c[k]; }
+  });
+  onStatChange();
+
+  // 技能
+  if (c.skills) {
+    Object.entries(c.skills).forEach(([skillName, v]) => {
+      const row = document.querySelector(`[data-skill="${skillName}"]`);
+      if (row) {
+        const addInput = row.querySelector('.skill-val');
+        if (addInput) { addInput.value = v.add||0; onSkillInput(addInput); }
+        const cb = row.querySelector('.skill-check');
+        if (cb) { cb.checked = true; onSkillCheck(cb); }
+      } else {
+        addCustomSkill(skillName, v.base||1, v.add||0, true);
+      }
+    });
+  }
+  if (c.updatedAt) {
+    document.getElementById('save-hint').textContent = `最終保存: ${new Date(c.updatedAt).toLocaleDateString('ja-JP')}`;
+  }
+}
+
+window.goBack = () => history.back();
+
+function showToast(msg, isGold=false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast' + (isGold?' gold':'') + ' show';
+  setTimeout(() => t.className = 'toast' + (isGold?' gold':''), 2500);
+}
+
+// ── Auth ──
+onAuthStateChanged(auth, async user => {
+  if (!user) { location.href = 'index.html'; return; }
+  currentUser = user;
+  setEdition('6'); // デフォルト6版で構築
+  if (editingCharId) await loadCharacter(editingCharId);
+  document.getElementById('loading').style.display = 'none';
+  if (!editingCharId) document.getElementById('save-hint').textContent = '新規キャラクター';
+});
+</script>
+</body>
+</html>

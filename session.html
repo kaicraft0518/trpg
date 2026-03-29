@@ -1887,6 +1887,9 @@ function renderCharSheet(char, canEdit) {
   // 他人キャラ閲覧中はSANチェックボタンを非表示（自分 or KPのみ表示）
   const sanBtn = document.getElementById('san-display-btn');
   if (sanBtn) sanBtn.style.visibility = canEdit ? 'visible' : 'hidden';
+  // 編集ボタン（自分のキャラのみ表示）
+  const editBtn = document.getElementById('char-edit-link');
+  if (editBtn) editBtn.style.display = (canEdit && viewingCharId && viewingUid === currentUser?.uid) ? 'inline-block' : 'none';
 
   // Stats
   const sg = document.getElementById('stats-grid'); sg.innerHTML = '';
@@ -2909,6 +2912,10 @@ window.addInitManual = async () => {
 };
 
 window.addInitiative = window.openAddInitModal; // 後方互換
+
+window.goEditChar = () => {
+  if (viewingCharId) location.href = `character-make.html?id=${viewingCharId}`;
+};
 
 window.deleteInitiative = async (e, id) => {
   e.stopPropagation();
