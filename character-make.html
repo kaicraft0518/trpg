@@ -33,14 +33,16 @@ body{background:var(--bg-deep);color:var(--text-primary);font-family:'Noto Serif
 body::before{content:'';position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse 60% 40% at 10% 50%,rgba(120,80,20,0.08) 0%,transparent 70%),radial-gradient(ellipse 40% 60% at 90% 30%,rgba(100,60,20,0.06) 0%,transparent 70%);z-index:0}
 
 /* Header */
-header{position:sticky;top:0;z-index:100;background:rgba(17,14,11,0.97);backdrop-filter:blur(10px);border-bottom:1px solid var(--border);padding:0 16px;height:52px;display:flex;align-items:center;gap:12px}
-:root.light header{background:rgba(237,230,216,0.97)!important}
-.header-logo{font-family:'Cinzel Decorative',serif;font-size:14px;color:var(--gold);text-decoration:none;flex-shrink:0}
-.header-title{font-size:12px;color:var(--text-dim);flex:1}
-.header-btn{padding:5px 12px;background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--text-dim);cursor:pointer;font-size:11px;font-family:'Noto Serif JP',serif;transition:all 0.2s;white-space:nowrap}
-.header-btn:hover{border-color:var(--border-glow);color:var(--text-secondary)}
-.theme-toggle{background:var(--bg-mid);border:1px solid var(--border);border-radius:20px;padding:4px 10px;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:4px;color:var(--text-dim);transition:all 0.2s;font-family:'Noto Serif JP',serif;white-space:nowrap}
+header{position:sticky;top:0;z-index:100;background:rgba(17,14,11,0.95);backdrop-filter:blur(10px);border-bottom:1px solid var(--border);padding:0 28px;height:60px;display:flex;align-items:center;justify-content:space-between}
+:root.light header{background:rgba(237,230,216,0.95)!important}
+.header-logo{font-family:'Cinzel Decorative',serif;font-size:16px;color:var(--gold);letter-spacing:2px;text-shadow:0 0 15px rgba(201,168,76,0.3);display:flex;align-items:center;gap:8px;text-decoration:none}
+.header-logo::before{content:'👁';font-size:18px;filter:sepia(1) hue-rotate(30deg) saturate(2)}
+.header-right{display:flex;align-items:center;gap:10px}
+.header-title{font-size:12px;color:var(--text-dim);font-family:'Noto Serif JP',serif}
+.theme-toggle{background:var(--bg-card);border:1px solid var(--border);border-radius:20px;padding:5px 14px;cursor:pointer;font-size:12px;display:flex;align-items:center;gap:6px;color:var(--text-dim);transition:all 0.2s;font-family:'Noto Serif JP',serif;white-space:nowrap}
 .theme-toggle:hover{border-color:var(--border-glow);color:var(--text-secondary)}
+.header-back{padding:5px 14px;background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--text-dim);cursor:pointer;font-size:12px;font-family:'Noto Serif JP',serif;transition:all 0.2s;white-space:nowrap;text-decoration:none;display:flex;align-items:center;gap:5px}
+.header-back:hover{border-color:var(--border-glow);color:var(--text-secondary)}
 
 /* Layout */
 main{position:relative;z-index:1;max-width:800px;margin:0 auto;padding:20px 16px 80px}
@@ -139,9 +141,12 @@ select option{background:var(--bg-mid)}
 </div>
 
 <header>
-  <a href="home.html" class="header-logo">⚗ TRPG</a>
-  <span class="header-title" id="page-title">キャラクター作成</span>
-  <button class="theme-toggle" onclick="toggleTheme()" id="theme-btn">🌙</button>
+  <a href="home.html" class="header-logo">TRPG Table</a>
+  <div class="header-right">
+    <span class="header-title" id="page-title">キャラクター作成</span>
+    <button class="theme-toggle" onclick="toggleTheme()" id="theme-btn">🌙 ダーク</button>
+    <a href="home.html" class="header-back">← ホームへ</a>
+  </div>
 </header>
 
 <main>
@@ -405,11 +410,11 @@ const urlParams = new URLSearchParams(location.search);
 editingCharId = urlParams.get('id') || null;
 
 // テーマ（head内のインラインスクリプトで適用済み）
-document.getElementById('theme-btn').textContent = document.documentElement.classList.contains('light') ? '☀️' : '🌙';
+document.getElementById('theme-btn').textContent = document.documentElement.classList.contains('light') ? '☀️ ライト' : '🌙 ダーク';
 window.toggleTheme = () => {
   const isLight = document.documentElement.classList.toggle('light');
   localStorage.setItem('trpg-theme', isLight ? 'light' : 'dark');
-  document.getElementById('theme-btn').textContent = isLight ? '☀️' : '🌙';
+  document.getElementById('theme-btn').textContent = isLight ? '☀️ ライト' : '🌙 ダーク';
 };
 
 // ── 版切り替え ──
